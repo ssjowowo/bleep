@@ -1,0 +1,326 @@
+{
+ "locked": "2026-10-08",
+ "reason": "Bleep v1 main board ordered from JLCPCB; no further board changes. Shell and firmware work only.",
+ "board_files": [
+  "mainboard/mainboard.kicad_pcb",
+  "mainboard/fab/"
+ ],
+ "values": {
+  "ACC_POS": [
+   8.2,
+   121.37
+  ],
+  "ALS_POS": [
+   13.17,
+   96.18
+  ],
+  "ANT_KEEPOUT": [
+   49.54,
+   91.58,
+   57.34,
+   116.58
+  ],
+  "BAT_PADS": [
+   [
+    12.0,
+    92.46
+   ],
+   [
+    16.0,
+    92.46
+   ]
+  ],
+  "BL_POS": [
+   53.24,
+   131.63
+  ],
+  "BOT_BOSSES": [
+   [
+    11.5,
+    173.73
+   ],
+   [
+    49.24,
+    173.73
+   ]
+  ],
+  "BP_INSET": 3.4,
+  "BP_T": 0.8,
+  "CHG_POS": [
+   52.74,
+   156.37
+  ],
+  "DPAD_C": [
+   30.5,
+   18.5
+  ],
+  "DRV_POS": [
+   11.4,
+   113.17
+  ],
+  "EN_PADS": [
+   [
+    46.99,
+    117.08
+   ],
+   [
+    43.99,
+    117.08
+   ]
+  ],
+  "FG_POS": [
+   9.2,
+   140.43
+  ],
+  "GPIO": {
+   "IRRX_PWR": "IO1",
+   "ACC_INT": "IO2",
+   "TP_INT": "IO14",
+   "CHRG": "IO12",
+   "STDBY": "IO3",
+   "LCD_D0": "IO35",
+   "LCD_D1": "IO36",
+   "LCD_D2": "IO37",
+   "LCD_D3": "IO38",
+   "LCD_D4": "IO39",
+   "LCD_D5": "IO40",
+   "LCD_D6": "IO41",
+   "LCD_D7": "IO43",
+   "LCD_WR": "IO44",
+   "LCD_DC": "IO21",
+   "IR_RX": "IO42",
+   "BL_PWM": "IO46",
+   "IR_TX": "IO45",
+   "SDA": "IO47",
+   "SCL": "IO48",
+   "USB_DN": "IO19",
+   "USB_DP": "IO20"
+  },
+  "IRRX_POS": [
+   18.97,
+   96.94
+  ],
+  "IR_LED_PAD_Y": 5.02,
+  "IR_LED_X": [
+   27.47,
+   33.27
+  ],
+  "KEYS": [
+   [
+    "UP",
+    [
+     30.5,
+     7.5
+    ],
+    "IO4",
+    "ring",
+    90,
+    ""
+   ],
+   [
+    "RIGHT",
+    [
+     41.5,
+     18.5
+    ],
+    "IO5",
+    "ring",
+    0,
+    ""
+   ],
+   [
+    "OK",
+    [
+     30.5,
+     18.5
+    ],
+    "IO0",
+    "ok",
+    0,
+    ""
+   ],
+   [
+    "LEFT",
+    [
+     19.5,
+     18.5
+    ],
+    "IO6",
+    "ring",
+    180,
+    ""
+   ],
+   [
+    "DOWN",
+    [
+     30.5,
+     29.5
+    ],
+    "IO7",
+    "ring",
+    270,
+    ""
+   ],
+   [
+    "BACK",
+    [
+     44.5,
+     42.0
+    ],
+    "IO15",
+    "round",
+    0,
+    "@back"
+   ],
+   [
+    "HOME",
+    [
+     30.5,
+     42.0
+    ],
+    "IO16",
+    "round",
+    0,
+    "@home"
+   ],
+   [
+    "MUTE",
+    [
+     16.5,
+     42.0
+    ],
+    "IO17",
+    "round",
+    0,
+    "@mute"
+   ],
+   [
+    "PLEX",
+    [
+     44.5,
+     54.0
+    ],
+    "IO18",
+    "pill",
+    0,
+    "@plex"
+   ],
+   [
+    "NFLX",
+    [
+     30.5,
+     54.0
+    ],
+    "IO8",
+    "pill",
+    0,
+    "@netflix"
+   ],
+   [
+    "YT",
+    [
+     16.5,
+     54.0
+    ],
+    "IO9",
+    "pill",
+    0,
+    "@youtube"
+   ],
+   [
+    "VOLUP",
+    [
+     40.5,
+     64.0
+    ],
+    "IO10",
+    "volR",
+    0,
+    "+"
+   ],
+   [
+    "VOLDN",
+    [
+     20.5,
+     64.0
+    ],
+    "IO11",
+    "volL",
+    0,
+    "\u2212"
+   ]
+  ],
+  "KEYS_X0": -0.13,
+  "KEYS_Y0": 99.43,
+  "KEY_HOLES": [
+   [
+    6.3,
+    103.43
+   ],
+   [
+    54.44,
+    121.63
+   ],
+   [
+    6.3,
+    145.93
+   ],
+   [
+    54.44,
+    145.93
+   ]
+  ],
+  "L": 182.23,
+  "LDO_POS": [
+   46.59,
+   103.18
+  ],
+  "MOD_C": [
+   44.29,
+   104.08
+  ],
+  "MOD_L": 25.5,
+  "MOD_W": 18.0,
+  "MOTOR_C": [
+   7.8,
+   128.37
+  ],
+  "MOTOR_PADS_Y": 134.97,
+  "PWR_GPIO": "IO13",
+  "PWR_KEY": [
+   44.37,
+   96.18
+  ],
+  "ROW_Y": 96.18,
+  "R_BOT": 20.0,
+  "R_TOP": 5.0,
+  "SW_FOOTPRINT": [
+   "Button_Switch_SMD",
+   "SW_Push_1P1T_XKB_TS-1187A"
+  ],
+  "TOP_BOSSES": [],
+  "USB_FP_ORIGIN": [
+   30.37,
+   177.83
+  ],
+  "USB_TAB": [
+   24.37,
+   36.37,
+   180.93
+  ],
+  "W": 60.74,
+  "ZIF_C": [
+   30.37,
+   67.6368
+  ]
+ },
+ "ordered": {
+  "date": "2026-10-08",
+  "fab": "JLCPCB",
+  "pcb": "5 pcs, 2 layers, 53.94 x 177.53 mm, 0.8 mm, green solder mask, white silkscreen, HASL (with lead), tented vias",
+  "assembly": "Economic PCBA, top side, 2 boards; assembly remark about the D1/D2 IR LED orientation",
+  "files": "fab/mainboard-gerbers.zip, fab/mainboard-BOM.csv, fab/mainboard-CPL.csv",
+  "note": "mainboard.kicad_pcb's stackup says white mask / black silk (set before the order); only renders use it. The board was ordered green, since JLCPCB's Economic assembly only takes green."
+ },
+ "how_to_unlock": "Only for a deliberate new board revision: PCB_UNLOCK=1 ./build.sh pcb, after clearing the read-only flags. Shell work must keep every value in 'values' unchanged (layout.py checks)."
+}

@@ -1,0 +1,798 @@
+<meta charset="utf-8">
+<title>Bleep Remote Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one-screen studio. Stage (orbitable render) fills the left, a
+   narrow parts/colour rail sits on the right; stacked on phones. Tokens come
+   from the concept pack (graphite ground, warm off-white type, cyan accent). */
+:root {
+  --bg: #0d0e0f;
+  --stage-a: #1b1d20;
+  --stage-b: #0a0b0c;
+  --panel: #131416;
+  --line: #26282c;
+  --fg: #ece9e4;
+  --muted: #9a9893;
+  --accent: #5ac4da;
+  --accent-ink: #071417;
+  --chip: #1b1d20;
+  --font-ui: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #eceef0; --stage-a: #f7f8f9; --stage-b: #d5d9dd; --panel: #ffffff; --line: #d6dadf;
+    --fg: #15171a; --muted: #5b6168; --accent: #13809a; --accent-ink: #ffffff; --chip: #eef0f2;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #eceef0; --stage-a: #f7f8f9; --stage-b: #d5d9dd; --panel: #ffffff; --line: #d6dadf;
+  --fg: #15171a; --muted: #5b6168; --accent: #13809a; --accent-ink: #ffffff; --chip: #eef0f2;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body { overflow-x: hidden; }   /* callouts move every frame; never let them scroll the page sideways */
+body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 14px; }
+* { box-sizing: border-box; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 340px; }
+.stage { position: relative; min-width: 0; min-height: 0;
+  background: radial-gradient(120% 90% at 50% 35%, var(--stage-a), var(--stage-b)); overflow: hidden; }
+#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.hud { position: absolute; left: 16px; top: 14px; display: flex; flex-direction: column; gap: 2px; pointer-events: none; }
+.hud .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; color: var(--accent); }
+.hud h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.01em; text-wrap: balance; }
+.hud .dims { font-family: var(--font-mono); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.toolbar { position: absolute; right: 12px; top: 12px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: calc(100% - 24px); }
+.views { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 2px; padding: 3px;
+  background: color-mix(in srgb, var(--panel) 82%, transparent); border: 1px solid var(--line); border-radius: 999px;
+  backdrop-filter: blur(8px); max-width: calc(100% - 24px); overflow-x: auto; }
+.views button { border: 0; background: transparent; padding: 7px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; color: var(--muted); }
+.views button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.views button:hover:not([aria-pressed="true"]) { color: var(--fg); }
+
+.tool { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; font-size: 12px; font-weight: 600;
+  background: color-mix(in srgb, var(--panel) 82%, transparent); border: 1px solid var(--line); backdrop-filter: blur(8px); }
+.tool[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.tool input[type=range] { width: 84px; accent-color: var(--accent); }
+
+[hidden] { display: none !important; }
+.leaders { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.leaders line { stroke: var(--fg); stroke-opacity: .6; stroke-width: 1.2; }
+.leaders circle { fill: var(--fg); }
+.callouts { position: absolute; inset: 0; pointer-events: none; }
+.callout { position: absolute; left: 0; top: 0; display: flex; align-items: flex-start; gap: 7px; max-width: 200px; padding: 5px 8px 6px;
+  border-radius: 8px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 88%, transparent);
+  backdrop-filter: blur(6px); pointer-events: auto; cursor: default; will-change: transform; }
+.callout .sw { flex: none; width: 10px; height: 10px; margin-top: 3px; border-radius: 3px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 25%, transparent) inset; }
+.callout b { display: block; font-size: 12px; font-weight: 700; line-height: 1.25; }
+.callout small { display: block; font-family: var(--font-mono); font-size: 10px; color: var(--muted); line-height: 1.3; margin-top: 1px; }
+.callout:hover { border-color: var(--accent); }
+@media (max-width: 560px) { .callout small { display: none; } .callout { max-width: 130px; } }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-mono); font-size: 12px; color: var(--muted); pointer-events: none; }
+
+.panel { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; min-width: 0;
+  padding-inline: 18px; padding-block: 18px 28px; display: flex; flex-direction: column; gap: 22px; }
+.section { display: flex; flex-direction: column; gap: 10px; }
+.section h2 { margin: 0; font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+.presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.preset { display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--chip); }
+.preset[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.preset .bar { display: flex; height: 16px; border-radius: 5px; overflow: hidden; box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 12%, transparent) inset; }
+.preset .bar span { flex: 1; }
+.preset .bar span:first-child { flex: 2.4; }
+.preset b { font-size: 13px; font-weight: 700; }
+.preset small { color: var(--muted); font-size: 11px; line-height: 1.35; }
+
+.parts { display: flex; flex-direction: column; gap: 4px; }
+.part { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 10px;
+  border-radius: 10px; border: 1px solid transparent; background: transparent; text-align: left; }
+.part:hover { background: var(--chip); }
+.part[aria-pressed="true"] { background: var(--chip); border-color: var(--accent); }
+.part .dot { width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 18%, transparent) inset; }
+.part .name { font-weight: 600; font-size: 13px; }
+.part .cname { font-family: var(--font-mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+.swatches { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+.swatch { aspect-ratio: 1; max-width: 100%; border-radius: 8px; border: 0; padding: 0;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 16%, transparent) inset; position: relative; }
+.swatch[aria-pressed="true"]::after { content: ""; position: absolute; inset: -3px; border-radius: 10px; border: 2px solid var(--accent); }
+.swatch-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.swatch-meta label { display: flex; align-items: center; gap: 8px; }
+.swatch-meta input[type=color] { width: 34px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; font-size: 12px; }
+
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 3px; border-radius: 10px; background: var(--chip); border: 1px solid var(--line); }
+.seg button { border: 0; background: transparent; padding: 7px 6px; border-radius: 7px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--panel); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+
+.copy { display: flex; flex-direction: column; gap: 8px; }
+.copy button { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--chip); font-weight: 700; font-size: 13px; }
+.copy textarea { width: 100%; min-height: 0; height: 0; opacity: 0; position: absolute; pointer-events: none; }
+.note { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.note code { font-family: var(--font-mono); font-size: 11px; }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: minmax(380px, 62vh) auto; height: auto; min-height: 100%; }
+  .panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .hud h1 { font-size: 18px; }
+  .toolbar { top: auto; bottom: 62px; right: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <canvas id="gl" aria-label="3D view of the remote. Drag to orbit, scroll or pinch to zoom, click a part to select it."></canvas>
+    <div class="hud">
+      <div class="eyebrow">CONCEPT 1b · v1 SLIM · OWN MAIN BOARD</div>
+      <h1>Bleep</h1>
+      <div class="dims">60.7 × 182.2 × 13.0 mm · 14 keys · 3.5″ 320×480</div>
+    </div>
+    <div class="toolbar">
+      <button class="tool" id="spin" aria-pressed="false" type="button">Turntable</button>
+      <button class="tool" id="xray" aria-pressed="false" type="button">X-ray + labels</button>
+      <label class="tool" for="explode">Explode <input id="explode" type="range" min="0" max="1" step="0.01" value="0"></label>
+    </div>
+    <div class="views" role="group" aria-label="Camera views" id="views">
+      <button type="button" data-view="hero" aria-pressed="true">3/4</button>
+      <button type="button" data-view="front" aria-pressed="false">Front</button>
+      <button type="button" data-view="back" aria-pressed="false">Back</button>
+      <button type="button" data-view="side" aria-pressed="false">Side</button>
+      <button type="button" data-view="top" aria-pressed="false">IR end</button>
+      <button type="button" data-view="bottom" aria-pressed="false">USB-C end</button>
+      <button type="button" data-view="hand" aria-pressed="false">Low angle</button>
+    </div>
+    <svg class="leaders" id="leaders" aria-hidden="true" hidden></svg>
+    <div class="callouts" id="callouts" hidden></div>
+    <div class="loading" id="loading">Loading model…</div>
+  </div>
+
+  <aside class="panel">
+    <section class="section">
+      <h2>Colorways</h2>
+      <div class="presets" id="presets"></div>
+    </section>
+
+    <section class="section">
+      <h2>Parts</h2>
+      <div class="parts" id="parts"></div>
+    </section>
+
+    <section class="section">
+      <h2 id="swatch-title">PETG colors</h2>
+      <div class="swatches" id="swatches"></div>
+      <div class="swatch-meta">
+        <label for="custom">Custom <input type="color" id="custom" value="#34363a"></label>
+        <button class="linkbtn" id="allkeys" type="button">Apply to all keys</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Finish</h2>
+      <div class="seg" id="finish" role="group" aria-label="Surface finish">
+        <button type="button" data-finish="matte" aria-pressed="false">Matte</button>
+        <button type="button" data-finish="satin" aria-pressed="true">Satin</button>
+        <button type="button" data-finish="gloss" aria-pressed="false">Gloss</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Screen</h2>
+      <div class="seg" id="screen" role="group" aria-label="Screen content">
+        <button type="button" data-screen="off" aria-pressed="false">Off</button>
+        <button type="button" data-screen="activities" aria-pressed="true">Activities</button>
+        <button type="button" data-screen="playing" aria-pressed="false">Playing</button>
+        <button type="button" data-screen="home" aria-pressed="false">Home</button>
+      </div>
+    </section>
+
+    <section class="section copy">
+      <h2>Filament list</h2>
+      <button type="button" id="copybtn">Copy color list</button>
+      <textarea id="copytext" aria-hidden="true" tabindex="-1"></textarea>
+      <p class="note">The geometry is the real print files from <code>hardware/enclosure</code>. Labels and icons are flush two-color inlays: print <code>caps.stl</code> with <code>caps_labels.stl</code> added as a second part on a multi-material printer.</p>
+    </section>
+  </aside>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { STLLoader } from "three/addons/loaders/STLLoader.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
+
+// ---------- data -----------------------------------------------------------
+// Shell dimensions (mm), from hardware/enclosure/params.scad
+const DIM = { W: 60.74, L: 182.23, H: 12.95, LENS: [56.54, 84.96, 0.3], LENS_C: [30.37, 47.28], ACTIVE: [48.96, 73.44], ACTIVE_DY: 2.00, Z_LENS_TOP: 12.15 };
+
+const SWATCHES = [
+  ["Jet black", "#18191b"], ["Graphite", "#34363a"], ["Slate", "#5d636b"], ["Cool grey", "#9ea3a8"],
+  ["Arctic white", "#e8e9e8"], ["Sand", "#cdbb98"], ["Clay", "#b9775a"], ["Brick red", "#9e3a2f"],
+  ["Signal orange", "#e5612b"], ["Sunflower", "#efb630"], ["Sage", "#93a48c"], ["Olive", "#646b48"],
+  ["Petrol", "#1e5a66"], ["Concept cyan", "#5ac4da"], ["Navy", "#1d2a45"], ["Lilac", "#a597c4"],
+];
+
+const PARTS = [
+  { id: "shell", name: "Front shell", file: "shell.stl" },
+  { id: "back",  name: "Back plate", file: "back.stl" },
+  { id: "dpad",  name: "D-pad ring", file: "dpad.stl", key: true },
+  { id: "ok",    name: "OK key", file: "ok.stl", key: true },
+  { id: "nav",   name: "Back · Home · Mute", file: "nav.stl", key: true },
+  { id: "apps",  name: "App keys", file: "apps.stl", key: true },
+  { id: "vol",   name: "Volume", file: "vol.stl", key: true },
+  { id: "pwr",   name: "Power key", file: "pwr.stl", key: true },
+  { id: "labels", name: "Labels & icons", file: "labels.stl" },
+];
+
+const PRESETS = [
+  { name: "Concept", note: "The graphite of the design pack",
+    c: { shell: ["Concept graphite", "#232427"], back: ["Concept black", "#151618"], dpad: ["Concept key", "#2a2c30"], ok: ["Concept key", "#2a2c30"], nav: ["Concept key", "#2a2c30"], apps: ["Concept key", "#2a2c30"], vol: ["Concept key", "#2a2c30"], pwr: ["Concept key", "#2a2c30"], labels: ["Concept legend", "#bdbab4"] } },
+  { name: "Arctic", note: "White shell, grey keys, cyan OK",
+    c: { shell: "Arctic white", back: "Cool grey", dpad: "Cool grey", ok: "Concept cyan", nav: "Cool grey", apps: "Cool grey", vol: "Cool grey", pwr: "Signal orange", labels: "Jet black" } },
+  { name: "Deck", note: "Graphite body, sand key set",
+    c: { shell: "Graphite", back: "Graphite", dpad: "Sand", ok: "Sand", nav: "Sand", apps: "Sand", vol: "Sand", pwr: "Clay", labels: "Graphite" } },
+  { name: "Signal", note: "Slate with orange accents",
+    c: { shell: "Slate", back: "Jet black", dpad: "Jet black", ok: "Signal orange", nav: "Jet black", apps: "Jet black", vol: "Jet black", pwr: "Signal orange", labels: "Arctic white" } },
+  { name: "Sage", note: "Soft green, white keys",
+    c: { shell: "Sage", back: "Olive", dpad: "Arctic white", ok: "Arctic white", nav: "Arctic white", apps: "Arctic white", vol: "Arctic white", pwr: "Olive", labels: "Olive" } },
+  { name: "Petrol", note: "Deep teal, sunflower OK",
+    c: { shell: "Petrol", back: "Navy", dpad: "Arctic white", ok: "Sunflower", nav: "Arctic white", apps: "Arctic white", vol: "Arctic white", pwr: "Sunflower", labels: "Petrol" } },
+];
+const swatchByName = Object.fromEntries(SWATCHES);
+function presetColors(p) {
+  const out = {};
+  for (const [k, v] of Object.entries(p.c)) out[k] = Array.isArray(v) ? { name: v[0], hex: v[1] } : { name: v, hex: swatchByName[v] };
+  return out;
+}
+
+// ---------- state ----------------------------------------------------------
+const STORE = "pebble-color-studio-v1";
+let state = { colors: presetColors(PRESETS[0]), preset: 0, finish: "satin", screen: "activities", selected: "shell" };
+try {
+  const saved = JSON.parse(localStorage.getItem(STORE) || "null");
+  if (saved && saved.colors) state = { ...state, ...saved, colors: { ...state.colors, ...saved.colors } };
+} catch (e) { /* storage unavailable: use defaults */ }
+function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
+
+// ---------- three.js scene -------------------------------------------------
+const canvas = document.getElementById("gl");
+const stage = document.getElementById("stage");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(30, 1, 1, 3000);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 90;
+controls.maxDistance = 700;
+controls.autoRotateSpeed = 1.6;
+
+const key = new THREE.DirectionalLight(0xffffff, 1.6);
+key.position.set(140, 260, 120);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -160, right: 160, top: 160, bottom: -160, near: 10, far: 700 });
+key.shadow.radius = 6;
+key.shadow.bias = -0.0005;
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xbfd8ff, 0.35);
+fill.position.set(-200, 80, -120);
+scene.add(fill);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600), new THREE.ShadowMaterial({ opacity: 0.28 }));
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -DIM.H / 2 - 0.02;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Model hierarchy: pivot lays the remote flat (front up, IR end away),
+// model holds everything in the shell coordinates of the SCAD files.
+const pivot = new THREE.Group();
+pivot.rotation.x = -Math.PI / 2;
+scene.add(pivot);
+const model = new THREE.Group();
+model.position.set(-DIM.W / 2, DIM.L / 2, -DIM.H / 2);
+pivot.add(model);
+const layers = { back: new THREE.Group(), internals: new THREE.Group(), caps: new THREE.Group(), shell: new THREE.Group() };
+// X-ray stand-ins (from hardware/enclosure/remote.scad), with callout text and
+// an anchor point in shell coordinates [x, y down, z up]. "g" = explode group.
+const INTERNALS = [
+  { id: "v_panel",    g: "board",   color: "#3d63dd", name: "Display panel", detail: "BuyDisplay 3.5\" IPS + touch, 3.75 mm", at: [57.7, 40, 10.3] },
+  { id: "v_fpc",      g: "board",   color: "#d9a441", name: "Display FPC", detail: "folds back under the panel", at: [20.4, 91.4, 7.6] },
+  { id: "v_zif",      g: "bp",      color: "#3b3f46", name: "50-pin ZIF connector", detail: "the display plugs in here", at: [42.4, 67.0, 8.3] },
+  { id: "v_pcb",      g: "bp",      color: "#2f8f5b", name: "Main board", detail: "0.8 mm, JLCPCB-assembled top side", at: [57.1, 135, 6.8] },
+  { id: "v_switches", g: "bp",      color: "#cfd2d6", name: "Key switches ×14", detail: "each on its own ESP32 GPIO", at: [30.4, 117.3, 8.3] },
+  { id: "v_ics",      g: "bp",      color: "#26282c", name: "TP4056 charger", detail: "USB-C charging, 360 mA", at: [52.7, 155.8, 8.5] },
+  { id: "v_ics",      g: "bp",      color: "#26282c", name: "DRV2605L + MMA8452Q", detail: "haptics, lift-to-wake", at: [8.2, 117.8, 7.9], noMesh: true },
+  { id: "v_ics",      g: "bp",      color: "#26282c", name: "IR receiver", detail: "learns codes from old remotes", at: [19.0, 96.3, 10.8], noMesh: true },
+  { id: "v_ics",      g: "bp",      color: "#26282c", name: "Light sensor", detail: "auto-brightness", at: [13.2, 95.6, 7.5], noMesh: true },
+  { id: "v_irleds",   g: "bp",      color: "#8b5cf6", name: "IR LEDs ×2", detail: "side-view 940 nm, top window", at: [30.4, 4.6, 8.1] },
+  { id: "v_usbc",     g: "bp",      color: "#9aa0a6", name: "USB-C", detail: "charging + flashing", at: [30.4, 177.7, 8.4] },
+  { id: "v_module",   g: "under",   color: "#c9ccd1", name: "ESP32-S3-WROOM-1", detail: "underside, antenna at the right edge", at: [44.3, 103.5, 3.4] },
+  { id: "v_lra",      g: "under",   color: "#b9bccb", name: "Vibration motor", detail: "8 mm coin, underside", at: [7.8, 127.8, 3.0] },
+  { id: "v_battery",  g: "battery", color: "#e0683a", name: "Li-Po, flat", detail: "under the screen, in the tub", at: [30.4, 39.0, 3.5] },
+];
+const xgroups = { board: new THREE.Group(), under: new THREE.Group(), battery: new THREE.Group(), bp: new THREE.Group() };
+Object.values(xgroups).forEach(g => layers.internals.add(g));
+Object.values(layers).forEach(g => model.add(g));
+
+const FINISH = { matte: { roughness: 0.82, clearcoat: 0 }, satin: { roughness: 0.55, clearcoat: 0.08 }, gloss: { roughness: 0.28, clearcoat: 0.6 } };
+const meshes = {};
+const materials = {};
+for (const p of PARTS) {
+  materials[p.id] = new THREE.MeshPhysicalMaterial({ color: state.colors[p.id].hex, metalness: 0, ...FINISH[state.finish], clearcoatRoughness: 0.35 });
+}
+const xMats = {};
+for (const it of INTERNALS) if (!it.noMesh && !xMats[it.id])
+  xMats[it.id] = new THREE.MeshStandardMaterial({ color: it.color, roughness: it.id === "v_ics" ? 0.4 : 0.6, metalness: it.id === "v_usbc" || it.id === "v_lra" ? 0.5 : 0 });
+
+// screen: black lens + UI texture + a faint glass layer for reflections
+const screenCanvas = document.createElement("canvas");
+screenCanvas.width = 640; screenCanvas.height = 960;
+const screenTex = new THREE.CanvasTexture(screenCanvas);
+screenTex.colorSpace = THREE.SRGBColorSpace;
+screenTex.anisotropy = 8;
+const screenGroup = new THREE.Group();
+{
+  const [lw, lh, lr] = DIM.LENS;
+  const s = new THREE.Shape();
+  const x0 = -lw / 2, y0 = -lh / 2;
+  s.moveTo(x0 + lr, y0); s.lineTo(x0 + lw - lr, y0); s.quadraticCurveTo(x0 + lw, y0, x0 + lw, y0 + lr);
+  s.lineTo(x0 + lw, y0 + lh - lr); s.quadraticCurveTo(x0 + lw, y0 + lh, x0 + lw - lr, y0 + lh);
+  s.lineTo(x0 + lr, y0 + lh); s.quadraticCurveTo(x0, y0 + lh, x0, y0 + lh - lr);
+  s.lineTo(x0, y0 + lr); s.quadraticCurveTo(x0, y0, x0 + lr, y0);
+  const lens = new THREE.Mesh(new THREE.ShapeGeometry(s), new THREE.MeshPhysicalMaterial({ color: 0x050607, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05 }));
+  lens.position.z = DIM.Z_LENS_TOP - 0.06;
+  screenGroup.add(lens);
+  const ui = new THREE.Mesh(new THREE.PlaneGeometry(DIM.ACTIVE[0], DIM.ACTIVE[1]), new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false }));
+  ui.position.z = DIM.Z_LENS_TOP - 0.04;
+  ui.position.y = DIM.ACTIVE_DY;          // the active area sits nearer the top edge (the FPC border is at the bottom)
+  ui.name = "ui";
+  screenGroup.add(ui);
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(DIM.ACTIVE[0] + 2, DIM.ACTIVE[1] + 2),
+    new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.04, metalness: 0, transparent: true, opacity: 0.06, clearcoat: 1 }));
+  glass.position.z = DIM.Z_LENS_TOP - 0.01;
+  glass.position.y = DIM.ACTIVE_DY;
+  screenGroup.add(glass);
+  screenGroup.position.set(DIM.LENS_C[0], -DIM.LENS_C[1], 0);
+}
+layers.shell.add(screenGroup);
+
+// ---------- load meshes ----------------------------------------------------
+// meshes.json holds every part as a base64 binary STL (one file, one request)
+const loader = new STLLoader();
+function b64ToBuffer(b64) {
+  const bin = atob(b64), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out.buffer;
+}
+const loadingEl = document.getElementById("loading");
+fetch("meshes.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(pack => {
+  const geo = name => loader.parse(b64ToBuffer(pack[name]));
+  const parts = PARTS.map(p => geo(p.file.replace(".stl", "")));
+  const inner = {};
+  for (const it of INTERNALS) if (!it.noMesh && !inner[it.id] && pack[it.id]) inner[it.id] = geo(it.id);
+  return [parts, inner];
+}).then(([geos, inner]) => {
+  PARTS.forEach((p, i) => {
+    const g = toCreasedNormals(geos[i], THREE.MathUtils.degToRad(32));
+    const m = new THREE.Mesh(g, materials[p.id]);
+    m.castShadow = true; m.receiveShadow = true;
+    m.userData.part = p.id;
+    meshes[p.id] = m;
+    (p.id === "shell" ? layers.shell : p.id === "back" ? layers.back : layers.caps).add(m);
+  });
+  const done = new Set();
+  for (const it of INTERNALS) {
+    if (it.noMesh || !inner[it.id] || done.has(it.id)) continue;
+    const m = new THREE.Mesh(toCreasedNormals(inner[it.id], 0.6), xMats[it.id]);
+    m.castShadow = true;
+    xgroups[it.g].add(m);
+    done.add(it.id);
+  }
+  layers.internals.visible = false;
+  buildCallouts();
+  loadingEl.hidden = true;
+}).catch(err => {
+  loadingEl.textContent = "The model files didn't load. Reload the page to try again.";
+  console.error(err);
+});
+
+// ---------- screen drawing -------------------------------------------------
+const UI = { bg: "#090a0b", tile: "#15171a", line: "#25282c", fg: "#ece9e4", muted: "#9b9a96", accent: "#5ac4da", ok: "#62c38a" };
+function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function statusBar(c) {
+  c.font = "500 11px 'JetBrains Mono', monospace"; c.fillStyle = UI.muted; c.textBaseline = "middle";
+  c.fillText("21:40", 16, 16);
+  c.textAlign = "right"; c.fillText("82%", 282, 16); c.textAlign = "left";
+  rr(c, 288, 11, 18, 10, 2.5); c.strokeStyle = UI.muted; c.lineWidth = 1; c.stroke();
+  c.fillStyle = UI.muted; c.fillRect(290, 13, 12, 6);
+}
+function tabBar(c, active) {
+  c.fillStyle = "#0f1012"; c.fillRect(0, 430, 320, 50);
+  c.fillStyle = UI.line; c.fillRect(0, 430, 320, 1);
+  const tabs = ["Activities", "Devices", "Home", "Settings"];
+  tabs.forEach((t, i) => {
+    const cx = 40 + i * 80, on = t === active;
+    c.fillStyle = on ? UI.accent : UI.muted;
+    rr(c, cx - 8, 441, 16, 12, 3); on ? c.fill() : (c.strokeStyle = UI.muted, c.lineWidth = 1.4, c.stroke());
+    c.font = (on ? "700 " : "600 ") + "10px Manrope"; c.textAlign = "center"; c.fillText(t, cx, 465); c.textAlign = "left";
+  });
+}
+function title(c, small, big) {
+  c.textBaseline = "alphabetic";
+  c.font = "500 13px Manrope"; c.fillStyle = UI.muted; c.fillText(small, 16, 56);
+  c.font = "800 24px Manrope"; c.fillStyle = UI.fg; c.fillText(big, 16, 84);
+}
+function drawActivities(c) {
+  title(c, "Living room", "Activities");
+  const tiles = [["Watch TV", "TV + AV receiver"], ["Shield TV", "Running"], ["Apple TV", "TV + Apple TV"], ["Kodi", "TV + Kodi box"], ["Sonos", "Music, TV off"], ["All off", "Every device in room"]];
+  tiles.forEach(([t, s], i) => {
+    const x = 16 + (i % 2) * 149, y = 104 + Math.floor(i / 2) * 104, w = 139, h = 94, on = i === 1;
+    if (on) { c.save(); c.shadowColor = "rgba(90,196,218,.45)"; c.shadowBlur = 18; }
+    rr(c, x, y, w, h, 12); c.fillStyle = UI.tile; c.fill();
+    c.lineWidth = on ? 1.5 : 1; c.strokeStyle = on ? UI.accent : UI.line; c.stroke();
+    if (on) c.restore();
+    c.font = "700 15px Manrope"; c.fillStyle = UI.fg; c.fillText(t, x + 12, y + 28);
+    c.font = "500 11px Manrope"; c.fillStyle = on ? UI.ok : UI.muted;
+    if (on) { c.beginPath(); c.arc(x + 15, y + h - 17, 3.5, 0, Math.PI * 2); c.fill(); c.fillText(s, x + 24, y + h - 13); }
+    else c.fillText(s, x + 12, y + h - 13);
+  });
+  tabBar(c, "Activities");
+}
+function drawPlaying(c) {
+  c.font = "600 12px Manrope"; c.fillStyle = UI.muted; c.fillText("Shield TV · Plex", 16, 52);
+  c.textAlign = "right"; c.fillText("End ×", 304, 52); c.textAlign = "left";
+  const g = c.createLinearGradient(16, 66, 304, 236);
+  g.addColorStop(0, "#2b4a63"); g.addColorStop(0.55, "#7a4b5a"); g.addColorStop(1, "#d48a4a");
+  rr(c, 16, 66, 288, 170, 14); c.fillStyle = g; c.fill();
+  c.fillStyle = "rgba(0,0,0,.25)"; c.beginPath(); c.arc(240, 120, 38, 0, Math.PI * 2); c.fill();
+  c.font = "800 20px Manrope"; c.fillStyle = UI.fg; c.fillText("Night Train", 16, 270);
+  c.font = "500 12px Manrope"; c.fillStyle = UI.muted; c.fillText("2021 · 2 h 08 m", 16, 290);
+  rr(c, 16, 310, 288, 4, 2); c.fillStyle = UI.line; c.fill();
+  rr(c, 16, 310, 162, 4, 2); c.fillStyle = UI.accent; c.fill();
+  c.beginPath(); c.arc(178, 312, 6, 0, Math.PI * 2); c.fillStyle = UI.fg; c.fill();
+  c.font = "500 10px 'JetBrains Mono', monospace"; c.fillStyle = UI.muted; c.fillText("1:12:40", 16, 330);
+  c.textAlign = "right"; c.fillText("2:08:15", 304, 330); c.textAlign = "left";
+  const btn = (x, label) => { rr(c, x - 30, 348, 60, 36, 18); c.fillStyle = UI.tile; c.fill(); c.strokeStyle = UI.line; c.stroke();
+    c.font = "700 13px Manrope"; c.fillStyle = UI.fg; c.textAlign = "center"; c.fillText(label, x, 371); c.textAlign = "left"; };
+  btn(70, "−10"); btn(250, "+30");
+  c.beginPath(); c.arc(160, 366, 26, 0, Math.PI * 2); c.fillStyle = UI.fg; c.fill();
+  c.fillStyle = UI.bg; c.fillRect(151, 355, 6, 22); c.fillRect(163, 355, 6, 22);
+  ["Subtitles", "Audio", "Info"].forEach((t, i) => {
+    const x = 16 + i * 98; rr(c, x, 404, 90, 30, 15); c.strokeStyle = UI.line; c.stroke();
+    c.font = "600 12px Manrope"; c.fillStyle = UI.muted; c.textAlign = "center"; c.fillText(t, x + 45, 423); c.textAlign = "left";
+  });
+}
+function toggle(c, x, y, on) {
+  rr(c, x, y, 40, 22, 11); c.fillStyle = on ? UI.accent : "#2a2d31"; c.fill();
+  c.beginPath(); c.arc(on ? x + 29 : x + 11, y + 11, 8, 0, Math.PI * 2); c.fillStyle = on ? "#071417" : UI.muted; c.fill();
+}
+function drawHome(c) {
+  title(c, "Home Assistant", "Living room");
+  ["Living room", "Kitchen", "Bedroom"].forEach((t, i) => {
+    c.font = "600 12px Manrope"; const w = c.measureText(t).width + 24, x = [16, 112, 190][i];
+    rr(c, x, 98, w, 28, 14); if (i === 0) { c.fillStyle = UI.accent; c.fill(); c.fillStyle = "#071417"; } else { c.strokeStyle = UI.line; c.stroke(); c.fillStyle = UI.muted; }
+    c.fillText(t, x + 12, 116);
+  });
+  const row = (y, h) => { rr(c, 16, y, 288, h, 12); c.fillStyle = UI.tile; c.fill(); c.strokeStyle = UI.line; c.stroke(); };
+  row(140, 78);
+  c.font = "700 14px Manrope"; c.fillStyle = UI.fg; c.fillText("Ceiling light", 30, 166);
+  c.font = "500 12px Manrope"; c.fillStyle = UI.muted; c.fillText("70%", 30, 184); toggle(c, 250, 152, true);
+  rr(c, 30, 198, 260, 6, 3); c.fillStyle = "#2a2d31"; c.fill(); rr(c, 30, 198, 182, 6, 3); c.fillStyle = UI.accent; c.fill();
+  row(228, 58);
+  c.font = "700 14px Manrope"; c.fillStyle = UI.fg; c.fillText("Floor lamp", 30, 254);
+  c.font = "500 12px Manrope"; c.fillStyle = UI.muted; c.fillText("Off", 30, 272); toggle(c, 250, 246, false);
+  row(296, 58);
+  c.font = "700 14px Manrope"; c.fillStyle = UI.fg; c.fillText("Thermostat", 30, 322);
+  c.font = "500 12px Manrope"; c.fillStyle = UI.muted; c.fillText("Now 21.5°", 30, 340);
+  c.font = "700 16px Manrope"; c.fillStyle = UI.fg; c.textAlign = "center"; c.fillText("−", 214, 331); c.fillText("21°", 248, 331); c.fillText("+", 284, 331); c.textAlign = "left";
+  ["Movie", "Bright", "Off"].forEach((t, i) => {
+    const x = 16 + i * 98; rr(c, x, 370, 90, 44, 12); c.fillStyle = UI.tile; c.fill(); c.strokeStyle = UI.line; c.stroke();
+    c.font = "700 13px Manrope"; c.fillStyle = UI.fg; c.textAlign = "center"; c.fillText(t, x + 45, 397); c.textAlign = "left";
+  });
+  tabBar(c, "Home");
+}
+function drawScreen() {
+  const c = screenCanvas.getContext("2d");
+  c.setTransform(2, 0, 0, 2, 0, 0);
+  c.fillStyle = state.screen === "off" ? "#030404" : UI.bg;
+  c.fillRect(0, 0, 320, 480);
+  if (state.screen !== "off") {
+    statusBar(c);
+    ({ activities: drawActivities, playing: drawPlaying, home: drawHome })[state.screen](c);
+  }
+  screenTex.needsUpdate = true;
+}
+
+// ---------- camera views ---------------------------------------------------
+const VIEWS = {
+  hero:   { pos: [150, 170, 185], target: [0, -2, 6] },
+  front:  { pos: [0, 330, 0.01], target: [0, 0, 0] },
+  back:   { pos: [0, -330, 0.01], target: [0, 0, 0] },
+  side:   { pos: [330, 6, 0], target: [0, 0, 0] },
+  top:    { pos: [-40, 70, -230], target: [0, 0, -60] },
+  bottom: { pos: [40, 60, 230], target: [0, 0, 60] },
+  hand:   { pos: [-60, 26, 210], target: [0, 4, 10] },
+};
+let tween = null;
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function goView(name, instant = false) {
+  const v = VIEWS[name];
+  const to = { pos: new THREE.Vector3(...v.pos), target: new THREE.Vector3(...v.target) };
+  document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === name)));
+  if (instant || reduceMotion) { camera.position.copy(to.pos); controls.target.copy(to.target); controls.update(); return; }
+  tween = { from: { pos: camera.position.clone(), target: controls.target.clone() }, to, t0: performance.now(), dur: 750 };
+}
+document.getElementById("views").addEventListener("click", e => {
+  const b = e.target.closest("button[data-view]"); if (b) goView(b.dataset.view);
+});
+controls.addEventListener("start", () => { tween = null; document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-pressed", "false")); });
+
+// ---------- toolbar --------------------------------------------------------
+const spinBtn = document.getElementById("spin");
+spinBtn.addEventListener("click", () => {
+  controls.autoRotate = !controls.autoRotate;
+  spinBtn.setAttribute("aria-pressed", String(controls.autoRotate));
+});
+const xrayBtn = document.getElementById("xray");
+let xray = false;
+xrayBtn.addEventListener("click", () => {
+  xray = !xray;
+  xrayBtn.setAttribute("aria-pressed", String(xray));
+  for (const id of ["shell", "back"]) {
+    const m = materials[id];
+    m.transparent = xray; m.opacity = xray ? 0.16 : 1; m.depthWrite = !xray; m.needsUpdate = true;
+  }
+  for (const id of ["dpad", "ok", "nav", "apps", "vol", "pwr", "labels"]) {
+    const m = materials[id];
+    m.transparent = xray; m.opacity = xray ? 0.35 : 1; m.depthWrite = !xray; m.needsUpdate = true;
+  }
+  layers.internals.visible = xray;
+  screenGroup.visible = !xray;
+  calloutsEl.hidden = !xray;
+  leadersEl.toggleAttribute("hidden", !xray);   // SVG elements have no .hidden property
+});
+const explodeEl = document.getElementById("explode");
+function applyExplode() {
+  const e = parseFloat(explodeEl.value);
+  // stack order from the front: caps, shell + panel, main board, underside parts, battery, back plate
+  layers.caps.position.z = 22 * e;
+  xgroups.bp.position.z = -10 * e;
+  xgroups.under.position.z = -18 * e;
+  xgroups.battery.position.z = -28 * e;
+  layers.back.position.z = -38 * e;
+}
+explodeEl.addEventListener("input", applyExplode);
+
+// ---------- panel ----------------------------------------------------------
+const presetsEl = document.getElementById("presets");
+PRESETS.forEach((p, i) => {
+  const cols = presetColors(p);
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "preset"; b.dataset.i = i;
+  b.innerHTML = `<span class="bar">${[cols.shell, cols.dpad, cols.labels, cols.ok, cols.pwr].map(c => `<span style="background:${c.hex}"></span>`).join("")}</span><b></b><small></small>`;
+  b.querySelector("b").textContent = p.name;
+  b.querySelector("small").textContent = p.note;
+  b.addEventListener("click", () => { state.colors = presetColors(p); state.preset = i; refresh(); });
+  presetsEl.appendChild(b);
+});
+
+const partsEl = document.getElementById("parts");
+PARTS.forEach(p => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "part"; b.dataset.id = p.id;
+  b.innerHTML = `<span class="dot"></span><span class="name"></span><span class="cname"></span>`;
+  b.querySelector(".name").textContent = p.name;
+  b.addEventListener("click", () => select(p.id));
+  partsEl.appendChild(b);
+});
+
+const swEl = document.getElementById("swatches");
+SWATCHES.forEach(([name, hex]) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "swatch"; b.style.background = hex; b.title = name; b.dataset.hex = hex;
+  b.setAttribute("aria-label", name);
+  b.addEventListener("click", () => setColor(state.selected, { name, hex }));
+  swEl.appendChild(b);
+});
+const customEl = document.getElementById("custom");
+customEl.addEventListener("input", () => setColor(state.selected, { name: "Custom " + customEl.value.toUpperCase(), hex: customEl.value }));
+document.getElementById("allkeys").addEventListener("click", () => {
+  const c = state.colors[state.selected];
+  for (const p of PARTS) if (p.key) state.colors[p.id] = { ...c };
+  state.preset = -1; refresh();
+});
+
+document.getElementById("finish").addEventListener("click", e => {
+  const b = e.target.closest("button[data-finish]"); if (!b) return;
+  state.finish = b.dataset.finish; refresh();
+});
+document.getElementById("screen").addEventListener("click", e => {
+  const b = e.target.closest("button[data-screen]"); if (!b) return;
+  state.screen = b.dataset.screen; refresh();
+});
+
+function setColor(id, c) { state.colors[id] = c; state.preset = -1; refresh(); flash(id); }
+function select(id) { state.selected = id; refresh(); flash(id); }
+
+function flash(id) {
+  const m = materials[id]; if (!m || reduceMotion) return;
+  const t0 = performance.now();
+  (function step() {
+    const t = (performance.now() - t0) / 450;
+    m.emissive.setRGB(0.18 * Math.max(0, 1 - t), 0.5 * Math.max(0, 1 - t) * 0.6, 0.6 * Math.max(0, 1 - t) * 0.6);
+    if (t < 1) requestAnimationFrame(step); else m.emissive.setRGB(0, 0, 0);
+  })();
+}
+
+function refresh() {
+  for (const p of PARTS) {
+    const m = materials[p.id];
+    m.color.set(state.colors[p.id].hex);
+    Object.assign(m, FINISH[state.finish]);
+    m.needsUpdate = true;
+  }
+  presetsEl.querySelectorAll(".preset").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.i === state.preset)));
+  partsEl.querySelectorAll(".part").forEach(b => {
+    const c = state.colors[b.dataset.id];
+    b.setAttribute("aria-pressed", String(b.dataset.id === state.selected));
+    b.querySelector(".dot").style.background = c.hex;
+    b.querySelector(".cname").textContent = c.name;
+  });
+  const sel = state.colors[state.selected];
+  swEl.querySelectorAll(".swatch").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.hex.toLowerCase() === sel.hex.toLowerCase())));
+  customEl.value = sel.hex;
+  document.getElementById("swatch-title").textContent = "PETG colors · " + PARTS.find(p => p.id === state.selected).name;
+  document.querySelectorAll("#finish button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.finish === state.finish)));
+  document.querySelectorAll("#screen button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.screen === state.screen)));
+  drawScreen();
+  save();
+}
+
+// copy list
+const copyBtn = document.getElementById("copybtn");
+copyBtn.addEventListener("click", () => {
+  const lines = PARTS.map(p => `${p.name}: ${state.colors[p.id].name} (${state.colors[p.id].hex})`);
+  const text = `Bleep remote, ${state.finish} finish\n` + lines.join("\n");
+  const done = () => { copyBtn.textContent = "Copied"; setTimeout(() => (copyBtn.textContent = "Copy color list"), 1600); };
+  const fallback = () => { const t = document.getElementById("copytext"); t.value = text; t.style.height = "auto"; t.style.opacity = "1"; t.style.position = "static"; t.style.pointerEvents = "auto"; t.rows = 9; t.select(); copyBtn.textContent = "Select the text and copy it"; };
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+});
+
+// click a part in 3D to select it
+const ray = new THREE.Raycaster();
+let down = null;
+canvas.addEventListener("pointerdown", e => { down = [e.clientX, e.clientY]; });
+canvas.addEventListener("pointerup", e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) return;
+  const r = canvas.getBoundingClientRect();
+  ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+  const hit = ray.intersectObjects(Object.values(meshes), false)[0];
+  if (hit) select(hit.object.userData.part);
+});
+
+// ---------- X-ray callouts ---------------------------------------------------
+const calloutsEl = document.getElementById("callouts");
+const leadersEl = document.getElementById("leaders");
+const SVGNS = "http://www.w3.org/2000/svg";
+const callouts = [];
+function groupOf(it) { return it.g === "back" ? layers.back : xgroups[it.g]; }
+function buildCallouts() {
+  calloutsEl.textContent = ""; leadersEl.textContent = ""; callouts.length = 0;
+  for (const it of INTERNALS) {
+    const el = document.createElement("div");
+    el.className = "callout";
+    const sw = document.createElement("span"); sw.className = "sw";
+    sw.style.background = it.color || state.colors.back.hex;
+    const txt = document.createElement("span");
+    const b = document.createElement("b"); b.textContent = it.name;
+    const sm = document.createElement("small"); sm.textContent = it.detail;
+    txt.append(b, sm); el.append(sw, txt);
+    calloutsEl.appendChild(el);
+    const line = document.createElementNS(SVGNS, "line");
+    const dot = document.createElementNS(SVGNS, "circle"); dot.setAttribute("r", "2.5");
+    leadersEl.append(line, dot);
+    const mat = it.g === "back" ? materials.back : xMats[it.id];
+    el.addEventListener("pointerenter", () => mat && mat.emissive && mat.emissive.setRGB(0.28, 0.24, 0.05));
+    el.addEventListener("pointerleave", () => mat && mat.emissive && mat.emissive.setRGB(0, 0, 0));
+    callouts.push({ it, el, line, dot, w: 0, h: 0 });
+  }
+}
+const _v = new THREE.Vector3();
+function updateCallouts() {
+  const W = stage.clientWidth, Hh = stage.clientHeight;
+  leadersEl.setAttribute('width', W); leadersEl.setAttribute('height', Hh);
+  const sides = { L: [], R: [] };
+  model.updateMatrixWorld();
+  for (const c of callouts) {
+    const [x, y, z] = c.it.at;
+    const g = groupOf(c.it);
+    _v.set(x, -y, z + (g ? g.position.z : 0));
+    model.localToWorld(_v);
+    _v.project(camera);
+    c.ax = (_v.x + 1) / 2 * W; c.ay = (1 - _v.y) / 2 * Hh;
+    c.vis = _v.z < 1;
+    if (!c.w) { c.w = c.el.offsetWidth; c.h = c.el.offsetHeight; }
+    (c.ax < W / 2 ? sides.L : sides.R).push(c);
+  }
+  const top = 70, bottom = Hh - 64, gap = 6, margin = W < 560 ? 8 : 16;
+  for (const [side, list] of Object.entries(sides)) {
+    list.sort((a, b) => a.ay - b.ay);
+    let yy = top;
+    for (const c of list) { c.ly = Math.max(yy, c.ay - c.h / 2); yy = c.ly + c.h + gap; }
+    let lim = bottom;                       // push back up if the column ran off the bottom
+    for (let i = list.length - 1; i >= 0; i--) { const c = list[i]; if (c.ly + c.h > lim) c.ly = lim - c.h; lim = c.ly - gap; }
+    for (const c of list) {
+      c.lx = side === "L" ? margin : W - margin - c.w;
+      c.el.style.transform = `translate(${c.lx}px, ${c.ly}px)`;
+      const vis = c.vis ? "visible" : "hidden";
+      c.el.style.visibility = vis;
+      const ex = side === "L" ? c.lx + c.w : c.lx, ey = c.ly + c.h / 2;
+      c.line.setAttribute("x1", ex); c.line.setAttribute("y1", ey);
+      c.line.setAttribute("x2", c.ax); c.line.setAttribute("y2", c.ay);
+      c.dot.setAttribute("cx", c.ax); c.dot.setAttribute("cy", c.ay);
+      c.line.style.visibility = c.dot.style.visibility = vis;
+    }
+  }
+}
+new ResizeObserver(() => callouts.forEach(c => (c.w = 0))).observe(stage);
+
+// ---------- render loop ----------------------------------------------------
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+
+function loop(now) {
+  if (tween) {
+    const t = Math.min(1, (now - tween.t0) / tween.dur), k = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    camera.position.lerpVectors(tween.from.pos, tween.to.pos, k);
+    controls.target.lerpVectors(tween.from.target, tween.to.target, k);
+    if (t >= 1) tween = null;
+  }
+  controls.update();
+  ground.visible = camera.position.y > ground.position.y + 2;
+  renderer.render(scene, camera);
+  if (xray) updateCallouts();
+  requestAnimationFrame(loop);
+}
+
+goView("hero", true);
+document.fonts.ready.then(() => Promise.all([document.fonts.load("800 24px Manrope"), document.fonts.load("500 11px 'JetBrains Mono'")]))
+  .catch(() => {}).finally(() => drawScreen());
+refresh();
+requestAnimationFrame(loop);
+</script>

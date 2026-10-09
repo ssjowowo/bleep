@@ -1,0 +1,46 @@
+2026-10-08 12:36:40.250 INFO   Freerouting v2.5.0 (build-date: 2026-10-05)
+2026-10-08 12:36:40.705 INFO   Hardware: 10 CPU cores, 265 CPU score, 3996 MB RAM
+2026-10-08 12:36:40.710 WARN   GUI is disabled and you don't have a console available, so the only feedback from Freerouting is in the log.
+2026-10-08 12:36:42.707 INFO   [EDB663\3677C4] Loading board file 'mainboard.dsn'...
+2026-10-08 12:36:43.309 INFO   Layer 'B.Cu' contains a power plane / large copper pour covering >=30% of the board; associated net(s) configured for plane routing.
+2026-10-08 12:36:43.470 INFO   Applied drill-hole clearance override: 260.0 um (2600 board units), 16 hole keepouts reclassified.
+2026-10-08 12:36:43.583 INFO   [EDB663\3677C4] Job 'EDB663\3677C4' started at 2026-10-08T09:36:43.580643200Z.
+2026-10-08 12:36:44.061 WARN   Design Warning: Board has 42 pre-existing clearance violation(s) in the loaded design (before routing):
+  - 42 unfixable violation(s) (cannot be resolved by Freerouting):
+      * 22 pin-to-pin clearance violations (first 5 shown):
+          - J1.50 [net BL_A] <-> J1.49 [net BL_K]
+          - J1.48 [net BL_K] <-> J1.47
+          - J1.45 <-> J1.44 [net 3V3]
+          - J1.43 [net 3V3] <-> J1.42 [net GND]
+          - J1.42 [net GND] <-> J1.41 [net LCD_RST]
+          ... and 17 more
+      * 20 fixed trace/via clearance violations (first 5 shown):
+          - FixedVia#1079 [net GND] <-> ObstacleArea#5
+          - FixedVia#1075 [net GND] <-> ObstacleArea#5
+          - FixedTrace#1046 [net VSYS] <-> BoardOutline
+          - FixedTrace#1042 [net VSYS] <-> BoardOutline
+          - FixedTrace#1038 [net VSYS] <-> BoardOutline
+          ... and 15 more
+  - 0 potentially fixable violations
+Notice: Freerouting does not modify component placement, board outlines, or fixed items.
+Resolving these 42 unfixable violation(s) is the responsibility of the board author in their EDA tool (e.g. KiCad).
+2026-10-08 12:36:44.216 INFO   [EDB663\3677C4] Pipeline thread limits: autorouter pass is single-threaded, optimizer.max_threads=9.
+2026-10-08 12:36:44.555 INFO   [EDB663\3677C4] Fanout stage started on board 'eb49670047fdc8f6d10af75b21bca113' with 290 of 319 SMD pins needing fanout (8 already connected, 21 netless).
+2026-10-08 12:37:06.254 INFO   [EDB663\3677C4] Fanout pass #1 on board 'b1533838974a180feef3973a00b3d034' completed in 21.57 seconds with 252 SMD pins fanouted, 6 not routed, 0 insert errors, +114 extra vias (0 SMD pins still to check in pass, ripup costs=100).
+2026-10-08 12:37:09.942 INFO   [EDB663\3677C4] Fanout pass #2 on board 'f462abeae9d3895eb542eacbaf64e70a' completed in 3.64 seconds with 49 SMD pins fanouted, 2 not routed, 0 insert errors, +22 extra vias (0 SMD pins still to check in pass, ripup costs=200).
+2026-10-08 12:37:12.406 INFO   [EDB663\3677C4] Fanout pass #3 on board '8f5fe5af43515071c238f7207af7e4ac' completed in 2.43 seconds with 20 SMD pins fanouted, 0 not routed, 0 insert errors, +4 extra vias (0 SMD pins still to check in pass, ripup costs=300).
+2026-10-08 12:37:14.650 INFO   [EDB663\3677C4] Fanout pass #4 on board '41e7a17ff351206580160ef6561c56f8' completed in 2.22 seconds with 12 SMD pins fanouted, 0 not routed, 0 insert errors, +3 extra vias (0 SMD pins still to check in pass, ripup costs=400).
+2026-10-08 12:37:16.854 INFO   [EDB663\3677C4] Fanout pass #5 on board '8693d852cfd16b73e6ccb6bf3f8d3b60' completed in 2.18 seconds with 9 SMD pins fanouted, 0 not routed, 0 insert errors, +0 extra vias (0 SMD pins still to check in pass, ripup costs=500).
+2026-10-08 12:37:19.107 INFO   [EDB663\3677C4] Fanout pass #6 on board '26ac77bc9b17f0d7b569eda29783b3cd' completed in 2.22 seconds with 9 SMD pins fanouted, 0 not routed, 0 insert errors, +0 extra vias (0 SMD pins still to check in pass, ripup costs=600).
+2026-10-08 12:37:21.268 INFO   [EDB663\3677C4] Fanout pass #7 on board '9709c15e6e771ac133a5b1382c543885' completed in 2.13 seconds with 9 SMD pins fanouted, 0 not routed, 0 insert errors, +0 extra vias (0 SMD pins still to check in pass, ripup costs=700).
+2026-10-08 12:37:23.452 INFO   [EDB663\3677C4] Fanout pass #8 on board '8c47de8ba4f25e8f7b7e13c01e45331f' completed in 2.16 seconds with 9 SMD pins fanouted, 0 not routed, 0 insert errors, +0 extra vias (0 SMD pins still to check in pass, ripup costs=800).
+2026-10-08 12:37:23.454 INFO   Fanout stopped after 8 passes: no progress for 3 consecutive passes.
+2026-10-08 12:37:23.865 INFO   [EDB663\3677C4] Fanout stage completed: started with 298 total SMD pins, completed in 39.22 seconds, escaped pins: 289/298 (97.0%), using 33.30 total CPU seconds, 10.75 GB total allocated, and 286.6 MB peak heap usage.
+2026-10-08 12:37:25.189 INFO   [EDB663\3677C4] Auto-routing stage started on board '8c47de8ba4f25e8f7b7e13c01e45331f' with baseline score 615.74 for 71 unrouted items.
+2026-10-08 12:37:45.892 INFO   [EDB663\3677C4] Auto-routing pass #1 on board '8c47de8ba4f25e8f7b7e13c01e45331f' was completed in 20.17 seconds with score 820.04 (33 unrouted and 42 violations), using 52.08 CPU seconds and the job allocated 19.15 GB of memory so far.
+2026-10-08 12:37:58.453 INFO   [EDB663\3677C4] Auto-routing pass #2 on board 'c5acd9a3a7678579396f1d3bdbe6b145' was completed in 12.04 seconds with score 820.04 (33 unrouted and 42 violations), using 61.98 CPU seconds and the job allocated 24.18 GB of memory so far.
+2026-10-08 12:38:10.210 INFO   [EDB663\3677C4] Auto-routing pass #3 on board 'f296e6c6ffb69db3c9e616da375d728e' was completed in 11.26 seconds with score 841.55 (29 unrouted and 42 violations), using 72.36 CPU seconds and the job allocated 29.40 GB of memory so far.
+2026-10-08 12:38:19.694 INFO   [EDB663\3677C4] Auto-routing pass #4 on board '67b4c8a6b5630795f69c9295f8f4154e' was completed in 9.03 seconds with score 777.03 (41 unrouted and 42 violations), using 80.09 CPU seconds and the job allocated 33.32 GB of memory so far.
+2026-10-08 12:38:30.961 INFO   [EDB663\3677C4] Auto-routing pass #5 on board 'acd954cbf1124e48e1fa11a04961e1bc' was completed in 10.80 seconds with score 900.69 (18 unrouted and 42 violations), using 90.06 CPU seconds and the job allocated 38.22 GB of memory so far.
+2026-10-08 12:38:37.648 INFO   [EDB663\3677C4] Auto-routing pass #6 on board '36c61887e8667537b8fadbfe6dd1f354' was completed in 6.20 seconds with score 841.55 (29 unrouted and 42 violations), using 94.97 CPU seconds and the job allocated 40.59 GB of memory so far.
+2026-10-08 12:38:45.584 INFO   [EDB663\3677C4] Auto-routing pass #7 on board '35f7fce2dc664dfd8a7433761cbcf566' was completed in 7.40 seconds with score 938.32 (11 unrouted and 42 violations), using 101.91 CPU seconds and the job allocated 43.54 GB of memory so far.

@@ -1,0 +1,8 @@
+attempt 1: CHRG failed at U5.7; moving it earlier
+attempt 2: TP_INT failed at PRE.TP_INT; moving it earlier
+attempt 3: LCD_DC failed at PRE.LCD_DC; moving it earlier
+attempt 4: BL_PWM failed at PRE.BL_PWM; moving it earlier
+attempt 5: K_VOLUP failed at PRE.K_VOLUP; moving it earlier
+attempt 6: STDBY failed at U5.6; moving it earlier
+attempt 7: SCL failed at PRE.SCL; moving it earlier
+attempt 8: USB_DP failed at PRE.USB_DP; moving it earlier
