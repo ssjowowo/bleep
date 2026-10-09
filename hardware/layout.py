@@ -221,10 +221,13 @@ GPIO = {
 }
 I2C_ADDR = {"FT6236": 0x38, "DRV2605L": 0x5A, "MMA8452Q": 0x1C}
 
-# Screw points: front-shell posts / bosses with heat-set inserts, M2 from the
-# back. There is no room for bosses beside or above the glass, so the top end
-# of the back plate hooks under the top wall instead (TOP_TABS), and the posts
-# all sit in the key area. The upper right post keeps clear of the antenna.
+# Screw points: front-shell posts / bosses with heat-set inserts. The main
+# board screws straight onto the four key-area posts (KEY_HOLES) with short M2
+# screws from its underside, before the back plate goes on. The back plate is
+# held by just the two bottom screws (BOT_BOSSES, through the board into the
+# bottom bosses) and, at the top end, where there is no room for bosses beside
+# or above the glass, by two snap fingers under the top wall (TOP_TABS). The
+# upper right post keeps clear of the antenna.
 POST_X = 6.3
 KEY_HOLES = [(POST_X, KEYS_Y0 + 4.0), (W - POST_X, KEYS_Y0 + 22.2),
              (POST_X, KEYS_Y0 + 46.5), (W - POST_X, KEYS_Y0 + 46.5)]
@@ -237,6 +240,9 @@ INSERT_HOLE_D = 3.0
 INSERT_HOLE_DEPTH = 4.0
 SCREW_CLR_D = 2.4
 SCREW_HEAD_D = 4.2
+BOARD_SCREWS = KEY_HOLES                         # board -> post, M2 from the board's underside
+PLATE_SCREWS = TOP_BOSSES + BOT_BOSSES           # back plate -> board -> boss, the only screws in the plate
+BOARD_HEAD = (4.0, 1.6)                          # M2 pan head (ISO 7045): diameter, height under the board
 
 # ---- parts on the main board (shell coords) --------------------------------
 # ESP32 module on the underside, lying across the board (rotated 90 deg) just
@@ -263,6 +269,11 @@ IRRX_LENS = (SENSOR_WIN[0] + 2.6, ROW_Y)
 IRRX_POS = (IRRX_LENS[0], IRRX_LENS[1] + 0.76)
 ALS_POS = (SENSOR_WIN[0] - 3.2, ROW_Y)
 SENSOR_HOLES = [(IRRX_LENS[0], IRRX_LENS[1], 3.0), (ALS_POS[0], ALS_POS[1], 1.6)]   # x, y, diameter
+ALS_H = 0.7
+# Both windows are printed in translucent PETG. The plug in the light sensor's hole
+# runs on down as a light pipe and ends this high, 0.5 mm above the sensor
+# (through the bare 1.6 mm hole alone it would see only about +-8 deg).
+ALS_PIPE_Z0 = Z_BP_TOP + ALS_H + 0.5
 FG_POS = (9.2, KEYS_Y0 + 41.0)
 # EN + GND pads on the underside (short them to reset the ESP32), reached
 # through a slot in the back plate: EN just below the module's EN pin, GND
@@ -326,14 +337,18 @@ UNDERSIDE_ZONES = [
     (BAT_PADS[0][0] - 2.0, BATT_BAY[3] - 0.1, BAT_PADS[1][0] + 2.0, BAT_PADS[0][1] + 1.6, 1.5),
     (USB_C_X - 5.8, USB_FACE_Y - USB_FP_FACE - 5.1, USB_C_X + 5.8, USB_FACE_Y - USB_FP_FACE + 2.4, 2.0),
 ]
-# Standoffs round the screws, from the plate up to the board (x, y, diameter)
-STANDOFFS = [(x, y, POST_D) for x, y in KEY_HOLES] + [(x, y, BOSS_D) for x, y in TOP_BOSSES + BOT_BOSSES]
+# Standoffs round the back plate's screws, from the plate up to the board (x, y,
+# diameter). The board screws' heads hang free under the board, with room kept
+# round them (x, y, diameter) that no support on the plate may take.
+STANDOFFS = [(x, y, BOSS_D) for x, y in PLATE_SCREWS]
+HEAD_ROOM = [(x, y, BOARD_HEAD[0] + 1.0) for x, y in BOARD_SCREWS]
 
 
 def _pillars():
     """A pillar under each key switch, nudged (up to 1.5 mm, still under the
-    switch body) clear of the underside parts, the reset slot, the standoffs and
-    the cell. A switch over the ESP32 module needs none: the module carries it."""
+    switch body) clear of the underside parts, the reset slot, the standoffs,
+    the board screws' heads and the cell. A switch over the ESP32 module needs
+    none: the module carries it."""
     en = (EN_SLOT[0] - EN_SLOT[2] / 2, EN_SLOT[1] - EN_SLOT[3] / 2,
           EN_SLOT[0] + EN_SLOT[2] / 2, EN_SLOT[1] + EN_SLOT[3] / 2)
     blocked = [z[:4] for z in UNDERSIDE_ZONES] + [en, BATT_BAY]
@@ -342,7 +357,7 @@ def _pillars():
     def clear(x, y):
         box = (x - r, y - r, x + r, y + r)
         return (not any(_overlap(box, b) for b in blocked)
-                and all(math.hypot(x - sx, y - sy) > d / 2 + r for sx, sy, d in STANDOFFS))
+                and all(math.hypot(x - sx, y - sy) > d / 2 + r for sx, sy, d in STANDOFFS + HEAD_ROOM))
 
     nudges = sorted({(dx * 0.1, dy * 0.1) for dx in range(-15, 16) for dy in range(-15, 16)
                      if math.hypot(dx, dy) <= 15}, key=lambda d: math.hypot(*d))
@@ -464,9 +479,16 @@ def check():
     for z in UNDERSIDE_ZONES:
         if _overlap(cell, z[:4]):
             problems.append(f"battery runs into the underside part room at {z[:4]}")
-    for x, y, d in STANDOFFS + PILLARS:
+    for x, y, d in STANDOFFS + PILLARS + HEAD_ROOM:
         if _overlap(cell, (x - d / 2, y - d / 2, x + d / 2, y + d / 2)):
-            problems.append(f"battery runs into the support at {x:.1f},{y:.1f}")
+            problems.append(f"battery runs into the support / screw head at {x:.1f},{y:.1f}")
+    # board screws: the head hangs under the board, clear of the parts there
+    if Z_BP_BOT - BACK_T < BOARD_HEAD[1] + 0.5:
+        problems.append("no room for the board screws' heads above the back plate")
+    for x, y, d in HEAD_ROOM:
+        for z in UNDERSIDE_ZONES:
+            if _overlap((x - d / 2, y - d / 2, x + d / 2, y + d / 2), z[:4]):
+                problems.append(f"board screw head at {x:.1f},{y:.1f} runs into the underside part room at {z[:4]}")
     # flat back: every key switch has a pillar under it, or the module carries it
     for name in PILLARS_SKIPPED:
         problems.append(f"no room for a pillar under the {name} switch")
@@ -479,9 +501,10 @@ def screws():
     plate = BACK_T - head_recess
     std = [4, 5, 6, 8, 10, 12]
     platform = Z_BP_BOT - BACK_T
-    insert = max(l for l in std if l <= plate + platform + BP_T + INSERT_HOLE_DEPTH - 0.5)
-    return [("back plate -> main board -> front-shell inserts (key posts + bottom bosses)",
-             len(KEY_HOLES + TOP_BOSSES + BOT_BOSSES), insert)]
+    plate_len = max(l for l in std if l <= plate + platform + BP_T + INSERT_HOLE_DEPTH - 0.5)
+    board_len = max(l for l in std if l <= BP_T + INSERT_HOLE_DEPTH - 0.5)
+    return [("main board -> key-area post inserts, from the board's underside", len(BOARD_SCREWS), board_len),
+            ("back plate -> main board -> bottom-boss inserts", len(PLATE_SCREWS), plate_len)]
 
 
 # ---------------------------------------------------------------------------
@@ -531,10 +554,10 @@ def write_scad(path):
         PWR_KEY=list(PWR_KEY), PWR_PILL=list(PWR_PILL),
         MOD=[MOD_C[0], MOD_C[1], MOD_L, MOD_W, MOD_T], ANT_KEEPOUT=list(ANT_KEEPOUT),
         MOTOR_C=list(MOTOR_C), MOTOR_D=MOTOR_D, MOTOR_T=MOTOR_T,
-        SENSOR_HOLES=[list(h) for h in SENSOR_HOLES], SENSOR_WIN=list(SENSOR_WIN), EN_SLOT=list(EN_SLOT),
+        SENSOR_HOLES=[list(h) for h in SENSOR_HOLES], SENSOR_WIN=list(SENSOR_WIN), ALS_PIPE_Z0=ALS_PIPE_Z0, EN_SLOT=list(EN_SLOT),
         TOP_TABS=[list(t) for t in TOP_TABS],
         PARTS=[[DRV_POS[0], DRV_POS[1], 3.0, 3.0, 1.1], [ACC_POS[0], ACC_POS[1], 3.0, 3.0, 1.0],
-               [IRRX_POS[0], IRRX_POS[1], 7.4, 5.0, 4.0], [ALS_POS[0], ALS_POS[1], 2.0, 2.0, 0.7],
+               [IRRX_POS[0], IRRX_POS[1], 7.4, 5.0, 4.0], [ALS_POS[0], ALS_POS[1], 2.0, 2.0, ALS_H],
                [FG_POS[0], FG_POS[1], 2.0, 2.0, 0.8],
                [CHG_POS[0], CHG_POS[1], 4.9, 6.0, 1.7], [LDO_POS[0], LDO_POS[1], 3.0, 3.0, 1.3],
                [BL_POS[0], BL_POS[1], 4.0, 9.0, 1.1]],
@@ -546,6 +569,8 @@ def write_scad(path):
         TOP_BOSSES=[list(b) for b in TOP_BOSSES], BOT_BOSSES=[list(b) for b in BOT_BOSSES],
         BOSS_D=BOSS_D, INSERT_HOLE_D=INSERT_HOLE_D, INSERT_HOLE_DEPTH=INSERT_HOLE_DEPTH,
         SCREW_CLR_D=SCREW_CLR_D, SCREW_HEAD_D=SCREW_HEAD_D,
+        BOARD_SCREWS=[list(p) for p in BOARD_SCREWS], PLATE_SCREWS=[list(p) for p in PLATE_SCREWS],
+        BOARD_HEAD=list(BOARD_HEAD),
     )
     lines = ["// GENERATED by hardware/layout.py -- edit layout.py, not this file.",
              "// Shell coords: x right, y DOWN from the top end, z up from the back face."]
@@ -591,7 +616,8 @@ if __name__ == "__main__":
     print(f"battery bay {BATT_BAY[2] - BATT_BAY[0]:.1f} x {BATT_BAY[3] - BATT_BAY[1]:.1f} mm "
           f"(cells up to {BATT_BAY[2] - BATT_BAY[0] - 0.8:.1f} x {BATT_BAY[3] - BATT_BAY[1] - 0.8:.1f} x 4.0); "
           f"cell {BATT[0]:g} x {BATT[1]:g} x {BATT[2]:g}")
-    print(f"flat back: {len(STANDOFFS)} screw standoffs, {len(PILLARS)} switch pillars, "
+    print(f"flat back: {len(PLATE_SCREWS)} screws in the plate ({len(BOARD_SCREWS)} more hold the board), "
+          f"{len(STANDOFFS)} screw standoffs, {len(PILLARS)} switch pillars, "
           f"{Z_BP_BOT - BACK_T:.1f} mm open under the board")
     print("screws (M2):")
     for what, n, length in screws():

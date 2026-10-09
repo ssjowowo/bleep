@@ -201,7 +201,7 @@ button { cursor: pointer; }
       <h2>Filament list</h2>
       <button type="button" id="copybtn">Copy color list</button>
       <textarea id="copytext" aria-hidden="true" tabindex="-1"></textarea>
-      <p class="note">The geometry is the real print files from <code>hardware/enclosure</code>. Labels and icons are flush two-color inlays: print <code>caps.stl</code> with <code>caps_labels.stl</code> added as a second part on a multi-material printer.</p>
+      <p class="note">The geometry is the real print files from <code>hardware/enclosure</code>. Labels and icons are flush two-color inlays: print <code>caps.stl</code> with <code>caps_labels.stl</code> added as a second part on a multi-material printer. The IR and sensor windows are small separate prints in translucent blue PETG (<code>ir_window.stl</code>, <code>sensor_window.stl</code>).</p>
     </section>
   </aside>
 </div>
@@ -228,7 +228,11 @@ const SWATCHES = [
   ["Arctic white", "#e8e9e8"], ["Sand", "#cdbb98"], ["Clay", "#b9775a"], ["Brick red", "#9e3a2f"],
   ["Signal orange", "#e5612b"], ["Sunflower", "#efb630"], ["Sage", "#93a48c"], ["Olive", "#646b48"],
   ["Petrol", "#1e5a66"], ["Concept cyan", "#5ac4da"], ["Navy", "#1d2a45"], ["Lilac", "#a597c4"],
+  ["Translucent blue", "#4a8fe0"],
 ];
+// See-through filaments: the windows' Creality CR-PETG Translucent Blue (prints frosted)
+const TRANSLUCENT = new Set(["Translucent blue"]);
+const swatchBg = c => TRANSLUCENT.has(c.name) ? `linear-gradient(135deg, ${c.hex}, ${c.hex}88 55%, #ffffff99)` : c.hex;
 
 const PARTS = [
   { id: "shell", name: "Front shell", file: "shell.stl" },
@@ -240,21 +244,24 @@ const PARTS = [
   { id: "vol",   name: "Volume", file: "vol.stl", key: true },
   { id: "pwr",   name: "Power key", file: "pwr.stl", key: true },
   { id: "labels", name: "Labels & icons", file: "labels.stl" },
+  { id: "windows", name: "IR + sensor windows", file: "windows.stl" },
 ];
 
 const PRESETS = [
   { name: "Concept", note: "The graphite of the design pack",
-    c: { shell: ["Concept graphite", "#232427"], back: ["Concept black", "#151618"], dpad: ["Concept key", "#2a2c30"], ok: ["Concept key", "#2a2c30"], nav: ["Concept key", "#2a2c30"], apps: ["Concept key", "#2a2c30"], vol: ["Concept key", "#2a2c30"], pwr: ["Concept key", "#2a2c30"], labels: ["Concept legend", "#bdbab4"] } },
+    c: { shell: ["Concept graphite", "#232427"], back: ["Concept black", "#151618"], dpad: ["Concept key", "#2a2c30"], ok: ["Concept key", "#2a2c30"], nav: ["Concept key", "#2a2c30"], apps: ["Concept key", "#2a2c30"], vol: ["Concept key", "#2a2c30"], pwr: ["Concept key", "#2a2c30"], labels: ["Concept legend", "#bdbab4"], windows: "Translucent blue" } },
   { name: "Arctic", note: "White shell, grey keys, cyan OK",
-    c: { shell: "Arctic white", back: "Cool grey", dpad: "Cool grey", ok: "Concept cyan", nav: "Cool grey", apps: "Cool grey", vol: "Cool grey", pwr: "Signal orange", labels: "Jet black" } },
+    c: { shell: "Arctic white", back: "Cool grey", dpad: "Cool grey", ok: "Concept cyan", nav: "Cool grey", apps: "Cool grey", vol: "Cool grey", pwr: "Signal orange", labels: "Jet black", windows: "Translucent blue" } },
   { name: "Deck", note: "Graphite body, sand key set",
-    c: { shell: "Graphite", back: "Graphite", dpad: "Sand", ok: "Sand", nav: "Sand", apps: "Sand", vol: "Sand", pwr: "Clay", labels: "Graphite" } },
+    c: { shell: "Graphite", back: "Graphite", dpad: "Sand", ok: "Sand", nav: "Sand", apps: "Sand", vol: "Sand", pwr: "Clay", labels: "Graphite", windows: "Translucent blue" } },
   { name: "Signal", note: "Slate with orange accents",
-    c: { shell: "Slate", back: "Jet black", dpad: "Jet black", ok: "Signal orange", nav: "Jet black", apps: "Jet black", vol: "Jet black", pwr: "Signal orange", labels: "Arctic white" } },
+    c: { shell: "Slate", back: "Jet black", dpad: "Jet black", ok: "Signal orange", nav: "Jet black", apps: "Jet black", vol: "Jet black", pwr: "Signal orange", labels: "Arctic white", windows: "Translucent blue" } },
   { name: "Sage", note: "Soft green, white keys",
-    c: { shell: "Sage", back: "Olive", dpad: "Arctic white", ok: "Arctic white", nav: "Arctic white", apps: "Arctic white", vol: "Arctic white", pwr: "Olive", labels: "Olive" } },
+    c: { shell: "Sage", back: "Olive", dpad: "Arctic white", ok: "Arctic white", nav: "Arctic white", apps: "Arctic white", vol: "Arctic white", pwr: "Olive", labels: "Olive", windows: "Translucent blue" } },
   { name: "Petrol", note: "Deep teal, sunflower OK",
-    c: { shell: "Petrol", back: "Navy", dpad: "Arctic white", ok: "Sunflower", nav: "Arctic white", apps: "Arctic white", vol: "Arctic white", pwr: "Sunflower", labels: "Petrol" } },
+    c: { shell: "Petrol", back: "Navy", dpad: "Arctic white", ok: "Sunflower", nav: "Arctic white", apps: "Arctic white", vol: "Arctic white", pwr: "Sunflower", labels: "Petrol", windows: "Translucent blue" } },
+  { name: "Lagoon", note: "Navy body; OK and power from the window spool",
+    c: { shell: "Navy", back: "Navy", dpad: "Arctic white", ok: "Translucent blue", nav: "Arctic white", apps: "Arctic white", vol: "Arctic white", pwr: "Translucent blue", labels: "Navy", windows: "Translucent blue" } },
 ];
 const swatchByName = Object.fromEntries(SWATCHES);
 function presetColors(p) {
@@ -338,6 +345,9 @@ const INTERNALS = [
   { id: "v_usbc",     g: "bp",      color: "#9aa0a6", name: "USB-C", detail: "charging + flashing", at: [30.4, 177.7, 8.4] },
   { id: "v_module",   g: "under",   color: "#c9ccd1", name: "ESP32-S3-WROOM-1", detail: "underside, antenna at the right edge", at: [44.3, 103.5, 3.4] },
   { id: "v_lra",      g: "under",   color: "#b9bccb", name: "Vibration motor", detail: "8 mm coin, underside", at: [7.8, 127.8, 3.0] },
+  { id: "v_screws",   g: "under",   color: "#a7abb3", name: "Board screws ×4", detail: "M2×4 from the underside into the key-area posts", at: [6.3, 103.4, 5.2] },
+  { id: "windows",    g: "shell",   color: "#4a8fe0", name: "IR window", detail: "translucent PETG plug, 940 nm out", at: [30.4, 0.9, 8.0], noMesh: true },
+  { id: "windows",    g: "shell",   color: "#4a8fe0", name: "Sensor window", detail: "translucent PETG, light pipe to the light sensor", at: [16.4, 96.2, 12.9], noMesh: true },
   { id: "v_battery",  g: "battery", color: "#e0683a", name: "Li-Po, flat", detail: "4 × 50 × 85 mm (405085), under the screen", at: [30.4, 46.2, 3.5] },
 ];
 const xgroups = { board: new THREE.Group(), under: new THREE.Group(), battery: new THREE.Group(), bp: new THREE.Group() };
@@ -352,7 +362,7 @@ for (const p of PARTS) {
 }
 const xMats = {};
 for (const it of INTERNALS) if (!it.noMesh && !xMats[it.id])
-  xMats[it.id] = new THREE.MeshStandardMaterial({ color: it.color, roughness: it.id === "v_ics" ? 0.4 : 0.6, metalness: it.id === "v_usbc" || it.id === "v_lra" ? 0.5 : 0 });
+  xMats[it.id] = new THREE.MeshStandardMaterial({ color: it.color, roughness: it.id === "v_ics" ? 0.4 : 0.6, metalness: it.id === "v_usbc" || it.id === "v_lra" || it.id === "v_screws" ? 0.5 : 0 });
 
 // screen: black lens + UI texture + a faint glass layer for reflections
 const screenCanvas = document.createElement("canvas");
@@ -395,7 +405,7 @@ function b64ToBuffer(b64) {
   return out.buffer;
 }
 const loadingEl = document.getElementById("loading");
-fetch("meshes.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(pack => {
+fetch("meshes.json", { cache: "no-cache" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(pack => {
   const geo = name => loader.parse(b64ToBuffer(pack[name]));
   const parts = PARTS.map(p => geo(p.file.replace(".stl", "")));
   const inner = {};
@@ -408,7 +418,7 @@ fetch("meshes.json").then(r => { if (!r.ok) throw new Error(r.status); return r.
     m.castShadow = true; m.receiveShadow = true;
     m.userData.part = p.id;
     meshes[p.id] = m;
-    (p.id === "shell" ? layers.shell : p.id === "back" ? layers.back : layers.caps).add(m);
+    (p.id === "shell" || p.id === "windows" ? layers.shell : p.id === "back" ? layers.back : layers.caps).add(m);
   });
   const done = new Set();
   for (const it of INTERNALS) {
@@ -568,14 +578,7 @@ let xray = false;
 xrayBtn.addEventListener("click", () => {
   xray = !xray;
   xrayBtn.setAttribute("aria-pressed", String(xray));
-  for (const id of ["shell", "back"]) {
-    const m = materials[id];
-    m.transparent = xray; m.opacity = xray ? 0.16 : 1; m.depthWrite = !xray; m.needsUpdate = true;
-  }
-  for (const id of ["dpad", "ok", "nav", "apps", "vol", "pwr", "labels"]) {
-    const m = materials[id];
-    m.transparent = xray; m.opacity = xray ? 0.35 : 1; m.depthWrite = !xray; m.needsUpdate = true;
-  }
+  for (const p of PARTS) applyLook(p.id);
   layers.internals.visible = xray;
   screenGroup.visible = !xray;
   calloutsEl.hidden = !xray;
@@ -599,7 +602,7 @@ PRESETS.forEach((p, i) => {
   const cols = presetColors(p);
   const b = document.createElement("button");
   b.type = "button"; b.className = "preset"; b.dataset.i = i;
-  b.innerHTML = `<span class="bar">${[cols.shell, cols.dpad, cols.labels, cols.ok, cols.pwr].map(c => `<span style="background:${c.hex}"></span>`).join("")}</span><b></b><small></small>`;
+  b.innerHTML = `<span class="bar">${[cols.shell, cols.dpad, cols.labels, cols.ok, cols.pwr, cols.windows].map(c => `<span style="background:${swatchBg(c)}"></span>`).join("")}</span><b></b><small></small>`;
   b.querySelector("b").textContent = p.name;
   b.querySelector("small").textContent = p.note;
   b.addEventListener("click", () => { state.colors = presetColors(p); state.preset = i; refresh(); });
@@ -619,7 +622,7 @@ PARTS.forEach(p => {
 const swEl = document.getElementById("swatches");
 SWATCHES.forEach(([name, hex]) => {
   const b = document.createElement("button");
-  b.type = "button"; b.className = "swatch"; b.style.background = hex; b.title = name; b.dataset.hex = hex;
+  b.type = "button"; b.className = "swatch"; b.style.background = swatchBg({ name, hex }); b.title = name; b.dataset.hex = hex;
   b.setAttribute("aria-label", name);
   b.addEventListener("click", () => setColor(state.selected, { name, hex }));
   swEl.appendChild(b);
@@ -654,18 +657,24 @@ function flash(id) {
   })();
 }
 
+// Colour, finish and see-through-ness of one part. X-ray fades the shell, back
+// plate and keys; a translucent filament stays see-through either way.
+function applyLook(id) {
+  const m = materials[id], c = state.colors[id], clear = TRANSLUCENT.has(c.name);
+  m.color.set(c.hex);
+  Object.assign(m, FINISH[state.finish], clear ? { roughness: 0.3, clearcoat: 0.4 } : {});
+  const xo = !xray || id === "windows" ? 1 : id === "shell" || id === "back" ? 0.16 : 0.35;
+  const o = Math.min(xo, clear ? 0.72 : 1);
+  m.transparent = o < 1; m.opacity = o; m.depthWrite = o === 1; m.needsUpdate = true;
+}
+
 function refresh() {
-  for (const p of PARTS) {
-    const m = materials[p.id];
-    m.color.set(state.colors[p.id].hex);
-    Object.assign(m, FINISH[state.finish]);
-    m.needsUpdate = true;
-  }
+  for (const p of PARTS) applyLook(p.id);
   presetsEl.querySelectorAll(".preset").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.i === state.preset)));
   partsEl.querySelectorAll(".part").forEach(b => {
     const c = state.colors[b.dataset.id];
     b.setAttribute("aria-pressed", String(b.dataset.id === state.selected));
-    b.querySelector(".dot").style.background = c.hex;
+    b.querySelector(".dot").style.background = swatchBg(c);
     b.querySelector(".cname").textContent = c.name;
   });
   const sel = state.colors[state.selected];

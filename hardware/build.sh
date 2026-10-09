@@ -23,9 +23,9 @@ what="${1:-all}"
 
 if [[ "$what" == all || "$what" == enclosure ]]; then
   cd enclosure
-  for p in front front_inlay back caps caps_labels fit_test; do
+  for p in front ir_window sensor_window back caps caps_labels fit_test; do
     out="stl/$p.stl"
-    case $p in front) out=stl/front_shell.stl;; front_inlay) out=stl/front_window_inlay.stl;; back) out=stl/back_plate.stl;; fit_test) out=stl/fit_test_keys.stl;; esac
+    case $p in front) out=stl/front_shell.stl;; back) out=stl/back_plate.stl;; fit_test) out=stl/fit_test_keys.stl;; esac
     "$OPENSCAD" -D "part=\"$p\"" -o "$out" remote.scad &
   done
   # PNG renders need a display (OpenSCAD 2021 renders through OpenGL)
@@ -45,6 +45,8 @@ if [[ "$what" == all || "$what" == enclosure ]]; then
   grep -i -E "empty|Volumes" <<<"$out" | sed 's/^/parts vs shell: /' || true
   out=$("$OPENSCAD" -D 'part="board_vs_bp"' -o "${TMPDIR:-/tmp}/bvb.stl" remote.scad 2>&1 || true)
   grep -i -E "empty|Volumes" <<<"$out" | sed 's/^/panel vs board parts: /' || true
+  out=$("$OPENSCAD" -D 'part="windows_vs_parts"' -o "${TMPDIR:-/tmp}/wvp.stl" remote.scad 2>&1 || true)
+  grep -i -E "empty|Volumes" <<<"$out" | sed 's/^/windows vs parts: /' || true
   echo "(interference may show zero-thickness contacts at the posts: those are intended)"
   cd ..
 fi
@@ -61,10 +63,11 @@ if [[ "$what" == all || "$what" == viewer ]]; then
   "$OPENSCAD" -D 'part="capgroup"' -D 'names=["YT","NFLX","PLEX"]' -o "$tmp/apps.stl" remote.scad &
   "$OPENSCAD" -D 'part="capgroup"' -D 'names=["VOLUP","VOLDN"]' -o "$tmp/vol.stl" remote.scad &
   "$OPENSCAD" -D 'part="pwrcap"' -o "$tmp/pwr.stl" remote.scad &
-  for v in panel fpc pcb switches irleds usbc module lra zif ics battery; do
+  for v in panel fpc pcb switches irleds usbc module lra zif ics screws battery; do
     "$OPENSCAD" -D "part=\"v_$v\"" -o "$tmp/v_$v.stl" remote.scad &
   done
   "$OPENSCAD" -D 'part="labels_inplace"' -o "$tmp/labels.stl" remote.scad &
+  "$OPENSCAD" -D 'part="windows_inplace"' -o "$tmp/windows.stl" remote.scad &
   wait
   cd ..
   # OpenSCAD writes ASCII STL; pack each as binary STL (smaller) into one JSON

@@ -3,7 +3,7 @@
 //
 // Render a part from the command line:
 //   openscad -D 'part="front"' -o stl/front_shell.stl remote.scad
-// parts: front, front_inlay, back, caps, caps_labels, assembly, interference
+// parts: front, ir_window, sensor_window, back, caps, caps_labels, assembly, interference
 //
 // Coordinates: layout.py uses shell coords with y pointing DOWN from the
 // top (IR) end. Here everything is placed at [x, -y] so the top end is +y.
@@ -276,16 +276,16 @@ module front_cuts() {
     for (i = [0:3]) translate([0, 0, Z_FRONT_IN - EPS + CAP_FLANGE * i / 4])
         linear_extrude(CAP_FLANGE / 4 + 2 * EPS) offset(r = CAP_HOLE_CLR + CAP_FLANGE * (1 - i / 4)) pwr2d();
     // IR window through the top end wall (centred on the LED axis), with a
-    // recess inside for an optional IR filter
+    // recess inside for the clear window's flange
     translate([IR_WINDOW[0] - IR_WINDOW[1] / 2, -WALL - 1, IR_WINDOW[3] - IR_WINDOW[2] / 2]) cube([IR_WINDOW[1], WALL + 2, IR_WINDOW[2]]);
-    translate([IR_WINDOW[0] - IR_WINDOW[1] / 2 - 1.5, -WALL - 0.01, IR_WINDOW[3] - IR_WINDOW[2] / 2 - 1.2])
-        cube([IR_WINDOW[1] + 3, 0.81, IR_WINDOW[2] + 2.4]);
+    translate([IR_WINDOW[0] - IR_WINDOW[1] / 2 - IR_FLANGE[0], -WALL - 0.01, IR_WINDOW[3] - IR_WINDOW[2] / 2 - IR_FLANGE[1]])
+        cube([IR_WINDOW[1] + 2 * IR_FLANGE[0], IR_FLANGE[2] + 0.01, IR_WINDOW[2] + 2 * IR_FLANGE[1]]);
     // USB-C: plug opening through the bottom wall, and a pocket inside that
     // thins the wall to USB_WALL_T so the receptacle face sits close to the outside
     translate([USB_X, -L - 1, USB_Z]) rotate([-90, 0, 0]) linear_extrude(WALL + 2)
         offset(r = USB_OPEN[1] / 2 - 0.01) square([USB_OPEN[0] - USB_OPEN[1], 0.02], center = true);
     translate([USB_X - 7.0, -(L - USB_WALL_T), BACK_T - 1]) cube([14.0, WALL - USB_WALL_T + 1, min(USB_Z + 4.0, Z_FRONT_IN) - BACK_T + 1]);
-    // sensor window under the screen: a pill recess for the dark inlay, and a
+    // sensor window under the screen: a pill recess for the clear window, and a
     // hole through it over the IR receiver (learning) and the light sensor
     translate([0, 0, H - WIN_DEPTH]) linear_extrude(1) sensor_win2d();
     for (h = SENSOR_HOLES) translate([h[0], -h[1], Z_FRONT_IN - 1]) cylinder(d = h[2], h = H, $fn = 40);
@@ -321,16 +321,34 @@ module front_shell() {
     }
 }
 
-// Sensor window: the recess is filled flush by a separate inlay printed in the
-// second (dark) filament together with the shell, like the key labels.
+// Windows: two small parts printed separately in translucent PETG and fitted by hand
+// (a drop of clear glue holds each one).
+//  - sensor window: goes in from the front. The pill sits flush in its recess
+//    in the front face, with a peg down through each hole; the light sensor's
+//    peg runs on to just above the sensor as a light pipe (the IR receiver's
+//    lens sits right under the wall anyway). Printed pill face down.
+//  - IR window: goes in from the inside, before the board. A plug fills the
+//    slot in the top wall, flush outside, and its flange sits in the recess on
+//    the inside, so it can't be pushed out. Printed flange down.
 WIN_DEPTH = 0.6;
+WIN_CLR = 0.1;          // per side, between a window and the shell (press-in fit)
 module sensor_win2d() { translate(S(SENSOR_WIN)) pill2d(SENSOR_WIN[2], SENSOR_WIN[3]); }
-module sensor_inlay() {
-    difference() {
-        translate([0, 0, H - WIN_DEPTH]) linear_extrude(WIN_DEPTH) offset(delta = -0.05) sensor_win2d();
-        for (h = SENSOR_HOLES) translate([h[0], -h[1], H - 2]) cylinder(d = h[2], h = 3, $fn = 40);
+module sensor_window() {
+    translate([0, 0, H - WIN_DEPTH]) linear_extrude(WIN_DEPTH) offset(delta = -WIN_CLR) sensor_win2d();
+    for (i = [0:len(SENSOR_HOLES) - 1]) {
+        h = SENSOR_HOLES[i];
+        z0 = i == 1 ? ALS_PIPE_Z0 : Z_FRONT_IN;          // [1] is the light sensor's hole
+        translate([h[0], -h[1], z0]) cylinder(d = h[2] - 2 * WIN_CLR, h = H - WIN_DEPTH - z0 + EPS, $fn = 40);
     }
 }
+module ir_window() {
+    x0 = IR_WINDOW[0] - IR_WINDOW[1] / 2; z0 = IR_WINDOW[3] - IR_WINDOW[2] / 2;
+    translate([x0 + WIN_CLR, -WALL, z0 + WIN_CLR]) cube([IR_WINDOW[1] - 2 * WIN_CLR, WALL, IR_WINDOW[2] - 2 * WIN_CLR]);
+    translate([x0 - IR_FLANGE[0] + WIN_CLR, -WALL, z0 - IR_FLANGE[1] + WIN_CLR])
+        cube([IR_WINDOW[1] + 2 * IR_FLANGE[0] - 2 * WIN_CLR, IR_FLANGE[2], IR_WINDOW[2] + 2 * IR_FLANGE[1] - 2 * WIN_CLR]);
+}
+IR_FLANGE = [1.5, 1.2, 0.8];   // the recess round the IR slot, inside the top wall: x and z overhang, depth
+module windows() { sensor_window(); ir_window(); }
 
 module front_cuts_cavity_only() { translate([0, 0, -1]) linear_extrude(Z_FRONT_IN + 1) outline2d(-WALL); }
 
@@ -367,10 +385,12 @@ module snap_fingers() {
 
 // The back plate (flat back, 2026-10-09): a flat 1.5 mm plate with the locating
 // lip and only the board's supports on it -- rails under the board's side edges
-// and a ledge under its top edge (under the screen), a standoff round every
-// screw and a pillar under each key switch. Everything else between the plate
-// and the board is open: the flat cell under the screen, the ESP32 module,
-// the motor and the battery / motor / USB-C solder joints.
+// (under the screen), a standoff round each of its two screws and a pillar
+// under each key switch. The board is screwed to the front shell on its own,
+// so the plate takes only the two bottom screws; snap fingers hold its top end.
+// Everything else between the plate and the board is open: the flat cell under
+// the screen, the ESP32 module, the motor, the board screws' heads and the
+// battery / motor / USB-C solder joints.
 module back_plate() {
     lip_h = 1.5;
     sup_h = Z_BP_BOT - BACK_T + EPS;
@@ -396,7 +416,7 @@ module back_plate() {
             fence_corners(BATT_C, [BATT[0] + 0.6, BATT[1] + 0.6], 1.5, t = 0.6);
             snap_fingers();
         }
-        for (p = concat(KEY_HOLES, TOP_BOSSES, BOT_BOSSES)) counterbored_hole(p);
+        for (p = PLATE_SCREWS) counterbored_hole(p);
         // slot to the EN/GND reset pads on the board's underside
         translate([EN_SLOT[0], -EN_SLOT[1], -1]) linear_extrude(BACK_T + 2)
             hull() for (s = [-1, 1]) translate([s * (EN_SLOT[2] - EN_SLOT[3]) / 2, 0]) circle(d = EN_SLOT[3], $fn = 24);
@@ -474,12 +494,15 @@ module bp_zif() {      // 50-pin ZIF connector under the panel
     translate([ZIF[0], -ZIF[1] - ZIF[3], Z_BP_TOP]) cube([ZIF[2], ZIF[3], ZIF[4]]);
 }
 module bp_ics() { for (p = PARTS) translate([p[0] - p[2] / 2, -p[1] - p[3] / 2, Z_BP_TOP]) cube([p[2], p[3], p[4]]); }
-module backplane_envelope() { bp_pcb(); bp_switches(); bp_irleds(); bp_usbc(); bp_module(); bp_lra(); bp_zif(); bp_ics(); }
+module bp_screw_heads() {   // the board screws' pan heads under the board
+    for (p = BOARD_SCREWS) translate([p[0], -p[1], Z_BP_BOT - BOARD_HEAD[1]]) cylinder(d = BOARD_HEAD[0], h = BOARD_HEAD[1], $fn = 32);
+}
+module backplane_envelope() { bp_pcb(); bp_switches(); bp_irleds(); bp_usbc(); bp_module(); bp_lra(); bp_zif(); bp_ics(); bp_screw_heads(); }
 module board_envelope() { panel(); panel_fpc(); }
 
 module assembly() {
     color("dimgray") front_shell();
-    color("black") sensor_inlay();
+    color("white", 0.5) windows();
     color("gray") back_plate();
     color("white") for (k = KEYS) cap(k);
     color("black") for (k = KEYS) cap_label(k);
@@ -507,15 +530,19 @@ else if (part == "v_module") bp_module();
 else if (part == "v_lra") bp_lra();
 else if (part == "v_zif") bp_zif();
 else if (part == "v_ics") bp_ics();
+else if (part == "v_screws") bp_screw_heads();
 else if (part == "v_battery") battery();
 else if (part == "front") front_print();
 else if (part == "front_inplace") front_shell();
-else if (part == "front_inlay") translate([0, 0, H]) rotate([180, 0, 0]) sensor_inlay();   // same placement as "front"
-else if (part == "inlay_inplace") sensor_inlay();
+else if (part == "ir_window")       // on the bed flange down, outer face up
+    translate([-IR_WINDOW[0], IR_WINDOW[3], WALL]) rotate([90, 0, 0]) ir_window();
+else if (part == "sensor_window")   // on the bed pill face down, pegs up
+    translate([-SENSOR_WIN[0], -SENSOR_WIN[1], H]) rotate([180, 0, 0]) sensor_window();
+else if (part == "windows_inplace") windows();
 else if (part == "back") back_plate();
 else if (part == "caps") caps_print("body");
 else if (part == "caps_labels") caps_print("labels");
-else if (part == "labels_inplace") { for (k = KEYS) cap_label(k); sensor_inlay(); }   // viewer: the window shares the label colour
+else if (part == "labels_inplace") { for (k = KEYS) cap_label(k); }
 else if (part == "caps_inplace") { for (k = KEYS) cap(k); pwr_cap(); }
 else if (part == "assembly") assembly();
 else if (part == "fit_test") {
@@ -529,6 +556,10 @@ else if (part == "fit_test") {
 else if (part == "interference") {
     // everything here should be empty (zero-thickness contacts are fine)
     intersection() { union() { front_shell(); back_plate(); } union() { board_envelope(); battery(); backplane_envelope(); } }
+}
+else if (part == "windows_vs_parts") {
+    // the windows (and the light pipe) against everything inside: should be empty
+    intersection() { windows(); union() { back_plate(); board_envelope(); backplane_envelope(); battery(); for (k = KEYS) cap(k); pwr_cap(); } }
 }
 else if (part == "cap_interference") {
     intersection() { front_shell(); union() { for (k = KEYS) cap(k); pwr_cap(); } }

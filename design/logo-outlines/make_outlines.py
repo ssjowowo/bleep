@@ -9,6 +9,10 @@ Writes an SVG and a PNG of each variant next to this script:
   bleep-front-silhouette  solid shell with the screen and keys cut out
   bleep-front-minimal     shell, screen and D-pad ring only, bold lines
   bleep-side-profile      side view (top end on the left, keys on top)
+  bleep-outlines-overview the four fronts in a row with the side profile below (PNG)
+
+The IR and sensor windows are printed in translucent blue PETG, so they're the
+one colour in the drawings: a see-through blue tint over whatever is under them.
 
 Run: python make_outlines.py   (needs Pillow and OpenSCAD)
 """
@@ -16,6 +20,7 @@ Run: python make_outlines.py   (needs Pillow and OpenSCAD)
 import math
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -27,8 +32,9 @@ HW = os.path.join(HERE, "..", "..", "hardware")
 sys.path.insert(0, HW)
 import layout as L  # noqa: E402
 
-OPENSCAD = os.environ.get("OPENSCAD", r"C:\Program Files\OpenSCAD\openscad.com")
+OPENSCAD = os.environ.get("OPENSCAD") or shutil.which("openscad") or r"C:\Program Files\OpenSCAD\openscad.com"
 INK, PAPER = "#111111", "#ffffff"
+WINDOW, WINDOW_ALPHA = "#4a8fe0", 0.6      # translucent blue PETG (Creality CR-PETG Translucent Blue)
 PNG_LONG = 2400         # PNG size along its long side, px
 MARGIN = 6.0            # mm around the drawing
 
@@ -125,7 +131,9 @@ def side_parts():
             spans.append((S(c)[1], L.PILL[1] / 2))
     caps = [rrect(y - r, 0, y + r, top, 0.4, 0) for y, r in spans]     # the glass sits flush with the front
     usb = rrect(L.L - 0.6, top + L.H - L.USB_Z - L.USB_OPEN[1] / 2, L.L + 0.01, top + L.H - L.USB_Z + L.USB_OPEN[1] / 2, 0)
-    return dict(body=body, caps=caps, usb=usb, w=L.L, h=top + L.H)
+    zc, wh = L.IR_WINDOW["zc"], L.IR_WINDOW["h"]                       # the IR window in the top end wall
+    ir = rrect(-0.25, top + L.H - zc - wh / 2, 0.9, top + L.H - zc + wh / 2, 0)     # seen edge-on: a bold strip
+    return dict(body=body, caps=caps, usb=usb, ir=ir, w=L.L, h=top + L.H)
 
 
 # ---------------------------------------------------------------- output
@@ -134,7 +142,7 @@ class Canvas:
         self.w, self.h = w + 2 * MARGIN, h + 2 * MARGIN
         self.svg = []
         self.k = PNG_LONG / max(self.w, self.h) * 3                      # supersampled, downsized at the end
-        self.img = Image.new("L", (round(self.w * self.k), round(self.h * self.k)), 255)
+        self.img = Image.new("RGB", (round(self.w * self.k), round(self.h * self.k)), PAPER)
         self.d = ImageDraw.Draw(self.img)
 
     def P(self, pts):
@@ -147,23 +155,24 @@ class Canvas:
         self.svg.append(f'<path d="{self.path([pts]) if closed else self.path([pts])[:-2]}" fill="none" stroke="{INK}" '
                         f'stroke-width="{w}" stroke-linejoin="round" stroke-linecap="round"/>')
         q = self.P(pts + ([pts[0]] if closed else []))
-        self.d.line(q, fill=0, width=max(1, round(w * self.k)), joint="curve")
+        self.d.line(q, fill=INK, width=max(1, round(w * self.k)), joint="curve")
         r = w * self.k / 2
         for x, y in q:                                   # round joints
-            self.d.ellipse((x - r, y - r, x + r, y + r), fill=0)
+            self.d.ellipse((x - r, y - r, x + r, y + r), fill=INK)
 
-    def fill(self, polys, color=INK, evenodd=True):
-        self.svg.append(f'<path d="{self.path(polys)}" fill="{color}" fill-rule="{"evenodd" if evenodd else "nonzero"}"/>')
-        v = 0 if color == INK else 255
-        if len(polys) == 1:
-            self.d.polygon(self.P(polys[0]), fill=v)
-            return
+    def fill(self, polys, color=INK, evenodd=True, opacity=1.0):
+        op = f' fill-opacity="{opacity:g}"' if opacity < 1 else ""
+        self.svg.append(f'<path d="{self.path(polys)}" fill="{color}"{op} fill-rule="{"evenodd" if evenodd else "nonzero"}"/>')
         m = Image.new("1", self.img.size, 0)             # even-odd: XOR the sub-paths
         for p in polys:
             t = Image.new("1", self.img.size, 0)
             ImageDraw.Draw(t).polygon(self.P(p), fill=1)
             m = ImageChops.logical_xor(m, t)
-        self.img.paste(v, mask=m)
+        self.img.paste(color, mask=m.convert("L").point(lambda v: round(v * opacity)))
+
+    def window(self, polys):
+        """A translucent blue PETG window: a see-through tint over what's under it."""
+        self.fill(polys, WINDOW, opacity=WINDOW_ALPHA)
 
     def save(self, name, title):
         svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{self.w:.2f}mm" height="{self.h:.2f}mm" '
@@ -186,12 +195,14 @@ def main():
 
     # 1 line drawing
     c = Canvas(L.W, L.L)
+    c.window([f["win"]])
     for p in [f["shell"], f["screen"], f["pwr"], f["win"]] + f["keys"]:
         c.stroke(p, W_LINE)
     c.save("bleep-front-outline", "Bleep remote, front outline")
 
     # 2 detailed: icons, ring dots, + / -
     c = Canvas(L.W, L.L)
+    c.window([f["win"]])
     for p in [f["shell"], f["screen"], f["pwr"], f["win"]] + f["keys"]:
         c.stroke(p, W_LINE)
     for p in f["dots"]:
@@ -207,6 +218,7 @@ def main():
     c.fill([f["shell"]])
     for p in [f["screen"], f["pwr"], f["win"], f["ring"][0], f["vol_full"]] + f["keys"][3:]:
         c.fill([p], PAPER)
+    c.window([f["win"]])
     c.fill([f["ring"][1]])                              # gap between ring and OK
     c.fill([f["ok"]], PAPER)
     c.fill([rect_poly(L.key_to_shell((L.DPAD_C[0], L.VOL_Y))[0], L.key_to_shell((L.DPAD_C[0], L.VOL_Y))[1], L.VOL_SPLIT, L.VOL_BAR[1] + 1)])
@@ -231,7 +243,28 @@ def main():
     for p in s["caps"]:
         c.stroke(p, W_LINE)
     c.fill([s["usb"]])
+    c.fill([s["ir"]], WINDOW)
     c.save("bleep-side-profile", "Bleep remote, side profile (top end left)")
+
+    overview()
+
+
+def overview():
+    """The four fronts in a row, the side profile underneath (for the README)."""
+    fronts = [Image.open(os.path.join(HERE, f"bleep-front-{n}.png")).convert("RGB")
+              for n in ("outline", "detailed", "silhouette", "minimal")]
+    side = Image.open(os.path.join(HERE, "bleep-side-profile.png")).convert("RGB")
+    W, pad = 1800, 15
+    fw = (W - 5 * pad) // 4
+    fronts = [im.resize((fw, round(im.height * fw / im.width)), Image.LANCZOS) for im in fronts]
+    sw = W - 2 * pad
+    side = side.resize((sw, round(side.height * sw / side.width)), Image.LANCZOS)
+    out = Image.new("RGB", (W, pad + fronts[0].height + pad + side.height + pad), PAPER)
+    for i, im in enumerate(fronts):
+        out.paste(im, (pad + i * (fw + pad), pad))
+    out.paste(side, (pad, 2 * pad + fronts[0].height))
+    out.save(os.path.join(HERE, "bleep-outlines-overview.png"))
+    print("wrote bleep-outlines-overview.png", out.size)
 
 
 if __name__ == "__main__":

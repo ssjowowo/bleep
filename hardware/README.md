@@ -25,7 +25,7 @@ It needs Python 3 (no extra packages) and OpenSCAD 2021.01+, found on the PATH o
 | z (mm) | |
 |---|---|
 | 0 – 1.5 | back plate |
-| 1.5 – 6.0 | open space: battery (+0.5 swell gap) under the screen; ESP32 module and vibration motor under the keys. The back plate is flat; the board rests on rails along its edges under the screen, a standoff at every screw and a 3 mm pillar under each key switch |
+| 1.5 – 6.0 | open space: battery (+0.5 swell gap) under the screen; ESP32 module, vibration motor and the heads of the 4 board screws under the keys. The back plate is flat; the board rests on rails along its edges under the screen, a standoff at each of the plate's 2 screws and a 3 mm pillar under each key switch |
 | 6.0 – 6.8 | main board, 0.8 mm |
 | 6.8 – 8.4 | under the LCD: the 50-pin ZIF connector (1.5 mm), the folded display FPC and its parts area, foam pads at the top end |
 | 8.4 – 12.15 | LCD (2.1) + touch glass (1.65) |
@@ -56,7 +56,7 @@ Routing: [Freerouting](https://github.com/freerouting/freerouting) 2.5 does it, 
 | 50-pin 0.5 mm ZIF connector (XUNPU FPC-05F-50PH15) | top, under the panel, JLCPCB | bottom contact, flip lid; the display FPC folds under and plugs in |
 | ESP32-S3-WROOM-1-N8R2 | **underside**, across the board just below the screen | **you solder**. It must be the **N8R2**: the N8R8 (octal PSRAM) uses GPIO35–37, which are LCD D0–D2 here; antenna at the **right edge**, beside the D-pad, with no copper on either layer around it (3.5 mm past the module's sides). It can't go under the screen: the panel would detune it. |
 | IR receiver (Everlight IRM-H638T, 38 kHz) | in the row under the screen, left, under the sensor window (3.0 mm hole) | for **learning** codes from existing remotes; output on GPIO42. Powered from GPIO1 through 220 Ω + 10 µF, so it's only on while learning (it draws 0.4 mA) |
-| Ambient light sensor (LTR-303ALS-01) | beside the IR receiver, same window (1.6 mm hole) | auto-brightness; I²C `0x29` |
+| Ambient light sensor (LTR-303ALS-01) | beside the IR receiver, same window (1.6 mm hole, with a translucent PETG light pipe down to it) | auto-brightness; I²C `0x29` |
 | Fuel gauge (MAX17048) | top, left strip | battery %, time-to-empty and the cell voltage; I²C `0x36` |
 | EN + GND reset pads | underside, below the module, under a slot in the back plate | short them (a small screwdriver across both) to reset the ESP32 without opening the case |
 | BAT+ / BAT− pads, vibration-motor pads | underside: battery pads just below the screen on the left, motor in the left strip | the motor is an 8 mm ERM (or LRA) coin, set in firmware |
@@ -91,7 +91,8 @@ The FPC leaves the panel's bottom edge, makes a U-bend down past the glass and r
 3. **Display**: lay the panel face down beyond the board's key end, FPC towards J1. Flip J1's lid up, slide the FPC in with its contacts facing the board, then close the lid. Fold the panel over onto foam pads (two layers of 1 mm foam tape) at the board's top end, so the FPC makes a U-bend under it. Stick the pads left and right of the small IR-driver parts there (they sit under the LCD now), not on them.
 4. Flash over USB-C. esptool resets the ESP32 into download mode over USB by itself. If a broken firmware stops that from working, hold OK and short the two reset pads through the slot in the back plate (a small flat screwdriver across both), then release them while still holding OK. Plugging in USB doesn't reset the ESP32 once the battery is connected.
 5. Key caps into the front shell, face down: the **OK** button first, then the one-piece **D-pad ring** over it (the ring holds the OK in), then the other caps.
-6. Board into the front shell (glass into its pocket), battery on the back plate between its corner guides. Hook the back plate's top end in first: its two snap fingers click into grooves in the top wall. Then close it with **6 × M2×8**.
+6. Board into the front shell (glass into its pocket), then screw it to the four posts in the key area with **4 × M2×4** from its underside, into the inserts. Use nylon screws, or at least put a disc of Kapton tape under the head at the top-left hole (H1): a VBAT track passes 1.75 mm from its centre on the underside, under the edge of a 4 mm head, with only solder mask in between.
+7. Battery on the back plate between its corner guides. Hook the back plate's top end in first: its two snap fingers click into grooves in the top wall. Then close it with **2 × M2×8** through the bottom bosses (they pass through the board too).
 
 ## Ordering
 
@@ -133,6 +134,7 @@ Shipping ≈ $11 (Global Standard, 12–19 days). VAT is added at checkout.
 |---|---|---|---|
 | 8 mm coin vibration motor, ERM 0827, 5 pcs | [1005007600971536](https://www.aliexpress.com/item/1005007600971536.html) | "8x2.7mm" | 2.24 |
 | M2 × 8 pan-head screws, 100 pcs | [1005005581270091](https://www.aliexpress.com/item/1005005581270091.html) | "M2 100pcs" + "8mm" | 2.99 |
+| M2 × 4 nylon pan-head screws (the board screws) | search "M2 nylon screw 4mm" | 4 mm | ≈ 1–2 |
 | 1 mm double-sided foam tape, 10 m | [1005007483857645](https://www.aliexpress.com/item/1005007483857645.html) | 10 mm wide | 3.53 |
 
 Alternative screws: [4000970993800](https://www.aliexpress.com/item/4000970993800.html) (€2.26, 50 pcs stainless). An LRA 0832 exists ([1005010354264566](https://www.aliexpress.com/item/1005010354264566.html)) but costs ≈ €23.6 with shipping; the ERM works with the DRV2605L (a firmware setting).
@@ -153,7 +155,16 @@ Look for a flat Li-Po (pouch) cell, **at most 4.0 mm thick and 50.8 × 86.1 mm**
 | Batteries (to Germany, not yet chosen) | ≈ 15–20 + forwarding |
 | **Total** | **≈ €130 + forwarding + VAT on the JLCPCB and BuyDisplay parts** |
 
-Already on hand (not counted): PETG in two colours, solder, flux, solder wick. The second colour prints the key labels, the ring dots and the sensor-window inlay (`stl/front_window_inlay.stl`, added as a part to `front_shell.stl`).
+Already on hand (not counted): PETG in two colours, solder, flux, solder wick. The second colour prints the key labels and the ring dots.
+
+**Windows.** The IR window and the sensor window are two small separate prints in translucent PETG (Creality CR-PETG Translucent Blue), fitted by hand with a drop of clear glue:
+
+- `stl/ir_window.stl` (15.8 × 6.2 × 1.8 mm, printed flange down): a plug that fills the slot in the top wall, flush outside. Push it in from the inside before the board goes in; its flange sits in the recess round the slot, so it can't be pushed out.
+- `stl/sensor_window.stl` (10.8 × 3.8 mm, pegs 4.95 mm tall, printed pill face down): the pill sits flush in its recess under the screen, with a peg down through each hole. The peg over the light sensor runs on to 0.5 mm above it as a light pipe, because through the bare 1.6 mm hole the sensor would see only about ±8°.
+
+Each has 0.1 mm clearance per side for a press fit; if a peg is too tight, run a 1.5 / 3.0 mm drill through the shell's holes. Print a few spares: they're tiny.
+
+Before printing the real ones, check the filament passes infrared. Print a 1 mm square, hold it over a working remote's LED and work your TV from across the room (a phone's front camera usually shows the LED's glow through it too). Clear and translucent dyed PETG normally pass 940 nm. The blue tint dims and colours what the light sensor sees, so its lux reading needs a scale factor in firmware; calibrate it once against a phone's light meter. Auto-brightness only needs it to rise and fall with the room.
 
 ## The display cable fold
 
