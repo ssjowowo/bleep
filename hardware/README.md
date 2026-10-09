@@ -7,7 +7,7 @@
 | Size | 60.7 × 182.2 × **13.0 mm** |
 | Display | BuyDisplay ER-TFT035IPS-6 (ILI9488) + ER-TPC035-6 touch (FT6236), 3.75 mm, one 50-pin FPC |
 | ESP32 | ESP32-S3-WROOM-1-N8R2 module (8 MB flash, 2 MB PSRAM) |
-| Battery | flat Li-Po up to 4.0 mm thick and 41.9 × 81.4 mm, under the screen |
+| Battery | flat Li-Po up to 4.0 mm thick and 50.8 × 86.1 mm (sized for a 405085), under the screen |
 | You solder | ESP32 module, battery, vibration motor (the display just plugs in) |
 
 Everything is generated from [`layout.py`](layout.py):
@@ -18,12 +18,14 @@ Everything is generated from [`layout.py`](layout.py):
 ./build.sh pcb        # main board: place, route, DRC, Gerbers, BOM/CPL
 ```
 
+It needs Python 3 (no extra packages) and OpenSCAD 2021.01+, found on the PATH or set with `OPENSCAD=`. The PNG renders in `docs/` need a display, so on a headless Linux box they're skipped.
+
 ## Stack (from the back face, 4 mm cell)
 
 | z (mm) | |
 |---|---|
 | 0 – 1.5 | back plate |
-| 1.5 – 6.0 | battery (+0.5 swell gap) under the screen; ESP32 module and vibration motor in pockets under the keys |
+| 1.5 – 6.0 | open space: battery (+0.5 swell gap) under the screen; ESP32 module and vibration motor under the keys. The back plate is flat; the board rests on rails along its edges under the screen, a standoff at every screw and a 3 mm pillar under each key switch |
 | 6.0 – 6.8 | main board, 0.8 mm |
 | 6.8 – 8.4 | under the LCD: the 50-pin ZIF connector (1.5 mm), the folded display FPC and its parts area, foam pads at the top end |
 | 8.4 – 12.15 | LCD (2.1) + touch glass (1.65) |
@@ -85,11 +87,11 @@ The FPC leaves the panel's bottom edge, makes a U-bend down past the glass and r
 ## Assembly order
 
 1. **ESP32 module** (underside, lying across the board below the screen, antenna end at the right edge as the silk shows): tack two corners, then solder the edge pads. Solder the centre GND pad from the top side: feed solder into its four 1 mm holes until each one fills (the module's pad heats slowly, so use a hot, broad tip). Pins 1 and 40 (GND, by the antenna) are also tied to that pad with tracks.
-2. **Battery** leads to BAT+ / BAT− (underside, just below the screen on the left), **motor** leads to its pads (red to +). Cut the battery's plug off and solder the leads straight to the pads, red to BAT+: at 4 mm the tub has no room for a connector. Stick the motor in its pocket in the back plate. The cell goes at the top end of its tub, under the screen and as far from the antenna as it goes; its leads run down the tub to the pads.
+2. **Battery** leads to BAT+ / BAT− (underside, just below the screen on the left), **motor** leads to its pads (red to +). Cut the battery's plug off and solder the leads straight to the pads, red to BAT+: at 4 mm there's no room for a connector. Stick the motor to the board's underside by its adhesive back, on its spot in the left strip. The cell goes at the top end, under the screen and as far from the antenna as it goes, between the four corner guides on the back plate; its leads run down to the pads. A piece of Kapton tape on the board's underside over the cell area keeps via tips off the pouch.
 3. **Display**: lay the panel face down beyond the board's key end, FPC towards J1. Flip J1's lid up, slide the FPC in with its contacts facing the board, then close the lid. Fold the panel over onto foam pads (two layers of 1 mm foam tape) at the board's top end, so the FPC makes a U-bend under it. Stick the pads left and right of the small IR-driver parts there (they sit under the LCD now), not on them.
 4. Flash over USB-C. esptool resets the ESP32 into download mode over USB by itself. If a broken firmware stops that from working, hold OK and short the two reset pads through the slot in the back plate (a small flat screwdriver across both), then release them while still holding OK. Plugging in USB doesn't reset the ESP32 once the battery is connected.
 5. Key caps into the front shell, face down: the **OK** button first, then the one-piece **D-pad ring** over it (the ring holds the OK in), then the other caps.
-6. Board into the front shell (glass into its pocket), battery in the back-plate tub, plugged in. Hook the back plate's top end in first: its two snap fingers click into grooves in the top wall. Then close it with **6 × M2×10**.
+6. Board into the front shell (glass into its pocket), battery on the back plate between its corner guides. Hook the back plate's top end in first: its two snap fingers click into grooves in the top wall. Then close it with **6 × M2×8**.
 
 ## Ordering
 
@@ -139,7 +141,7 @@ Alternative screws: [4000970993800](https://www.aliexpress.com/item/400097099380
 
 Li-Po cells count as dangerous goods for shipping, and the shops that sell them won't send them to Cyprus directly. Eremit ships only within Germany but explicitly allows forwarding services, so order to the forwarder's German address.
 
-Look for a flat Li-Po (pouch) cell, **at most 4.0 mm thick and 41.9 × 81.4 mm**, with its leads on a short edge and a protection circuit. Pouch cells are named by size: thickness in tenths of a mm, then width, then length, so **404060** is 4.0 × 40 × 60 mm (≈ 1100 mAh). 3.0–4.0 mm thick, up to 41 mm wide and 81 mm long all fit: 404060, 403562 and 404080 (if you can find it, ≈ 1500 mAh). Not yet chosen.
+Look for a flat Li-Po (pouch) cell, **at most 4.0 mm thick and 50.8 × 86.1 mm**, with its leads on a short edge and a protection circuit. Pouch cells are named by size: thickness in tenths of a mm, then width, then length, so **405085** is 4.0 × 50 × 85 mm, the largest that fits and the one the back plate is set up for. 3.0–4.0 mm thick, up to 50 mm wide and 86 mm long all fit: 405085, 405080, 404080, 405060 or the smaller 404060. Set `BATT` in `layout.py` to the cell you buy and rebuild the back plate, so its corner guides fit it. Not yet chosen.
 
 ### Rough total
 

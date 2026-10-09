@@ -4,20 +4,22 @@
 #   ./build.sh enclosure  STLs + renders only
 #   ./build.sh pcb        main board PCB: place, route, DRC, Gerbers, BOM/CPL -- LOCKED, see below
 #   ./build.sh viewer     meshes for the 3D color viewer
-# Tools: Python 3, OpenSCAD (2021.01+), KiCad 10 (for kicad-cli and its Python),
+# Tools: Python 3 (no extra packages), OpenSCAD (2021.01+), KiCad 10 (for kicad-cli and its Python),
 # Freerouting 2.5 (the .jar) on a Java 25 runtime for the autorouting.
 set -euo pipefail
 cd "$(dirname "$0")"
 
-OPENSCAD="${OPENSCAD:-/c/Program Files/OpenSCAD/openscad.com}"
-KICAD_BIN="${KICAD_BIN:-$LOCALAPPDATA/Programs/KiCad/10.0/bin}"
+# Defaults: OpenSCAD and python3/python from PATH, else the Windows install
+OPENSCAD="${OPENSCAD:-$(command -v openscad || echo "/c/Program Files/OpenSCAD/openscad.com")}"
+PYTHON="${PYTHON:-$(command -v python3 || command -v python)}"
+KICAD_BIN="${KICAD_BIN:-${LOCALAPPDATA:-}/Programs/KiCad/10.0/bin}"
 KICAD_PY="$KICAD_BIN/python.exe"
 KICAD_CLI="$KICAD_BIN/kicad-cli.exe"
-FREEROUTING_JAR="${FREEROUTING_JAR:-$LOCALAPPDATA/freerouting/freerouting-2.5.0.jar}"
-JAVA="${JAVA:-$(ls -d "$LOCALAPPDATA"/freerouting/jdk-25*/ 2>/dev/null | head -1)bin/java.exe}"
+FREEROUTING_JAR="${FREEROUTING_JAR:-${LOCALAPPDATA:-}/freerouting/freerouting-2.5.0.jar}"
+JAVA="${JAVA:-$(ls -d "${LOCALAPPDATA:-}"/freerouting/jdk-25*/ 2>/dev/null | head -1 || true)bin/java.exe}"
 what="${1:-all}"
 
-python layout.py
+"$PYTHON" layout.py
 
 if [[ "$what" == all || "$what" == enclosure ]]; then
   cd enclosure
@@ -26,9 +28,14 @@ if [[ "$what" == all || "$what" == enclosure ]]; then
     case $p in front) out=stl/front_shell.stl;; front_inlay) out=stl/front_window_inlay.stl;; back) out=stl/back_plate.stl;; fit_test) out=stl/fit_test_keys.stl;; esac
     "$OPENSCAD" -D "part=\"$p\"" -o "$out" remote.scad &
   done
-  "$OPENSCAD" -D 'part="assembly"' --camera=0,0,0,55,0,25,0 --viewall --autocenter --imgsize=1200,1400 -o ../docs/enclosure-assembly.png remote.scad &
-  "$OPENSCAD" -D 'part="front"' --camera=0,0,0,40,0,20,0 --viewall --autocenter --imgsize=1000,1300 -o ../docs/front-shell-inside.png remote.scad &
-  "$OPENSCAD" -D 'part="back"' --camera=0,0,0,40,0,20,0 --viewall --autocenter --imgsize=1000,1300 -o ../docs/back-plate.png remote.scad &
+  # PNG renders need a display (OpenSCAD 2021 renders through OpenGL)
+  if [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" || "$OPENSCAD" == *.com || "$OPENSCAD" == *.exe ]]; then
+    "$OPENSCAD" -D 'part="assembly"' --camera=0,0,0,55,0,25,0 --viewall --autocenter --imgsize=1200,1400 -o ../docs/enclosure-assembly.png remote.scad &
+    "$OPENSCAD" -D 'part="front"' --camera=0,0,0,40,0,20,0 --viewall --autocenter --imgsize=1000,1300 -o ../docs/front-shell-inside.png remote.scad &
+    "$OPENSCAD" -D 'part="back"' --camera=0,0,0,40,0,20,0 --viewall --autocenter --imgsize=1000,1300 -o ../docs/back-plate.png remote.scad &
+  else
+    echo "no display: skipping the PNG renders in docs/"
+  fi
   wait
   # Interference checks: both must print "Current top level object is empty"
   # (OpenSCAD exits non-zero on an empty result, so capture the text instead of using the pipe status)
@@ -60,15 +67,28 @@ if [[ "$what" == all || "$what" == viewer ]]; then
   "$OPENSCAD" -D 'part="labels_inplace"' -o "$tmp/labels.stl" remote.scad &
   wait
   cd ..
-  # needs: pip install trimesh (converts OpenSCAD's ASCII STL to binary)
-  python - "$tmp" viewer/meshes.json <<'PY'
-import sys, os, io, json, base64, trimesh
+  # OpenSCAD writes ASCII STL; pack each as binary STL (smaller) into one JSON
+  "$PYTHON" - "$tmp" viewer/meshes.json <<'PY'
+import sys, os, json, base64, struct
 src, out = sys.argv[1], sys.argv[2]
+
+def binary_stl(path):
+    tris, cur = [], []
+    for line in open(path, encoding="ascii"):
+        w = line.split()
+        if w[:1] == ["facet"]:
+            cur = [tuple(map(float, w[2:5]))]
+        elif w[:1] == ["vertex"]:
+            cur.append(tuple(map(float, w[1:4])))
+        elif w[:1] == ["endfacet"]:
+            tris.append(cur)
+    body = b"".join(struct.pack("<12fH", *(c for v in t for c in v), 0) for t in tris)
+    return b"\0" * 80 + struct.pack("<I", len(tris)) + body
+
 pack = {}
 for f in sorted(os.listdir(src)):
     if f.endswith(".stl"):
-        buf = io.BytesIO(); trimesh.load(os.path.join(src, f)).export(buf, file_type="stl")
-        pack[f[:-4]] = base64.b64encode(buf.getvalue()).decode()
+        pack[f[:-4]] = base64.b64encode(binary_stl(os.path.join(src, f))).decode()
 json.dump(pack, open(out, "w"))
 print("wrote", out, os.path.getsize(out), "bytes")
 PY
@@ -97,7 +117,7 @@ if [[ "$what" == pcb ]]; then
   rm -rf fab/gerbers && mkdir -p fab/gerbers
   "$KICAD_CLI" pcb export gerbers --layers F.Cu,B.Cu,F.Mask,B.Mask,F.Paste,F.Silkscreen,B.Silkscreen,Edge.Cuts       --subtract-soldermask -o fab/gerbers/ mainboard.kicad_pcb
   "$KICAD_CLI" pcb export drill --format excellon --excellon-separate-th -o fab/gerbers/ mainboard.kicad_pcb
-  (cd fab/gerbers && python -c "import zipfile,os; z=zipfile.ZipFile('../mainboard-gerbers.zip','w',zipfile.ZIP_DEFLATED); [z.write(f) for f in sorted(os.listdir('.'))]")
+  (cd fab/gerbers && "$PYTHON" -c "import zipfile,os; z=zipfile.ZipFile('../mainboard-gerbers.zip','w',zipfile.ZIP_DEFLATED); [z.write(f) for f in sorted(os.listdir('.'))]")
   "$KICAD_CLI" pcb render --side top --width 900 --height 2300 --quality high -o ../docs/mainboard-top.png mainboard.kicad_pcb
   "$KICAD_CLI" pcb render --side bottom --width 900 --height 2300 --quality high -o ../docs/mainboard-bottom.png mainboard.kicad_pcb
   cd ..

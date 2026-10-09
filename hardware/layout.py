@@ -86,10 +86,10 @@ LIP = 0.8            # front frame over the glass
 LIP_OVER = 1.2       # how far the frame overlaps the glass edge
 BACK_T = 1.5         # back plate thickness
 SWELL = 0.5          # Li-Po swell gap
-# Flat cell under the SCREEN, in a tub in the back plate, pushed to the top
-# end (away from the antenna). Any cell up to BATT_BAY fits; set its size
-# here (its thickness drives H).
-BATT = (40.0, 60.0, 4.0)   # (x, y, z): e.g. 4 x 40 x 60 mm, roughly 1100 mAh
+# Flat cell under the SCREEN, on the flat back plate, pushed to the top end
+# (away from the antenna). Any cell up to BATT_BAY fits; set its size here
+# (corner guides on the plate locate it; its thickness drives H).
+BATT = (50.0, 85.0, 4.0)   # (x, y, z): a 405085, 4 x 50 x 85 mm
 BP_T = 0.8                 # main board thickness
 
 LENS_TOP = 4.8       # outer top edge -> glass top edge (keeps the LCD 0.7 mm clear of the IR LEDs' backs)
@@ -294,16 +294,31 @@ USB_FACE_Y = L - USB_WALL_T - 0.1
 USB_FP_ORIGIN = (USB_C_X, USB_FACE_Y - USB_FP_FACE)
 USB_TAB = (USB_C_X - 6.0, USB_C_X + 6.0, USB_FACE_Y - 0.6)
 
-# Battery tub in the back plate under the screen (shell coords x0, y0, x1, y1).
-# The cell sits at the tub's top end, as far from the antenna as it goes; its
-# leads run down the tub to two pads on the underside below the tub's left end.
-BATT_BAY = (9.0, 8.0, W - 9.0, LENS_Y1 + 0.5)
-BATT_C = ((BATT_BAY[0] + BATT_BAY[2]) / 2, BATT_BAY[1] + 1.0 + BATT[1] / 2)
-BAT_PADS = [(12.0, BATT_BAY[3] + 2.2), (16.0, BATT_BAY[3] + 2.2)]   # BAT+, BAT-
-# Pockets in the back-plate platform (x0, y0, x1, y1, depth below the board)
+# Flat back (2026-10-09): the back plate is a flat plate with only the board's
+# supports on it, so the whole space between the plate and the board
+# (z BACK_T..Z_BP_BOT) is open for the underside parts and the cell. The board
+# rests on rails under its side edges (under the screen, from the top end), a
+# standoff round every screw, and a pillar under each key switch. There's no
+# ledge along its top edge: that length goes to the cell (a 405085 fits).
+BP_LIP_IN = WALL + 1.45          # inner edge of the back plate's locating lip
+RAIL_W = 1.3                     # side rails: from the lip to 1.15 mm under the board edge
+PILLAR_D = 3.0                   # pillars under the key switches
+# Battery pads on the underside, just below the screen on the left (BAT+, BAT-);
+# fixed by the ordered board, so they're written out here
+BAT_PADS = [(12.0, 92.46), (16.0, 92.46)]
+# Where the cell may go (shell coords x0, y0, x1, y1): between the rails, from
+# the lip at the top end down to just above the battery pads' solder joints.
+# The cell sits at the top end, as far from the antenna as it goes; its leads
+# run down to the pads.
+BATT_BAY = (BP_LIP_IN + RAIL_W, BP_LIP_IN, W - BP_LIP_IN - RAIL_W, BAT_PADS[0][1] - 2.3)
+BATT_C = ((BATT_BAY[0] + BATT_BAY[2]) / 2, BATT_BAY[1] + 0.4 + BATT[1] / 2)
+RAILS = [(BP_LIP_IN, BP_LIP_IN, BATT_BAY[0], BATT_BAY[3]),                 # left
+         (BATT_BAY[2], BP_LIP_IN, W - BP_LIP_IN, BATT_BAY[3])]             # right
+# Room the parts on the board's underside need (x0, y0, x1, y1, height below
+# the board): nothing on the back plate may reach into these
 MOD_POCKET = (MOD_C[0] - MOD_L / 2 - 0.6, MOD_TOP - 0.6, W - BP_INSET + 0.2,
               MOD_TOP + MOD_W + 0.6, MOD_T + 0.4)
-PLATFORM_POCKETS = [
+UNDERSIDE_ZONES = [
     MOD_POCKET,
     (MOTOR_C[0] - MOTOR_D / 2 - 0.4, MOTOR_C[1] - MOTOR_D / 2 - 0.4,
      MOTOR_C[0] + MOTOR_D / 2 + 0.4, MOTOR_C[1] + MOTOR_D / 2 + 0.4, MOTOR_T + 0.3),
@@ -311,9 +326,47 @@ PLATFORM_POCKETS = [
     (BAT_PADS[0][0] - 2.0, BATT_BAY[3] - 0.1, BAT_PADS[1][0] + 2.0, BAT_PADS[0][1] + 1.6, 1.5),
     (USB_C_X - 5.8, USB_FACE_Y - USB_FP_FACE - 5.1, USB_C_X + 5.8, USB_FACE_Y - USB_FP_FACE + 2.4, 2.0),
 ]
+# Standoffs round the screws, from the plate up to the board (x, y, diameter)
+STANDOFFS = [(x, y, POST_D) for x, y in KEY_HOLES] + [(x, y, BOSS_D) for x, y in TOP_BOSSES + BOT_BOSSES]
+
+
+def _pillars():
+    """A pillar under each key switch, nudged (up to 1.5 mm, still under the
+    switch body) clear of the underside parts, the reset slot, the standoffs and
+    the cell. A switch over the ESP32 module needs none: the module carries it."""
+    en = (EN_SLOT[0] - EN_SLOT[2] / 2, EN_SLOT[1] - EN_SLOT[3] / 2,
+          EN_SLOT[0] + EN_SLOT[2] / 2, EN_SLOT[1] + EN_SLOT[3] / 2)
+    blocked = [z[:4] for z in UNDERSIDE_ZONES] + [en, BATT_BAY]
+    r = PILLAR_D / 2 + 0.5
+
+    def clear(x, y):
+        box = (x - r, y - r, x + r, y + r)
+        return (not any(_overlap(box, b) for b in blocked)
+                and all(math.hypot(x - sx, y - sy) > d / 2 + r for sx, sy, d in STANDOFFS))
+
+    nudges = sorted({(dx * 0.1, dy * 0.1) for dx in range(-15, 16) for dy in range(-15, 16)
+                     if math.hypot(dx, dy) <= 15}, key=lambda d: math.hypot(*d))
+    out, skipped = [], []
+    for name, (x, y) in [(k[0], key_to_shell(k[1])) for k in KEYS] + [("PWR", PWR_KEY)]:
+        if MOD_POCKET[0] < x < MOD_POCKET[2] and MOD_POCKET[1] < y < MOD_POCKET[3]:
+            continue
+        p = next(((round(x + dx, 2), round(y + dy, 2)) for dx, dy in nudges if clear(x + dx, y + dy)), None)
+        if p:
+            out.append((p[0], p[1], PILLAR_D))
+        else:
+            skipped.append(name)
+    return out, skipped
+
+
+def _overlap(a, b):
+    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
 
 def key_to_shell(p):
     return (KEYS_X0 + p[0], KEYS_Y0 + p[1])
+
+
+PILLARS, PILLARS_SKIPPED = _pillars()
 
 
 def bp_outline_contains(x, y, margin=0.0):
@@ -333,10 +386,6 @@ def _rounded_rect_contains(px, py, x0, y0, x1, y1, r_top, r_bot, margin=0.0):
         if in_corner_x and in_corner_y and math.hypot(px - cx, py - cy) > r:
             return False
     return True
-
-
-def _overlap(a, b):
-    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
 
 
 def check():
@@ -410,7 +459,17 @@ def check():
     # battery
     bw, bh = BATT_BAY[2] - BATT_BAY[0] - 0.8, BATT_BAY[3] - BATT_BAY[1] - 0.8
     if BATT[0] > bw or BATT[1] > bh:
-        problems.append(f"battery {BATT[0]}x{BATT[1]} doesn't fit the {bw:.1f}x{bh:.1f} tub")
+        problems.append(f"battery {BATT[0]}x{BATT[1]} doesn't fit the {bw:.1f}x{bh:.1f} bay")
+    cell = (BATT_C[0] - BATT[0] / 2, BATT_C[1] - BATT[1] / 2, BATT_C[0] + BATT[0] / 2, BATT_C[1] + BATT[1] / 2)
+    for z in UNDERSIDE_ZONES:
+        if _overlap(cell, z[:4]):
+            problems.append(f"battery runs into the underside part room at {z[:4]}")
+    for x, y, d in STANDOFFS + PILLARS:
+        if _overlap(cell, (x - d / 2, y - d / 2, x + d / 2, y + d / 2)):
+            problems.append(f"battery runs into the support at {x:.1f},{y:.1f}")
+    # flat back: every key switch has a pillar under it, or the module carries it
+    for name in PILLARS_SKIPPED:
+        problems.append(f"no room for a pillar under the {name} switch")
 
     return problems
 
@@ -457,7 +516,8 @@ def write_scad(path):
         ZIF=[ZIF_C[0] + ZIF_BODY[0], ZIF_C[1] + ZIF_BODY[1], ZIF_BODY[2] - ZIF_BODY[0], ZIF_BODY[3] - ZIF_BODY[1], ZIF_H],
         BATT=list(BATT), BATT_C=list(BATT_C), BATT_BAY=list(BATT_BAY),
         BP_INSET=BP_INSET, BP_T=BP_T, Z_BP_TOP=Z_BP_TOP, Z_BP_BOT=Z_BP_BOT,
-        PLATFORM_POCKETS=[list(r) for r in PLATFORM_POCKETS],
+        BP_LIP_IN=BP_LIP_IN, RAILS=[list(r) for r in RAILS],
+        STANDOFFS=[list(p) for p in STANDOFFS], PILLARS=[list(p) for p in PILLARS],
         BAT_PADS=[list(p) for p in BAT_PADS],
         KEY_HOLES=[list(h) for h in KEY_HOLES], POST_D=POST_D,
         Z_ACTUATOR=Z_ACTUATOR, SW_BODY=SW_BODY, SW_HEIGHT=SW_HEIGHT,
@@ -528,7 +588,11 @@ if __name__ == "__main__":
           f"actuators z {Z_ACTUATOR:.2f}; cap stems {STEM_LEN:.1f} mm")
     print(f"FPC: folds {FPC_FOLD_END:.1f} mm back under the panel (end at y {FPC_END_Y:.2f}); "
           f"ZIF at {ZIF_C[0]:.2f},{ZIF_C[1]:.2f}; parts area to y {FPC_PARTS_Y:.1f}")
-    print(f"battery tub {BATT_BAY[2] - BATT_BAY[0]:.1f} x {BATT_BAY[3] - BATT_BAY[1]:.1f} mm")
+    print(f"battery bay {BATT_BAY[2] - BATT_BAY[0]:.1f} x {BATT_BAY[3] - BATT_BAY[1]:.1f} mm "
+          f"(cells up to {BATT_BAY[2] - BATT_BAY[0] - 0.8:.1f} x {BATT_BAY[3] - BATT_BAY[1] - 0.8:.1f} x 4.0); "
+          f"cell {BATT[0]:g} x {BATT[1]:g} x {BATT[2]:g}")
+    print(f"flat back: {len(STANDOFFS)} screw standoffs, {len(PILLARS)} switch pillars, "
+          f"{Z_BP_BOT - BACK_T:.1f} mm open under the board")
     print("screws (M2):")
     for what, n, length in screws():
         print(f"  {n}x M2x{length}  {what}")

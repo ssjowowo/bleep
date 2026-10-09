@@ -15,6 +15,7 @@ On 2026-10-08 the user said: "lock pcb design. any further changes will not be p
 **How to apply:**
 - Never edit, regenerate or re-export anything in hardware/mainboard/. The files are read-only, `./build.sh pcb` refuses unless PCB_UNLOCK=1, and `./build.sh` skips the board.
 - Shell work in layout.py / remote.scad must keep every value in mainboard/pcb_lock.json unchanged. `python layout.py` stops with "PCB LOCKED" otherwise. If a shell idea needs a board change, say so and ask; don't work around the lock.
+- git doesn't keep the read-only bit: after a fresh clone, run `find hardware/mainboard -type f -exec chmod a-w {} +` (done on the Linux PC 2026-10-09).
 - Only the user can lift it, and only for a deliberate new board revision.
 - Lesson from setting up the lock: verify an edit landed (grep) before running anything it is meant to guard. A failed edit once let `./build.sh pcb` start re-routing; it was stopped before the ordered files were touched.
 

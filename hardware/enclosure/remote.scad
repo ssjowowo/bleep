@@ -365,33 +365,40 @@ module snap_fingers() {
     }
 }
 
-// The back plate: a 1.5 mm base plus a support platform up to the main board,
-// with a tub for the flat battery under the screen and pockets for the parts
-// on the board's underside (ESP32 module, LRA, battery pads + JST socket, USB-C legs).
+// The back plate (flat back, 2026-10-09): a flat 1.5 mm plate with the locating
+// lip and only the board's supports on it -- rails under the board's side edges
+// and a ledge under its top edge (under the screen), a standoff round every
+// screw and a pillar under each key switch. Everything else between the plate
+// and the board is open: the flat cell under the screen, the ESP32 module,
+// the motor and the battery / motor / USB-C solder joints.
 module back_plate() {
     lip_h = 1.5;
+    sup_h = Z_BP_BOT - BACK_T + EPS;
     difference() {
         union() {
             slab(0, BACK_T);
             difference() {
                 translate([0, 0, BACK_T - EPS]) linear_extrude(lip_h) difference() {
                     outline2d(-WALL - 0.25);
-                    outline2d(-WALL - 1.45);
+                    outline2d(-BP_LIP_IN);
                 }
                 for (p = concat(TOP_BOSSES, BOT_BOSSES)) translate([p[0], -p[1], 0]) cylinder(d = BOSS_D + 1.5, h = 10);
                 translate([USB_X - 7.5, -L - 1, 0]) cube([15, WALL + 12, 10]);
             }
-            translate([0, 0, BACK_T - EPS]) linear_extrude(Z_BP_BOT - BACK_T + EPS) difference() {
-                outline2d(-BP_INSET - 0.3);
-                translate([BATT_BAY[0], -BATT_BAY[3]]) square([BATT_BAY[2] - BATT_BAY[0], BATT_BAY[3] - BATT_BAY[1]]);
+            translate([0, 0, BACK_T - EPS]) linear_extrude(sup_h) intersection() {
+                outline2d(-WALL - 0.25);
+                union() {
+                    for (r = RAILS) translate([r[0], -r[3]]) square([r[2] - r[0], r[3] - r[1]]);
+                    for (p = STANDOFFS) translate(S(p)) circle(d = p[2]);
+                    for (p = PILLARS) translate(S(p)) circle(d = p[2], $fn = 32);
+                }
             }
             fence_corners(BATT_C, [BATT[0] + 0.6, BATT[1] + 0.6], 1.5, t = 0.6);
             snap_fingers();
         }
         for (p = concat(KEY_HOLES, TOP_BOSSES, BOT_BOSSES)) counterbored_hole(p);
-        for (r = PLATFORM_POCKETS) translate([r[0], -r[3], Z_BP_BOT - r[4]]) cube([r[2] - r[0], r[3] - r[1], r[4] + 1]);
         // slot to the EN/GND reset pads on the board's underside
-        translate([EN_SLOT[0], -EN_SLOT[1], -1]) linear_extrude(Z_BP_BOT + 2)
+        translate([EN_SLOT[0], -EN_SLOT[1], -1]) linear_extrude(BACK_T + 2)
             hull() for (s = [-1, 1]) translate([s * (EN_SLOT[2] - EN_SLOT[3]) / 2, 0]) circle(d = EN_SLOT[3], $fn = 24);
     }
 }

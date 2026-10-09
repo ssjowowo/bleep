@@ -338,7 +338,7 @@ const INTERNALS = [
   { id: "v_usbc",     g: "bp",      color: "#9aa0a6", name: "USB-C", detail: "charging + flashing", at: [30.4, 177.7, 8.4] },
   { id: "v_module",   g: "under",   color: "#c9ccd1", name: "ESP32-S3-WROOM-1", detail: "underside, antenna at the right edge", at: [44.3, 103.5, 3.4] },
   { id: "v_lra",      g: "under",   color: "#b9bccb", name: "Vibration motor", detail: "8 mm coin, underside", at: [7.8, 127.8, 3.0] },
-  { id: "v_battery",  g: "battery", color: "#e0683a", name: "Li-Po, flat", detail: "under the screen, in the tub", at: [30.4, 39.0, 3.5] },
+  { id: "v_battery",  g: "battery", color: "#e0683a", name: "Li-Po, flat", detail: "4 × 50 × 85 mm (405085), under the screen", at: [30.4, 46.2, 3.5] },
 ];
 const xgroups = { board: new THREE.Group(), under: new THREE.Group(), battery: new THREE.Group(), bp: new THREE.Group() };
 Object.values(xgroups).forEach(g => layers.internals.add(g));
