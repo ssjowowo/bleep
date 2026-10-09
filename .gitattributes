@@ -1,0 +1,2 @@
+# Keep LF everywhere (build.sh breaks with CRLF; the generated files are LF)
+* text=auto eol=lf
