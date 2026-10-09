@@ -51,4 +51,4 @@ Commands:
 
 ## Moving to another PC
 
-Copy the whole `esp-remote` folder. Claude's memory for this project is in `C:\Users\ioann\.claude\projects\C--Users-ioann-projects-esp-remote\memory\`. To keep it, copy that folder to the matching path on the new PC. The folder name follows the project path, so put the project at the same path, or rename the folder to match the new one.
+Clone the repo. A copy of Claude's memory for this project is in `.claude/memory/`, taken on 2026-10-09. On the new PC, copy those files into Claude's memory folder for the project: `%USERPROFILE%\.claude\projects\<project path with \ : and spaces as ->\memory\`. For example, the folder is `C--Users-ioann-projects-esp-remote` if the project sits at `C:\Users\ioann\projects\esp-remote`. Or ask Claude to restore them. The copy in the repo doesn't update itself; re-copy it after memory changes.
