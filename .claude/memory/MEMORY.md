@@ -1,0 +1,4 @@
+- [esp-remote overview](project-esp-remote-overview.md) — "Bleep": DIY ESP32-S3 touch remote; own main board + BuyDisplay 3.5" panel (the only board, in hardware/), slim shell with antenna at the right edge; firmware next; buyer in Cyprus (+€3 per AliExpress item)
+- [Freerouting setup](reference-freerouting.md) — how the main board is autorouted (jar + Java 25, settings file, SES-import quirks)
+- [PCB locked](feedback-pcb-locked.md) — Bleep v1 board ordered 2026-10-08: never change hardware/mainboard/; shell + firmware only
+- [Open request: flat back](project-open-request-flat-back.md) — 2026-10-09: user wants a flat back panel / room for a larger battery; not started, clarify first; see HANDOFF.md
