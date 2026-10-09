@@ -39,8 +39,12 @@ typedef enum {
 const char *fn_name(fn_t fn);
 fn_t key_default_fn(bleep_key_t key);
 
-/* IR protocols, as decoded by the RMT receiver or listed in Flipper-IRDB */
-enum { IR_NEC, IR_NECEXT, IR_SAMSUNG32, IR_SIRC, IR_RC5, IR_RC6, IR_RAW };
+/* IR protocols, as decoded by the RMT receiver or listed in Flipper-IRDB.
+ * Append only: the saved file names them (config.c proto_ids). SIRC is Sony's
+ * 12-bit form, SIRC15/SIRC20 the longer ones (newer Sony TVs, Blu-ray);
+ * Kaseikyo is Panasonic's 48-bit one (address = vendor id and device). */
+enum { IR_NEC, IR_NECEXT, IR_SAMSUNG32, IR_SIRC, IR_RC5, IR_RC6, IR_RAW, IR_KASEIKYO, IR_SIRC15, IR_SIRC20,
+       IR_PROTO_COUNT };
 const char *ir_proto_name(uint8_t proto);
 
 typedef struct {

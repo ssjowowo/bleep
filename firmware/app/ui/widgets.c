@@ -655,8 +655,7 @@ void w_status_bar_update(lv_obj_t *bar)
         w_icon(bar, ICON_BLUETOOTH, 14, r->ble == LINK_UP ? c : T->text2);
     if (r->ir_rx) w_icon(bar, ICON_IR, 14, T->accent);
     if (r->wifi != LINK_OFF) w_icon(bar, ICON_WIFI, 14, r->wifi == LINK_UP ? c : T->text2);
-    hal_battery_t b;
-    hal_battery(&b);
+    hal_battery_t b = *app_battery();
     if (b.charging) w_icon(bar, ICON_BOLT, 14, T->accent);
     snprintf(buf, sizeof(buf), "%d%%", b.percent);
     w_label(bar, F_LABEL_B, b.percent <= 8 && !b.usb ? T->warning : c, buf);

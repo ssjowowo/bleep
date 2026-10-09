@@ -75,7 +75,7 @@ static int key_watch(void *ud, SDL_Event *ev)
     /* closing either window quits; LVGL would otherwise delete that display */
     if (ev->type == SDL_QUIT || (ev->type == SDL_WINDOWEVENT && ev->window.event == SDL_WINDOWEVENT_CLOSE)) exit(0);
 #endif
-    lv_obj_t *ta = kb_textarea();
+    lv_obj_t *ta = g_sim.asleep ? NULL : kb_textarea();
     if (ev->type == SDL_TEXTINPUT && ta) {
         lv_textarea_add_text(ta, ev->text.text);
         return 0;
@@ -125,7 +125,7 @@ static int key_watch(void *ud, SDL_Event *ev)
 static void web_loop(void)
 {
     lv_timer_handler();
-    app_tick();
+    if (!g_sim.asleep) app_tick();   /* asleep, the remote runs nothing until a wake reloads the page */
 }
 
 /* Browser: one canvas for the remote; the controls are HTML (sim/web) */
@@ -135,6 +135,7 @@ static int run_web(void)
     g_sim.disp = lv_sdl_window_create(320, 480);
     remote_input(g_sim.disp);
     sim_backlight_layer();
+    app_early();
     app_init();
     /* 60 Hz on a timer rather than requestAnimationFrame, so the remote's
      * timeouts keep running while the tab isn't painting */
@@ -160,10 +161,11 @@ static int run_sdl(float zoom)
     remote_input(g_sim.disp);
 
     sim_backlight_layer();
+    app_early();
     app_init();
     while (1) {
         uint32_t idle = lv_timer_handler();
-        app_tick();
+        if (!g_sim.asleep) app_tick();   /* asleep: nothing runs until a wake starts it again */
         usleep((idle > 5 ? 5 : idle) * 1000);
     }
     return 0;
@@ -188,6 +190,10 @@ int main(int argc, char **argv)
             return 2;
         }
     }
+    g_sim.argc = argc;
+    g_sim.argv = argv;
+    g_sim.headless = script != NULL;
+    sim_state_load();   /* after a reboot: why it booted, the RTC block, the world outside */
     if (script) return script_run(script, shots);
 #if BLEEP_SDL && defined(__EMSCRIPTEN__)
     (void)zoom;
@@ -195,6 +201,7 @@ int main(int argc, char **argv)
 #elif BLEEP_SDL
     return run_sdl(zoom);
 #else
+    (void)zoom;
     fprintf(stderr, "built without SDL: only --script runs are available\n");
     return 2;
 #endif

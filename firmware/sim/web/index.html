@@ -78,6 +78,13 @@
     </section>
 
     <section>
+      <h2>Around the remote</h2>
+      <div class="row"><label for="rwifi">Router</label><input id="rwifi" type="checkbox" checked><span class="hint">Wi-Fi network answers</span></div>
+      <div class="row"><label for="rble">TVs</label><input id="rble" type="checkbox" checked><span class="hint">on and in Bluetooth range</span></div>
+      <p class="hint">Deep sleep is a reboot on the remote, so a wake reloads this page. The log carries on.</p>
+    </section>
+
+    <section>
       <h2>State</h2>
       <dl class="state" id="state"></dl>
       <div class="haptic" id="haptic"></div>
@@ -92,6 +99,17 @@
 
 <script>
   const logEl = document.getElementById('log');
+  // A wake from deep sleep (or a restart) reloads the page; boot.c left its
+  // state in sessionStorage. Keep the log, and notice a key let go meanwhile.
+  let rebooted = false, letGo = false;
+  try {
+    rebooted = sessionStorage.getItem('bleep-state') !== null;
+    if (rebooted) logEl.textContent = (sessionStorage.getItem('bleep-log') || '') + '— the remote rebooted —\n';
+  } catch (e) {}
+  ['pointerup', 'keyup'].forEach(t => document.addEventListener(t, () => { letGo = true; }, {once: true}));
+  // a mouse moving with no button down was let go too (the press was on the old page)
+  document.addEventListener('pointermove', (e) => { if (!e.buttons) letGo = true; });
+  window.addEventListener('pagehide', () => { try { sessionStorage.setItem('bleep-log', logEl.textContent.slice(-20000)); } catch (e) {} });
   function log(line) {
     const atEnd = logEl.scrollTop + logEl.clientHeight >= logEl.scrollHeight - 4;
     logEl.textContent += line + '\n';
@@ -151,12 +169,34 @@
       call('web_lux', v); document.getElementById('lux-o').textContent = v + ' lux';
     };
     document.getElementById('usb').onchange = (e) => call('web_usb', e.target.checked ? 1 : 0);
+    document.getElementById('rwifi').onchange = (e) => call('web_reach', 1, e.target.checked ? 1 : 0);
+    document.getElementById('rble').onchange = (e) => call('web_reach', 0, e.target.checked ? 1 : 0);
 
     // Keys typed while a panel control has focus still reach the remote
     document.querySelectorAll('button, input').forEach(el => el.addEventListener('mouseup', () => canvas.focus()));
 
     const stateEl = document.getElementById('state'), hapticEl = document.getElementById('haptic');
     const status = Module.cwrap('web_status', 'string', []);
+
+    // After a reboot: the controls show the world as it was, and a key that
+    // woke the remote is let go when the mouse button or PC key is. (On the
+    // next turn: main(), which reads what the reboot handed over, runs after
+    // this callback.)
+    setTimeout(() => {
+      const s0 = JSON.parse(status());
+      batt.value = s0.battery; document.getElementById('batt-o').textContent = s0.battery + ' %';
+      lux.value = Math.round(Math.sqrt(s0.lux * 10)); document.getElementById('lux-o').textContent = s0.lux + ' lux';
+      document.getElementById('usb').checked = s0.usb;
+      document.getElementById('rwifi').checked = s0.reach_wifi;
+      document.getElementById('rble').checked = s0.reach_ble;
+      const releaseAll = () => { for (let k = 0; k < 14; k++) if (s0.keys & (1 << k)) call('web_key_up', k); };
+      if (!s0.keys) return;
+      if (letGo) return releaseAll();
+      let done = false;
+      const once = () => { if (!done) { done = true; releaseAll(); } };
+      ['pointerup', 'keyup'].forEach(t => document.addEventListener(t, once));
+      document.addEventListener('pointermove', (e) => { if (!e.buttons) once(); });
+    }, 0);
     setInterval(() => {
       const s = JSON.parse(status());
       const rows = [

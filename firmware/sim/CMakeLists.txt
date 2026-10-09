@@ -68,6 +68,7 @@ file(GLOB APP_SOURCES CONFIGURE_DEPENDS ${FW}/app/*.c ${FW}/app/ui/*.c ${FW}/app
 add_executable(bleep_sim
   ${APP_SOURCES}
   main.c
+  boot.c
   hal_sim.c
   demo.c
   store.c

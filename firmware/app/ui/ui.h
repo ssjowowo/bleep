@@ -24,7 +24,8 @@ typedef struct page {
     const char *(*dirty)(void);
 } page_t;
 
-void ui_init(void);
+/* resume: a wake from deep sleep, which is a reboot: no splash, ui_resume follows */
+void ui_init(bool resume);
 void ui_open(const page_t *page, int arg);      /* push */
 void ui_replace(const page_t *page, int arg);   /* swap the top page */
 void ui_back(void);
@@ -44,6 +45,11 @@ const page_t *ui_current(void);
 int ui_current_arg(void);
 lv_obj_t *ui_root(void);
 void ui_woke(wake_cause_t cause);
+/* Where the screen is, small enough for RTC memory (retained.c): the tab and
+ * the device / activity / Now playing page open on it, if any. Editors and
+ * settings pages aren't kept: a wake comes back to their tab. */
+void ui_place(uint8_t *tab, uint8_t *page, int8_t *arg);
+void ui_resume(uint8_t tab, uint8_t page, int8_t arg);
 void ui_toast(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
 /* Pages */

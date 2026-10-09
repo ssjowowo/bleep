@@ -266,11 +266,33 @@ void ui_toast(const char *fmt, ...)
     ov_toast(buf);
 }
 
+static const page_t *const place_pages[] = {NULL, &page_device, &page_activity_page, &page_now_playing};
+
+void ui_place(uint8_t *tab, uint8_t *page, int8_t *arg)
+{
+    *tab = TAB_ACTIVITIES;
+    *page = 0;
+    *arg = 0;
+    if (!depth) return;
+    for (int t = 0; t < TAB_COUNT; t++)
+        if (stack[0].page == tab_pages[t]) *tab = t;
+    for (int i = depth - 1; i > 0 && !*page; i--)
+        for (int p = 1; p < (int)(sizeof(place_pages) / sizeof(place_pages[0])); p++)
+            if (stack[i].page == place_pages[p]) *page = p, *arg = stack[i].arg;
+}
+
+void ui_resume(uint8_t tab, uint8_t page, int8_t arg)
+{
+    ui_tab(tab < TAB_COUNT ? tab : TAB_ACTIVITIES);
+    if (page == 1 && arg >= 0 && arg < g_model.n_devices) ui_open(&page_device, arg);
+    else if ((page == 2 || page == 3) && arg >= 0 && arg < g_model.n_activities) ui_open(place_pages[page], arg);
+}
+
 void ui_woke(wake_cause_t cause)
 {
-    /* After deep sleep the remote has rebooted. Touch or lift shows the Wake
-     * screen; a key wake goes straight back to where the running activity was. */
-    power_clear_deep_wake();
+    /* After deep sleep the remote has rebooted and ui_resume has put back
+     * where it was. Touch, lift or USB shows the Wake screen over that; a key
+     * wake goes straight there. */
     if (cause == WAKE_KEY) return;
     depth = 1;
     stack[0].page = &page_wake;
@@ -310,6 +332,10 @@ static void on_event(app_event_t ev, int arg, void *ctx)
     case EV_VOLUME:
         ov_volume(arg);
         break;
+    case EV_LINK_FAILED:
+        if (arg >= 0 && arg < g_model.n_devices)
+            ui_toast("%s didn't answer over Bluetooth. Is it on?", g_model.devices[arg].name);
+        break;
     case EV_NO_TARGET:
         if (key_target(arg) == KEYDEV_NONE) ui_toast("Select a device or start an activity first");
         else ui_toast("%s isn't set up for this key", hal_key_name(arg));
@@ -327,7 +353,7 @@ static void auto_theme_timer(lv_timer_t *t)
 {
     LV_UNUSED(t);
     if (g_model.settings.theme != THEME_AUTO) return;
-    uint16_t lux = hal_light_lux();
+    uint16_t lux = app_lux();
     /* hysteresis so it doesn't flicker at dusk */
     bool next = light_auto ? lux > 120 : lux > 400;
     if (next != light_auto) {
@@ -336,17 +362,17 @@ static void auto_theme_timer(lv_timer_t *t)
     }
 }
 
-void ui_init(void)
+void ui_init(bool resume)
 {
     static lv_theme_t *blank;
     if (!blank) blank = lv_theme_create();   /* no default theme: every style comes from the tokens */
     lv_display_set_theme(lv_display_get_default(), blank);
     lv_obj_remove_style_all(lv_screen_active());   /* drop styles the default theme gave the screen */
-    light_auto = hal_light_lux() > 400;
+    light_auto = app_lux() > 400;
     lv_timer_create(editing_timer, 500, NULL);
     app_listen(on_event, NULL);
     depth = 1;
-    stack[0].page = &page_splash;   /* boot: the remote's own reboot after deep sleep skips it (ui_woke) */
+    stack[0].page = resume ? &page_activities : &page_splash;   /* a wake skips the splash */
     stack[0].arg = 0;
     build();
     ov_init();

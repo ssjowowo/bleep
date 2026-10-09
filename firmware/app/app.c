@@ -7,6 +7,7 @@
 #include "ha.h"
 #include "power.h"
 #include "radio.h"
+#include "retained.h"
 #include "routine.h"
 #include "update.h"
 #include "ui/ui.h"
@@ -23,7 +24,10 @@ static uint32_t last_second;
 static bool pwr_down, pwr_long;         /* PWR held, and held long enough for the power-off question */
 static uint32_t pwr_down_at;
 static int64_t last_minute;
-static hal_battery_t last_batt;
+static hal_battery_t batt, last_batt;   /* the latest reading, and the one the app last acted on */
+static uint16_t lux;
+static uint32_t sensors_at;
+static int early_key = -1;              /* sent over IR by app_early, this boot */
 
 /* The saved setup is everything in model_t before the runtime fields
  * (running, active_dev, last_activity), less each device's on/input, which
@@ -76,8 +80,39 @@ void app_buzz(haptic_t pattern)
     hal_haptic(pattern);
 }
 
+static void sensors_read(void)
+{
+    hal_battery(&batt);
+    lux = hal_light_lux();
+    sensors_at = hal_millis();
+}
+
+const hal_battery_t *app_battery(void) { return &batt; }
+uint16_t app_lux(void) { return lux; }
+
+void app_early(void)
+{
+    hal_wake_t w;
+    hal_wake_cause(&w);
+    if (w.boot != BOOT_WAKE || w.by != WOKE_KEY || w.key == KEY_PWR || !retained_valid() || retained()->off) return;
+    code_t c = retained()->keys[w.key];
+    if (c.transport != TR_IR) return;   /* Bluetooth and HA need their link first */
+    hal_ir_start(c.proto, c.a, c.b);
+    early_key = w.key;
+    hal_log("wake: %s sent over IR before boot", hal_key_name(w.key));
+}
+
 void app_init(void)
 {
+    hal_wake_t w;
+    hal_wake_cause(&w);
+    static const char *const boots[] = {"power-on", "restart", "wake"};
+    static const char *const bys[] = {"key", "touch", "lift", "USB"};
+    if (w.boot == BOOT_WAKE)
+        hal_log("boot: wake by %s%s%s", bys[w.by], w.by == WOKE_KEY ? " " : "", w.by == WOKE_KEY ? hal_key_name(w.key) : "");
+    else
+        hal_log("boot: %s", boots[w.boot]);
+
     model_init_defaults();
     if (!config_load(&g_model)) {
         /* first boot or a factory reset: save the defaults, so the next boot finds them */
@@ -85,14 +120,38 @@ void app_init(void)
         config_save(&g_model);
     }
     saved_hash = seen_hash = config_hash();
+
+    /* Deep sleep and restarts keep the runtime state in RTC memory */
+    bool warm = w.boot != BOOT_COLD && retained_valid();
+    bool was_off = warm && w.boot == BOOT_WAKE && retained()->off;
+    if (!warm) retained_clear();
+    else if (!was_off && retained_restore() && g_model.running >= 0)
+        hal_log("retained: %s still running", g_model.activities[g_model.running].name);
+
+    sensors_read();
+    last_batt = batt;
     ha_init();
-    power_init();
-    hal_battery(&last_batt);
+    power_init(&w, was_off);
     last_minute = hal_time() / 60;
-    ui_init();
+    /* a wake goes back to where the screen was; a power-on or restart shows the splash */
+    bool resume = w.boot == BOOT_WAKE && !was_off;
+    ui_init(resume);
+    if (resume) {
+        const retained_t *r = retained();
+        ui_resume(r->tab, r->page, r->page_arg);
+        static const wake_cause_t cause[] = {WAKE_KEY, WAKE_TOUCH, WAKE_LIFT, WAKE_USB};
+        ui_woke(cause[w.by]);
+    }
     radio_update();
     hal_fw_boot_ok();
     hal_log("bleep: ready");
+
+    /* the key that woke it acts now, as if pressed on an awake remote; its
+     * release comes later, or now if it's already up */
+    if (w.boot == BOOT_WAKE && w.by == WOKE_KEY && !was_off) {
+        app_key(w.key, true);
+        if (!hal_key_down(w.key)) app_key(w.key, false);
+    }
 }
 
 void app_key(bleep_key_t key, bool pressed)
@@ -101,6 +160,8 @@ void app_key(bleep_key_t key, bool pressed)
         if (key == KEY_PWR && pressed) power_on_press();   /* other keys do nothing while off */
         return;
     }
+    bool early = (int)key == early_key;
+    early_key = -1;
     if (key == KEY_PWR) {
         if (pressed) {
             pwr_down = true;
@@ -112,19 +173,19 @@ void app_key(bleep_key_t key, bool pressed)
             if (!act) return;   /* the hold asked to power off instead */
         }
     } else if (!pressed) {
+        key_up(key);   /* ends a hold: IR repeats, Bluetooth key up */
         return;
     }
     if (pressed) {
-        bool was_deep = power_state() == PWR_DEEP;
         power_input(WAKE_KEY);
         radio_update();
-        if (was_deep) ui_woke(WAKE_KEY);
         if (key == KEY_PWR) return;   /* acts on release */
     }
-    if (ui_key_intercept(key)) return;
+    if (!early && ui_key_intercept(key)) return;
     /* keys always act, even when they wake the screen (IR goes out at once,
      * BLE is queued until the link is back) */
-    key_press(key);
+    if (key == KEY_PWR) key_press(key);
+    else key_down(key, early);
 }
 
 void app_save_now(void)
@@ -153,9 +214,15 @@ void app_factory_reset(void)
     config_save(&g_model);   /* the next boot finds the defaults, as after a first boot */
     saved_hash = seen_hash = config_hash();
     dirty_at = retry_at = 0;
-    ha_init();
-    radio_update();
-    hal_restart();           /* boots as a new remote (the emulator: back to the splash) */
+    retained_clear();        /* nothing running, nothing on */
+    hal_restart();           /* boots as a new remote */
+}
+
+void app_restart(void)
+{
+    app_save_now();
+    retained_store();
+    hal_restart();
 }
 
 void app_power_off(void)
@@ -171,26 +238,19 @@ void app_power_off(void)
 
 bool app_touch(void)
 {
-    bool was_deep = power_state() == PWR_DEEP;
     bool woke = power_input(WAKE_TOUCH);
     if (woke) radio_update();
-    if (was_deep) ui_woke(WAKE_TOUCH);
     return woke;
 }
 
 void app_lift(void)
 {
-    bool was_deep = power_state() == PWR_DEEP;
-    if (power_input(WAKE_LIFT)) {
-        radio_update();
-        if (was_deep) ui_woke(WAKE_LIFT);
-    }
+    if (power_input(WAKE_LIFT)) radio_update();
 }
 
-void app_battery_changed(void)
+static void battery_changed(void)
 {
-    hal_battery_t b;
-    hal_battery(&b);
+    hal_battery_t b = batt;
     bool usb_changed = b.usb != last_batt.usb;
     if (power_state() == PWR_OFF) {
         /* power_tick shows or hides the charging screen; only its numbers change here */
@@ -215,9 +275,11 @@ void app_tick(void)
     power_tick();
     if (power_state() != before) radio_update();
     radio_tick();
+    key_tick();
     activity_tick();
     routine_tick();
-    app_battery_changed();
+    if (hal_usb() != batt.usb || hal_millis() - sensors_at >= 1000) sensors_read();
+    battery_changed();
     if (pwr_down && !pwr_long && power_state() != PWR_OFF && hal_millis() - pwr_down_at >= POWER_OFF_HOLD_MS) {
         pwr_long = true;
         hal_log("key PWR held %d s: power off?", POWER_OFF_HOLD_MS / 1000);

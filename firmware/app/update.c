@@ -68,8 +68,7 @@ void update_check(void)
 void update_install(void)
 {
     if (st.busy || !update_can_install()) return;
-    hal_battery_t b;
-    hal_battery(&b);
+    hal_battery_t b = *app_battery();
     if (!b.usb) return;     /* the page only offers Install on USB */
     silent = false;
     installing = true;
@@ -106,8 +105,7 @@ void update_tick(void)
 
     /* Installing is only allowed on USB; unplugging stops it */
     if (installing && (st.busy == UPD_WAIT_WIFI || st.busy == UPD_DOWNLOADING)) {
-        hal_battery_t b;
-        hal_battery(&b);
+        hal_battery_t b = *app_battery();
         if (!b.usb) {
             stop_install(UPD_STOPPED_USB);
             return;
@@ -195,8 +193,7 @@ void update_tick(void)
         if (hal_millis() - t0 >= RESTART_DELAY_MS) {
             radio_hold_update(false);
             st = (update_status_t){0};
-            app_save_now();
-            hal_restart();
+            app_restart();   /* saves, keeps what's running in RTC memory */
         }
         break;
     }

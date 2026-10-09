@@ -6,7 +6,31 @@
 #include "cJSON.h"
 #include "hal.h"
 
-#define MAX_CONFIG_BYTES (64 * 1024)
+/* A full remote (16 devices with every key, 12 routines of 16 steps) is
+ * ~100 KB of JSON; the file, its cJSON tree and the model all sit in PSRAM. */
+#define MAX_CONFIG_BYTES (256 * 1024)
+
+/* cJSON allocates through the HAL's big-buffer calls: PSRAM on the remote */
+static void use_psram(void)
+{
+    static bool done;
+    if (done) return;
+    done = true;
+    cJSON_InitHooks(&(cJSON_Hooks){hal_big_alloc, hal_big_free});
+}
+
+void config_free(char *json) { cJSON_free(json); }
+
+static uint32_t file_hash;
+
+static uint32_t hash_text(const char *s, int n)
+{
+    uint32_t h = 2166136261u;
+    while (n--) h = (h ^ (uint8_t)*s++) * 16777619u;
+    return h ? h : 1;
+}
+
+uint32_t config_file_hash(void) { return file_hash; }
 
 /* ---- names for things that are numbers in RAM ----
  * Saved by name so reordering an enum in a later firmware doesn't scramble a
@@ -27,7 +51,8 @@ static const char *const fn_ids[FN_COUNT] = {
     [FN_SUBTITLES] = "subtitles", [FN_AUDIO] = "audio", [FN_INFO] = "info",
 };
 static const char *const kind_ids[] = {"tv", "streamer", "avr", "speaker", "media_box", "other"};
-static const char *const proto_ids[] = {"nec", "necext", "samsung32", "sirc", "rc5", "rc6", "raw"};
+static const char *const proto_ids[IR_PROTO_COUNT] = {"nec", "necext", "samsung32", "sirc", "rc5", "rc6", "raw",
+                                                      "kaseikyo", "sirc15", "sirc20"};
 static const char *const step_ids[] = {"device", "ha", "activity_start", "activity_end"};
 static const char *const op_ids[HAOP_COUNT] = {"on", "off", "toggle", "set", "run", "open", "close", "lock"};
 static const char *const theme_ids[] = {"dark", "light", "auto"};
@@ -70,6 +95,7 @@ static void add_transports(cJSON *o, const char *key, uint8_t tr)
 
 char *config_to_json(const model_t *m)
 {
+    use_psram();
     cJSON *root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, "version", CONFIG_VERSION);
 
@@ -318,6 +344,7 @@ static void read_routine(const cJSON *o, routine_t *r, int n_devices, int n_acti
 /* m must be g_model: activities are rebuilt from its devices */
 bool config_from_json(const char *json, model_t *m)
 {
+    use_psram();
     cJSON *root = cJSON_Parse(json);
     if (!cJSON_IsObject(root) || !cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(root, "version"))) {
         cJSON_Delete(root);
@@ -361,15 +388,26 @@ bool config_from_json(const char *json, model_t *m)
 
 /* ---- load / save ---- */
 
-static char io_buf[MAX_CONFIG_BYTES];
 static char saved_pass[sizeof(((settings_t *)0)->wifi_pass)];   /* what the secret store holds */
 
 bool config_load(model_t *m)
 {
     int len = 0;
-    if (!hal_config_read(io_buf, sizeof(io_buf) - 1, &len)) return false;
-    io_buf[len] = 0;
-    if (!config_from_json(io_buf, m)) {
+    file_hash = 0;
+    char *buf = hal_big_alloc(MAX_CONFIG_BYTES);
+    if (!buf) {
+        hal_log("config: out of memory, not loaded");
+        return false;
+    }
+    if (!hal_config_read(buf, MAX_CONFIG_BYTES - 1, &len)) {
+        hal_big_free(buf);
+        return false;
+    }
+    buf[len] = 0;
+    bool ok = config_from_json(buf, m);
+    if (ok) file_hash = hash_text(buf, len);
+    hal_big_free(buf);
+    if (!ok) {
         hal_log("config: saved file unreadable; kept as config.bad, using factory defaults");
         hal_config_set_aside();
         return false;
@@ -392,8 +430,8 @@ bool config_save(const model_t *m)
     bool ok = false;
     if (len >= MAX_CONFIG_BYTES) hal_log("config: %d bytes, too big to save", len);
     else if (!hal_config_write(json, len)) hal_log("config: write failed");
-    else ok = true, hal_log("config: saved (%d bytes)", len);
-    free(json);
+    else ok = true, file_hash = hash_text(json, len), hal_log("config: saved (%d bytes)", len);
+    config_free(json);
     if (!ok) return false;
     if (strcmp(saved_pass, m->settings.wifi_pass)) {   /* NVS writes only when it changed */
         hal_secret_set("wifi_pass", m->settings.wifi_pass);

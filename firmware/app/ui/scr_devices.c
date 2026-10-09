@@ -613,8 +613,7 @@ static void test_cb(lv_event_t *e)
     if (what == 0) {   /* test power */
         memset(&ir_trial, 0, sizeof(ir_trial));
         ir_library_fill(&ir_trial, b, ir_set);
-        code_t c = ir_trial.fn[FN_POWER];
-        hal_ir_send(c.proto, c.a, c.b);
+        ir_send_once(&ir_trial.fn[FN_POWER]);
         app_buzz(HAPTIC_TICK);
     } else if (what == 1) {   /* works */
         if (ir_target >= 0) {
@@ -718,7 +717,7 @@ static void learn_btn_cb(lv_event_t *e)
 {
     int what = ARG_INT(e);
     if (what == 0) {            /* test */
-        hal_ir_send(lr.code.proto, lr.code.a, lr.code.b);
+        ir_send_once(&lr.code);
         app_buzz(HAPTIC_TICK);
         return;
     }

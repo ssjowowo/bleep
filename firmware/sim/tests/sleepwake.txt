@@ -1,0 +1,58 @@
+# Deep sleep is a reboot. A key that wakes it goes out over IR before the
+# app is up, from the key table in RTC memory; the running activity, the
+# devices it switched on and the page come back. Held keys repeat.
+click Start
+wait 300
+click Watch TV
+wait 3000
+# Held volume (AV receiver, IR): the HAL repeats until the release
+mark
+keydown VOL+
+wait 1000
+keyup VOL+
+expect-log-count 1 IR  > NEC
+expect-log repeat frame(s)
+# Idle: dim, screen off, deep sleep
+wait 155000
+expect-log deep sleep: wakes on 14 key(s), touch, lift, USB
+# VOL+ wakes it: a new run (a reboot); the press isn't sent twice
+key VOL+
+expect-log boot: wake by key VOL+
+expect-log wake: VOL+ sent over IR before boot
+expect-log retained: Watch TV still running
+expect-log-count 1 IR  > 
+expect D-pad: Living room TV
+expect Volume +
+shot 70_key_wake
+# End leaves nothing to switch on twice: the TV and receiver were on before the sleep
+key PWR
+wait 1500
+expect-log activity: end Watch TV
+# Shield TV: the D-pad goes over Bluetooth, which needs its link first
+click Shield TV
+wait 3000
+wait 155000
+key OK
+wait 1000
+expect-log boot: wake by key OK
+expect-log-no sent over IR before boot
+expect-log ble: queued until connected
+expect-log ble: sent 1 queued key(s)
+expect Film title
+shot 71_ble_wake
+# Held OK over Bluetooth: key down now, key up at the release
+mark
+keydown OK
+wait 800
+keyup OK
+expect-log BLE   key up after
+# Sonos through Home Assistant: no "held" there, so volume is sent again every 250 ms
+click Activities
+wait 300
+click Sonos
+wait 3000
+mark
+keydown VOL+
+wait 1300
+keyup VOL+
+expect-log-count 5 media_player.sonos value

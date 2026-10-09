@@ -1,0 +1,24 @@
+# The wake-loop guard: a key held down while it sleeps (under a cushion)
+# isn't a wake source, and three pick-ups in a row that came to nothing
+# turn lift-to-wake off until a key wakes it
+click Start
+wait 300
+keydown MUTE
+wait 155000
+expect-log MUTE is held down, it won't wake the remote
+expect-log deep sleep: wakes on 13 key(s), touch, lift, USB
+keyup MUTE
+lift
+wait 155000
+lift
+wait 155000
+lift
+wait 155000
+expect-log lifting won't wake it until a key does
+expect-log deep sleep: wakes on 14 key(s), touch, USB
+lift
+expect-log asleep: lift doesn't wake it
+# A key wakes it; that re-arms lift
+key OK
+wait 155000
+expect-log deep sleep: wakes on 14 key(s), touch, lift, USB

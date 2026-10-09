@@ -14,6 +14,7 @@
 #include "hal.h"
 #include "model.h"
 #include "ui/icons.h"
+#include "sim.h"
 
 static const char *const rooms[] = {"Living room", "Kitchen", "Bedroom", "Hallway", "Garden", "Home"};
 enum { R_LIVING, R_KITCHEN, R_BEDROOM, R_HALL, R_GARDEN, R_HOME };
@@ -338,10 +339,13 @@ void ha_login_phone_start(const char *server, char *qr_url, int len)
     login_t0 = hal_millis();
     login = known_server(server) ? HA_LOGIN_WAITING : HA_LOGIN_UNREACHABLE;
     hal_log("ha: serving %s for phone sign-in to %s", qr_url, server);
+    hal_log("ha: client_id " HA_CLIENT_ID, hal_device_id());
+    hal_log("ha: redirect_uri " HA_REDIRECT_URI);
 }
 
 void ha_login_password_start(const char *server, const char *user, const char *password)
 {
+    hal_log("ha: login_flow with client_id " HA_CLIENT_ID, hal_device_id());
     phone = false;
     login_t0 = hal_millis();
     login = HA_LOGIN_BUSY;
@@ -382,10 +386,45 @@ ha_login_t ha_login_poll(char *user, int len)
 
 void ha_login_cancel(void) { login = HA_LOGIN_IDLE; }
 
+/* ---- the house outlives the remote's reboots (sim/boot.c) ----
+ * Saved as whole entities; the pointers in them (id, icon, options) are this
+ * run's, so a restore keeps the freshly built ones and takes the rest. */
+static ha_entity_t pending[MAX_ENTITIES];
+static int n_pending = -1;
+
+int ha_mock_save(uint8_t *out, int max)
+{
+    int n = n_ents * (int)sizeof(ha_entity_t);
+    if (n > max) return 0;
+    memcpy(out, ents, n);
+    return n;
+}
+
+void ha_mock_restore(const uint8_t *in, int len)
+{
+    n_pending = len / (int)sizeof(ha_entity_t);
+    if (n_pending > MAX_ENTITIES) n_pending = -1;
+    else memcpy(pending, in, n_pending * sizeof(ha_entity_t));
+}
+
+static void apply_pending(void)
+{
+    if (n_pending != n_ents) return;   /* a different house (signed out meanwhile): start over */
+    for (int i = 0; i < n_ents; i++) {
+        ha_entity_t e = pending[i];
+        e.id = ents[i].id;
+        e.icon = ents[i].icon;
+        e.options = ents[i].options;
+        ents[i] = e;
+    }
+    n_pending = -1;
+}
+
 void ha_init(void)
 {
     n_ents = 0;
     if (g_model.settings.ha_user[0]) load_house();   /* last-known states from flash */
+    apply_pending();
 }
 
 void ha_signed_in(void)

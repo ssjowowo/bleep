@@ -16,7 +16,7 @@ This file carries the working state to another PC. Claude's memory and the chat 
   - STLs are in `hardware/enclosure/stl/`. Fit checks pass; the interference check has zero volume (surfaces touch only).
   - 3D viewer: https://claude.ai/artifact/5qHsgfE1eNkeLNL5kHZQUn (version 15, source in `hardware/viewer/`).
   - `docs/back-plate.png` and `docs/enclosure-assembly.png` still show the old platform: they need a machine with a display to re-render.
-- **Battery: not bought yet.** Look for a flat Li-Po up to 4.0 mm thick and 50.8 × 86.1 mm: the user wants a 405085 (4.0 × 50 × 85 mm). Shipping constraints:
+- **Display and battery: ordered (2026-10-09), waiting for delivery.** If the cell that arrives isn't a 405085, set `BATT` in `hardware/layout.py` to its size and rebuild the back plate. Background on the cell: look for a flat Li-Po up to 4.0 mm thick and 50.8 × 86.1 mm: the user wants a 405085 (4.0 × 50 × 85 mm). Shipping constraints:
   - Li-Po won't ship to Cyprus: Kaufland and Amazon/Akyga refuse.
   - The user has a German forwarding service, prefers Amazon, and wants the cheapest option.
   - Eremit ships within Germany and allows forwarders.

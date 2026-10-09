@@ -15,7 +15,22 @@ bool device_send_quiet(int dev, fn_t fn);   /* the same without any buzz (sequen
 /* Which device a physical key goes to right now, or KEYDEV_NONE / KEYDEV_END. */
 int key_target(bleep_key_t key);
 bool key_available(bleep_key_t key);    /* for greying out on-screen equivalents */
-void key_press(bleep_key_t key);
+
+/* Physical keys: the press starts what the key does, the release ends it.
+ * Held, IR repeats by itself (the HAL, at the protocol's rate), Bluetooth
+ * sends key down now and key up at the release (the TV repeats), and Home
+ * Assistant gets the call again every KEY_REPEAT_MS for volume and the D-pad.
+ * early: the press already went out over IR before the app was up (the key
+ * that woke the remote, app_early). */
+#define KEY_REPEAT_AFTER_MS 500
+#define KEY_REPEAT_MS       250
+void key_down(bleep_key_t key, bool early);
+void key_up(bleep_key_t key);
+void key_press(bleep_key_t key);        /* down and up at once (PWR acts on release) */
+void key_tick(void);
+
+/* One IR code, tapped: testing a code set, a learned key */
+void ir_send_once(const code_t *c);
 
 /* The keys' target is the last thing chosen: a selected device, or else the
  * running activity. Selecting a device leaves the activity running; starting

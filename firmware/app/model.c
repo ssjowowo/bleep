@@ -4,7 +4,7 @@
 #include <string.h>
 #include "ui/icons.h"
 
-model_t g_model;
+HAL_PSRAM model_t g_model;   /* ~30 KB: PSRAM on the remote */
 
 static const char *const fn_names[FN_COUNT] = {
     [FN_NONE] = "none",
@@ -38,7 +38,8 @@ fn_t key_default_fn(bleep_key_t key)
 
 const char *ir_proto_name(uint8_t proto)
 {
-    static const char *const n[] = {"NEC", "NECext", "Samsung32", "SIRC", "RC5", "RC6", "Raw"};
+    static const char *const n[IR_PROTO_COUNT] = {"NEC", "NECext", "Samsung32", "SIRC", "RC5", "RC6", "Raw",
+                                                  "Kaseikyo", "SIRC15", "SIRC20"};
     return proto < sizeof(n) / sizeof(n[0]) ? n[proto] : "?";
 }
 

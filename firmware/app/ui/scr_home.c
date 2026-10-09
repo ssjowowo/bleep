@@ -40,6 +40,7 @@ static void update_sub(void)
     const radio_status_t *rs = radio_status();
     const char *t = l == HA_CONNECTED          ? "Home Assistant"
                     : rs->wifi == LINK_CONNECTING ? "Home Assistant · joining Wi-Fi…"
+                    : rs->wifi == LINK_RETRY      ? "Home Assistant · can't join Wi-Fi, retrying"
                     : l == HA_CONNECTING        ? "Home Assistant · connecting…"
                     : l == HA_SIGNED_OUT        ? "Home Assistant · sign in under Settings"
                                                 : "Home Assistant · offline";

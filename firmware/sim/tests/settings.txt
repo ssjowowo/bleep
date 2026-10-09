@@ -5,6 +5,14 @@ tap 280 450
 wait 300
 expect Wi-Fi
 shot 59_settings_list
+# About: the remote's own ID, the one Home Assistant lists it by
+click About
+wait 300
+expect Remote ID
+expect 7c2f1a
+shot 59_about
+tap 20 70
+wait 300
 click Home Assistant
 wait 600
 expect SERVER

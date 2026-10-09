@@ -109,8 +109,7 @@ static void show_lock(void)
     ambient_charging = false;
     ambient = full(T->bg);
     lv_obj_add_event_cb(ambient, ambient_click, LV_EVENT_CLICKED, NULL);
-    hal_battery_t b;
-    hal_battery(&b);
+    hal_battery_t b = *app_battery();
     lv_obj_t *pct = w_label(ambient, F_CAPTION, T->text2, "");
     lv_label_set_text_fmt(pct, "%d%%", b.percent);
     lv_obj_align(pct, LV_ALIGN_TOP_RIGHT, -16, 12);
@@ -159,8 +158,7 @@ static void show_charging(void)
     lv_obj_add_event_cb(ambient, ambient_click, LV_EVENT_CLICKED, NULL);
     lv_obj_t *bar = w_status_bar(ambient);
     lv_obj_align(bar, LV_ALIGN_TOP_MID, 0, 0);
-    hal_battery_t b;
-    hal_battery(&b);
+    hal_battery_t b = *app_battery();
     lv_obj_t *ring = w_ring(ambient, 180, 8, b.percent);
     lv_obj_align(ring, LV_ALIGN_TOP_MID, 0, 98);
     lv_obj_set_style_bg_opa(ring, LV_OPA_COVER, 0);
@@ -190,8 +188,7 @@ static void rp_close(void);
 
 void ov_power(pwr_state_t s)
 {
-    hal_battery_t b;
-    hal_battery(&b);
+    hal_battery_t b = *app_battery();
     if (s == PWR_OFF) {
         /* off: nothing on screen, except the charging screen while on USB */
         close_sheet();
@@ -312,8 +309,7 @@ void ov_confirm(const char *title, const char *text, const char *ok, bool danger
 
 void ov_battery(bool usb_changed)
 {
-    hal_battery_t b;
-    hal_battery(&b);
+    hal_battery_t b = *app_battery();
     if (power_state() == PWR_OFF) {   /* ov_power shows and hides it; only refresh the numbers */
         if (ambient && ambient_charging) show_charging();
         return;

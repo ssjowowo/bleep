@@ -152,8 +152,7 @@ static lv_obj_t *page_col(lv_obj_t *root)
 /* Days left at 20 short uses a day: ~2 months from full (REQUIREMENTS.md section 6) */
 static void battery_text(char *line1, int l1, char *line2, int l2)
 {
-    hal_battery_t b;
-    hal_battery(&b);
+    hal_battery_t b = *app_battery();
     if (b.charging) {
         int mins = (100 - b.percent) * 90 / 100;
         snprintf(line1, l1, "Charging");
@@ -174,8 +173,7 @@ static void settings_build(lv_obj_t *root, int arg)
     w_header(root, NULL, "Settings", NULL);
     lv_obj_t *col = page_col(root);
 
-    hal_battery_t b;
-    hal_battery(&b);
+    hal_battery_t b = *app_battery();
     lv_obj_t *card = w_card(col, false, false);
     lv_obj_set_style_pad_all(card, 16, 0);
     lv_obj_set_style_margin_bottom(card, 6, 0);
@@ -331,7 +329,7 @@ static void bright_build(lv_obj_t *root, int arg)
     lv_obj_set_style_bg_color(sl, T->text2, LV_PART_INDICATOR | LV_STATE_DISABLED);
     lv_obj_add_event_cb(sl, bright_cb, LV_EVENT_VALUE_CHANGED, NULL);
     char buf[96];
-    snprintf(buf, sizeof(buf), "Light sensor: %u lux · backlight now %d%%", hal_light_lux(), power_backlight());
+    snprintf(buf, sizeof(buf), "Light sensor: %u lux · backlight now %d%%", app_lux(), power_backlight());
     w_label(col, F_LABEL, T->text2, buf);
     lv_obj_t *n = w_label(col, F_CAPTION, T->text2,
                           "Auto follows the light sensor. Battery saver caps it at 50 %, and on USB it stops at 85 %.");
@@ -531,7 +529,8 @@ static void wifi_build(lv_obj_t *root, int arg)
     const radio_status_t *r = radio_status();
     char st[64];
     if (!s->wifi_ssid[0]) snprintf(st, sizeof(st), "Not set up");
-    else snprintf(st, sizeof(st), "%s · %s", r->wifi == LINK_UP ? "Connected" : r->wifi == LINK_CONNECTING ? "Connecting" : "Off",
+    else snprintf(st, sizeof(st), "%s · %s", r->wifi == LINK_UP ? "Connected" : r->wifi == LINK_CONNECTING ? "Connecting"
+                  : r->wifi == LINK_RETRY ? "Can't connect, retrying" : "Off",
                   s->wifi_ssid);
     lv_obj_t *row = w_list_row(col, ICON_WIFI, "Status", st, NULL);
     lv_obj_set_style_text_color(lv_obj_get_child(row, 2), r->wifi == LINK_UP ? T->accent : T->text2, 0);
@@ -674,8 +673,7 @@ static void upd_build(lv_obj_t *root, int arg)
 
     char buf[160];
     w_list_row(col, ICON_REMOTE, "Installed", hal_fw_version(), NULL);
-    hal_battery_t b;
-    hal_battery(&b);
+    hal_battery_t b = *app_battery();
 
     lv_obj_t *c;
     switch (u->busy) {
@@ -802,15 +800,15 @@ static void about_build(lv_obj_t *root, int arg)
     w_header(root, "Settings", "About", ui_back_cb);
     lv_obj_t *col = w_col(root, 0);
     lv_obj_set_style_pad_hor(col, PAD, 0);
-    hal_battery_t b;
-    hal_battery(&b);
+    hal_battery_t b = *app_battery();
     const radio_status_t *r = radio_status();
     char buf[48];
     w_list_row(col, NULL, "Firmware", hal_fw_version(), NULL);
+    w_list_row(col, NULL, "Remote ID", hal_device_id(), NULL);   /* matches its entry in HA's refresh tokens */
     snprintf(buf, sizeof(buf), "%u mV · %d%%", b.millivolts, b.percent);
     w_list_row(col, NULL, "Battery", buf, NULL);
     w_list_row(col, NULL, "Power state", power_state_name(power_state()), NULL);
-    static const char *const ln[] = {"Off", "Connecting", "On"};
+    static const char *const ln[] = {"Off", "Connecting", "On", "Retrying"};
     w_list_row(col, NULL, "Wi-Fi", ln[r->wifi], NULL);
     w_list_row(col, NULL, "Bluetooth", r->ble_pairing ? "Pairing" : ln[r->ble], NULL);
     w_list_row(col, NULL, "IR", r->ir_rx ? "Receiver on" : r->ir_ready ? "Ready" : "Off", NULL);

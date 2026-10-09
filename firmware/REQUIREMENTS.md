@@ -136,6 +136,7 @@ A routine runs a list of steps with one tap and then is done; unlike an activity
 - IR has no standby cost: the RMT channel is set up when a code is sent.
 - Wi-Fi and BLE can run together (Home tab with a BLE device selected); ESP-IDF's coexistence shares the radio. Use NimBLE to keep RAM down.
 - Setup flows may turn a radio on outside these rules while they run: BLE pairing, IR library download, Wi-Fi setup, firmware update.
+- Link state comes from the radio stacks' events (the HAL reports down / connecting / up / failed), never from timers. A link that fails or drops is retried after 2, 5, 10, then every 30 s while it's still wanted; a key for that device tries at once. Bluetooth keys queued for a host that doesn't answer are dropped, never sent to another TV, and a toast says the TV didn't answer.
 
 ## 6. Power states
 
@@ -150,11 +151,12 @@ A routine runs a list of steps with one tap and then is done; unlike an activity
 - Idle (Active → Dim) and Sleep (→ screen off) are settings, both counted from the last touch or key. Battery saver overrides them with 5 s and 15 s. Warm → Deep sleep stays at 2 min. On USB, stay warm until unplugged.
 - Auto-brightness from the LTR-303ALS (calibrate by eye; the blue window tints it).
 - CPU: power management with frequency scaling (80–240 MHz) and auto light sleep while active.
-- Before deep sleep: LCD Sleep In, backlight off, FT6236 in monitor mode (never hibernate), MMA8452Q armed for motion, MAX17048 hibernated, IR receiver off and held, LCD bus pins held.
+- Before deep sleep: LCD Sleep In, backlight off, FT6236 in monitor mode (never hibernate), MMA8452Q armed for motion (standby if lift doesn't wake it), MAX17048 hibernated, IR receiver off and held, LCD bus pins held. The app passes the wake mask (`hal_deep_sleep`): the keys, touch, lift and USB.
+- **Wake-loop guard.** A key that's held down when the remote goes to sleep (under a cushion) is left out of the wake mask, or it would wake it over and over. Three touch or lift wakes in a row that nobody followed up with a touch or key turn that source off until a key wakes the remote. Both are logged.
 
 **Power off.** There is no power switch: the cell feeds the system rail directly and the LDO's enable is tied to it, so Off is the deepest sleep the remote has.
 - PWR acts on release: a short press is the normal PWR key. Held 5 s it asks "Power off?" (Cancel / Power off) and the release does nothing. Settings > Power & reset > Power off asks the same.
-- Off: stops a routine, forgets the running activity and selected device (nothing is sent), screen, radios and every chip off or in its lowest mode, except the FT6236: monitor mode, never hibernate (its reset is only the power-on RC, so it would stay dead until the battery is disconnected; hardware/README.md), then deep sleep with two wake sources: PWR (ext0, GPIO13) and USB (ext1 any-low on CHRG GPIO12 / STDBY GPIO3, RTC pull-ups on; one of them is low whenever USB is in). An RTC flag marks the wake as "from Off".
+- Off: stops a routine, forgets the running activity and selected device (nothing is sent), screen, radios and every chip off or in its lowest mode, except the FT6236: monitor mode, never hibernate (its reset is only the power-on RC, so it would stay dead until the battery is disconnected; hardware/README.md), then deep sleep with two wake sources: PWR and USB (CHRG GPIO12 / STDBY GPIO3, RTC pull-ups on; one of them is low whenever USB is in). It goes to sleep only once PWR is let go, since PWR is the wake key. A flag in the RTC block (section 7) marks the wake as "from Off".
 - Woken by PWR: the screen stays dark; if PWR is still held 2 s after the wake, the remote boots to the splash with a confirm buzz. Let go sooner and it sleeps again. Touch, lift and the other keys do nothing while off.
 - Woken by USB: the charging screen at dim brightness ("Off · hold PWR for 2 s to turn it on"); still off. Unplugged, it sleeps again. A 2 s PWR hold from there turns it on.
 
@@ -162,19 +164,30 @@ Target: about 2 months on a 405085 (~2000 mAh) at 20 short uses a day. The backl
 
 ## 7. Wake paths
 
-On wake, read `esp_sleep_get_ext1_wakeup_status()` and act before the UI is up:
+A wake from deep sleep is a reboot: RAM is gone and the app starts again. What has to survive is in a 1 KB block of RTC memory (`RTC_NOINIT_ATTR`, `app/retained.c`), checked by a magic number (after a power-on it holds garbage), and its device and activity indexes only count if the saved file is still the one they refer to (a hash of it):
+- the running activity, the selected device, the last activity, and which devices the remote switched on (and their inputs);
+- powered off or just asleep;
+- where the screen was: the tab, and the device, activity or Now playing page on it (editors aren't kept);
+- the key table: for each key, the code it sends right now;
+- the wake-loop guard's counts.
 
-- **Key mapped to IR**: send the code immediately (~150 ms from the press), then bring the screen up.
-- **Key mapped to BLE**: start BLE, directed advertising to the bonded TV, queue the key, send on connect (typically 100–500 ms, up to ~2 s). Send only the press, not a held repeat, if the reconnect took longer than the hold.
-- **Touch or lift**: Sleep Out on the LCD and backlight on, so the last frame shows at once; start the running activity's radios in parallel. LVGL redraws once it's running.
-- **Home tab was showing at sleep**: start Wi-Fi on wake too.
+The boot order (`hal_wake_cause` gives the source: key and which one, touch, lift or USB):
+- **Key mapped to IR**: `app_early()` sends it from the key table before the display, the file system or the radios are up (target ~30 ms from the press). Still held, it repeats until the release; the app then boots and carries on from that key without sending it again.
+- **Key mapped to BLE**: start BLE, directed advertising to the bonded TV, queue the key down (and its up, if it was let go), send on connect (typically 100–500 ms, up to ~2 s).
+- **Touch, lift or USB**: the Wake screen over the page that was showing. The touch that woke it isn't passed on (the HAL drops it until the finger lifts).
+- **Home tab was showing at sleep**: it comes back with the tab, so Wi-Fi starts too.
+
+The emulator reboots the same way: a new process (or a page reload in the browser) with only what boot.c wrote down, so nothing survives by accident.
+
+**Held keys.** The press starts what the key does and the release ends it: IR repeats at the protocol's own rate (the HAL), Bluetooth sends key down and key up (the TV repeats), and Home Assistant gets volume and D-pad calls again every 250 ms after the first 500 ms.
 
 Wi-Fi fast reconnect: keep the AP's BSSID and channel in RTC memory, static IP (DHCP fallback), target 300–500 ms to an open HA WebSocket.
 
 ## 8. Home Assistant (Home tab)
 
 - WebSocket `/api/websocket`, `auth` with a short-lived access token, `call_service` for actions.
-- **No long-lived token to type.** The remote signs in the way HA's phone app does and keeps a **refresh token** (NVS, encrypted). On each connect it trades that for a 30-minute access token (`POST /auth/token`, `grant_type=refresh_token`). The token appears in the user's HA profile under Refresh tokens and can be revoked there; Sign out revokes it too. `client_id` is `http://<remote IP>/`.
+- **No long-lived token to type.** The remote signs in the way HA's phone app does and keeps a **refresh token** (NVS, encrypted). On each connect it trades that for a 30-minute access token (`POST /auth/token`, `grant_type=refresh_token`). The token appears in the user's HA profile under Refresh tokens and can be revoked there; Sign out revokes it too.
+- **A `client_id` that never changes**, since HA ties the refresh token to it: `https://bleepremote.com/ha/r/<remote ID>/`, with `redirect_uri` `https://bleepremote.com/ha/callback` (same host, so HA accepts it without fetching anything; it checks the scheme and host, not the path). The remote ID is 6 hex digits from the chip's MAC address (`hal_device_id`), shown under Settings > About, so several remotes on one HA, or a remote in each of many homes, each have their own entry in the user's list of refresh tokens and can be revoked one by one. That callback is a static page: it forwards the authorization code to the remote at the LAN address carried in `state` (`http://<remote IP>/ha-callback?code&state`). A new IP from the router later changes nothing. The same static page serves every remote; nothing about a home is stored on bleepremote.com. It's only needed during a phone sign-in (the password sign-in never follows the redirect). For a product: host it somewhere dependable (Cloudflare or GitHub Pages) with access logs off, since the one-time code passes through its URL; and test the https-to-LAN forward on current Android and iOS browsers, as Chrome is tightening access to local networks.
 - **Server:** found by mDNS (`_home-assistant._tcp`, name and URL from the TXT record), or typed in. Changing the server signs out.
 - **Sign in with a phone** (main way): the remote shows a QR code for a small page it serves on its own IP. The page redirects to the server's `/auth/authorize`; HA's own login page runs on the phone (two-factor and passkeys work), then redirects back to `/ha-callback` on the remote with an authorization code, which the remote exchanges for the refresh token. The remote stays awake while the QR code is up and gives up after 5 minutes.
 - **Sign in on the remote** (fallback): username and password on the keyboard, through HA's login-flow API (`/auth/login_flow`), then the two-factor code on the number pad if HA asks for it. The password is sent only to the HA server and never stored.
@@ -185,14 +198,14 @@ Wi-Fi fast reconnect: keep the AP's BSSID and channel in RTC memory, static IP (
 
 ## 9. Bluetooth (Google TV)
 
-- NimBLE, HID over GATT: keyboard report (arrows, Enter) and consumer-control report (AC Home 0x223, AC Back 0x224, volume 0xE9/0xEA, mute 0xE2, play/pause 0xCD, power 0x30).
-- Bond with several TVs; connect only to the host of the device the running activity uses.
+- NimBLE, HID over GATT: keyboard report (arrows, Enter) and consumer-control report (AC Home 0x223, AC Back 0x224, volume 0xE9/0xEA, mute 0xE2, play/pause 0xCD, power 0x30). A key is a down report and an empty (up) report; held, the TV repeats.
+- Bond with several TVs; connect only to the host of the device the running activity uses, by directed advertising to its address (stored with the device), so only that TV answers.
 - While connected and idle, ask for a long connection interval with slave latency.
 - To test early on real hardware: the Netflix and YouTube keys (the TV may honour their HID codes only from known remotes), and waking the stick from standby with a BLE key.
 
 ## 10. IR
 
-- Send: RMT TX on GPIO45, 38 kHz carrier, 33 % duty. Protocols: NEC/NECext, Samsung32, Sony SIRC, RC5, RC6, Kaseikyo, raw. Repeat frames while a key is held.
+- Send: RMT TX on GPIO45, 38 kHz carrier, 33 % duty. Protocols: NEC/NECext, Samsung32, Sony SIRC (12, 15 and 20 bit), RC5, RC6, Kaseikyo (Panasonic), raw. While a key is held: NEC-style repeat codes every ~108 ms, Sony and RC5/RC6 the whole frame (RC5/RC6 keep the toggle bit, which flips on the next press); Sony always at least 3 frames.
 - Learn: GPIO1 high, wait 100 ms, RMT RX on GPIO42 (active low, already demodulated), IR LEDs off; decode to a known protocol or keep raw. GPIO1 low and no pull-up on GPIO42 afterwards. The carrier can't be measured; learned codes are sent at 38 kHz.
 - Library: curated Flipper-IRDB subset in the firmware image.
 
@@ -203,13 +216,13 @@ Wi-Fi fast reconnect: keep the AP's BSSID and channel in RTC memory, static IP (
   - written 2 s after the last change, and at once before deep sleep, power off and a firmware restart; to `/config.tmp` first, then renamed over, so a reset mid-write keeps the old file;
   - versioned (`"version": 1`); functions, kinds, icons, step kinds and actions are stored by name, not by number, so a later firmware still reads it. A missing field keeps its default; unknown fields, functions and step kinds are skipped; values are clamped; references to devices or activities that aren't there are dropped;
   - **backwards compatible, always**: every newer firmware must load the setup saved by any older one, with nothing lost (the owner's requirement). Keys and names are only ever added, never renamed, removed or reused; new fields have defaults; a change of meaning bumps the version with an upgrade step. Each released version has a frozen fixture (`sim/tests/fixtures/config-vN.json`) and a scenario that must keep loading it. The rules are spelled out at the top of `app/config.h`;
-  - the Wi-Fi password is not in it: it goes to NVS (encrypted), like the Home Assistant refresh token; written only when it changes;
+  - the Wi-Fi password is not in it: it goes to NVS (encrypted), like the Home Assistant refresh token; written only when it changes. NVS encryption uses the HMAC scheme (`CONFIG_NVS_SEC_KEY_PROTECT_USING_HMAC`): its key is derived from an HMAC key in an eFuse block, generated and burned on the first boot and unreadable by software, so no flash encryption is needed;
   - first boot (or a factory reset): the factory defaults are saved straight away;
   - not saved, by design: the running activity, the selected device and the last activity (RTC memory: they survive deep sleep, not a reset or power off), and screen state (the Home tab's room, the Activities/Routines switch).
-- A small web page served while on USB edits the config, plus on-device editing where the design has it.
+- On-device editing where the design has it, plus a **setup site on bleepremote.com over USB**. The ESP32-S3's USB port is Serial/JTAG only (it can't be a network adapter or a drive), so the page talks to the remote with WebSerial (Chrome, Edge): read and write the setup's JSON, back it up and restore it, import Flipper `.ir` files, and flash firmware (esp-web-tools).
 - Firmware updates over Wi-Fi from bleepremote.com (Settings > Software update, `app/update.c`):
   - Check: `GET https://bleepremote.com/fw/stable.json` → `{"version", "url", "size", "sha256", "notes"}`, over HTTPS with the ESP-IDF certificate bundle. A manual check turns Wi-Fi on for itself (a setup flow, section 5). The optional daily check runs only while Wi-Fi is already on, and never turns it on.
-  - Install: only while on USB; unplugging stops it. `esp_https_ota` streams the image into the idle OTA slot, checks the SHA-256 and the image signature (`CONFIG_SECURE_SIGNED_APPS_NO_SECURE_BOOT`, ECDSA key kept off the website), then sets it as the boot slot and restarts. A stopped or failed download leaves the running slot untouched.
+  - Install: only while on USB; unplugging stops it. `esp_https_ota` streams the image into the idle OTA slot, checks the SHA-256 and the image signature (`CONFIG_SECURE_SIGNED_APPS_NO_SECURE_BOOT` with the RSA scheme: on the ESP32-S3 that's RSA-3072, the Secure Boot v2 format; no eFuses burned for it; the key is kept off the website), then sets it as the boot slot and restarts. A stopped or failed download leaves the running slot untouched.
   - Rollback: `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`. A new image boots "pending verify" and marks itself valid once `app_init()` has finished (`hal_fw_boot_ok()`); if it crashes or resets before that, the bootloader goes back to the previous slot.
   - Hosting: static files on the domain (the manifest plus `bleep-<version>.bin`), e.g. GitHub Pages or Cloudflare Pages. Release = build, sign, upload the .bin, then update the manifest last.
   - USB-serial flashing (`idf.py flash` over the USB-Serial/JTAG port) always works too, so a bad release can't brick the remote.
@@ -225,7 +238,9 @@ Wi-Fi fast reconnect: keep the AP's BSSID and channel in RTC memory, static IP (
 - ESP-IDF 5.x, C.
 - LVGL 9 on `esp_lcd` i80 (8-bit, ILI9488, 320 × 480, RGB565). Two partial draw buffers in internal DMA RAM.
 - NimBLE for BLE HID, ESP-IDF Wi-Fi + `esp_websocket_client`, RMT for IR.
-- Flash (8 MB): two OTA app slots + LittleFS. PSRAM (2 MB, quad) for the JSON config and caches. Partition table:
+- Sensors: the fuel gauge and the light sensor are read once a second, never from a hot path; USB is two GPIOs, polled every tick.
+- PSRAM (2 MB, quad): the model (~30 KB, `HAL_PSRAM` = `EXT_RAM_BSS_ATTR`, needs `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`), the setup's JSON (up to 256 KB) and its cJSON tree (`hal_big_alloc`), and caches. Internal RAM is for Wi-Fi, NimBLE and LVGL's draw buffers.
+- Flash (8 MB): two OTA app slots + LittleFS. Partition table:
 
   | Name | Type | Size |
   |---|---|---|

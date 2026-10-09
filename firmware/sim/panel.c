@@ -41,10 +41,24 @@ static void lux_cb(lv_event_t *e)
     lv_label_set_text_fmt(lux_lbl, "Light %u lux", g_sim.lux);
 }
 
-static void usb_cb(lv_event_t *e)
+static void usb_cb(lv_event_t *e) { sim_set_usb(lv_obj_has_state(lv_event_get_target_obj(e), LV_STATE_CHECKED)); }
+
+/* the router / the TVs answering (Wi-Fi and Bluetooth links) */
+static void reach_cb(lv_event_t *e)
 {
-    g_sim.usb = lv_obj_has_state(lv_event_get_target_obj(e), LV_STATE_CHECKED);
-    hal_log("emulator: USB %s", g_sim.usb ? "plugged in" : "unplugged");
+    bool on = lv_obj_has_state(lv_event_get_target_obj(e), LV_STATE_CHECKED);
+    bool wifi = (intptr_t)lv_event_get_user_data(e);
+    if (wifi) g_sim.reach_wifi = on;
+    else g_sim.reach_ble = on;
+    hal_log("emulator: %s %s", wifi ? "router" : "TVs' Bluetooth", on ? "answering" : "not answering");
+}
+
+static void reach_switch(lv_obj_t *r, const char *text, bool wifi, bool on)
+{
+    lv_obj_t *sw = lv_switch_create(r);
+    if (on) lv_obj_add_state(sw, LV_STATE_CHECKED);
+    lv_obj_add_event_cb(sw, reach_cb, LV_EVENT_VALUE_CHANGED, (void *)(intptr_t)wifi);
+    lv_label_set_text(lv_label_create(r), text);
 }
 
 static lv_obj_t *key_btn(lv_obj_t *parent, const char *text, bleep_key_t k, int w, int h)
@@ -74,13 +88,14 @@ static lv_obj_t *row(lv_obj_t *parent)
 static void refresh(lv_timer_t *t)
 {
     LV_UNUSED(t);
-    static const char *const ln[] = {"off", "connecting", "on"};
+    static const char *const ln[] = {"off", "connecting", "on", "retrying"};
     const radio_status_t *r = radio_status();
     const char *act = g_model.running >= 0 ? g_model.activities[g_model.running].name : "none";
     lv_label_set_text_fmt(state_lbl,
                           "Power  %s%s\nScreen  backlight %d%%%s\nWi-Fi  %s     Bluetooth  %s%s\n"
                           "IR  %s     Activity  %s",
-                          power_state_name(power_state()), g_sim.usb ? " (USB)" : "", g_sim.backlight,
+                          g_sim.asleep ? "Deep sleep (input wakes it: a reboot)" : power_state_name(power_state()),
+                          g_sim.usb ? " (USB)" : "", g_sim.backlight,
                           g_sim.lcd_sleep ? ", LCD asleep" : "", ln[r->wifi], r->ble_pairing ? "pairing" : ln[r->ble],
                           r->ble_dev >= 0 ? "" : "", r->ir_rx ? "receiving" : r->ir_ready ? "ready" : "idle", act);
     char buf[SIM_LOG_LINES * 100];
@@ -151,8 +166,13 @@ void panel_create(void)
     lv_slider_set_value(bs, g_sim.battery, LV_ANIM_OFF);
     lv_obj_add_event_cb(bs, batt_cb, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_t *usb = lv_switch_create(r);
+    if (g_sim.usb) lv_obj_add_state(usb, LV_STATE_CHECKED);
     lv_obj_add_event_cb(usb, usb_cb, LV_EVENT_VALUE_CHANGED, NULL);
     lv_label_set_text(lv_label_create(r), "USB");
+
+    r = row(scr);
+    reach_switch(r, "Router", true, g_sim.reach_wifi);
+    reach_switch(r, "TVs' Bluetooth", false, g_sim.reach_ble);
 
     r = row(scr);
     lux_lbl = lv_label_create(r);

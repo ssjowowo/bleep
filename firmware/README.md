@@ -6,7 +6,7 @@ The spec is [REQUIREMENTS.md](REQUIREMENTS.md). Right now the firmware runs in a
 
 | Path | What |
 |---|---|
-| `hal/hal.h` | Hardware interface: keys, backlight, LCD sleep, haptics, radios, IR/BLE sends, battery, light sensor, deep sleep |
+| `hal/hal.h` | Hardware interface: keys, backlight, LCD sleep, haptics, radio links (Wi-Fi, directed Bluetooth), IR start/stop and Bluetooth key down/up, battery, light sensor, deep sleep with a wake mask, wake cause, RTC memory, PSRAM buffers |
 | `app/` | Hardware-independent firmware: devices, activities and routines (`model.c`, factory defaults), key routing and activity sequences (`control.c`), running routines (`routine.c`), radio policy (`radio.c`), power states (`power.c`), firmware updates (`update.c`), and the interfaces for the saved setup (`config.h`) and Home Assistant (`ha.h`) |
 | `app/ui/` | LVGL 9 UI from the "Bleep Remote UI" design (2c Flat): tabs, pages, HA cards, keyboard, overlays |
 | `app/ui/fonts/` | Figtree, icon and logo fonts, generated (see below) |
@@ -56,7 +56,7 @@ The first configure downloads LVGL v9.6.0.
 Two windows open:
 
 - **Bleep**: the 320×480 screen. The mouse is your finger. Click to tap, drag to scroll, and hold to long-press. Holding an activity tile edits it.
-- **Bleep · controls**: the 14 physical keys and a pick-up button. It also has the battery, USB and light-sensor controls, "Idle +10 s / +2 min" to jump to dim, screen-off and deep sleep, the live power and radio state, and the event log, which shows every IR and BLE send.
+- **Bleep · controls**: the 14 physical keys and a pick-up button. It also has the battery, USB and light-sensor controls, switches for whether the router and the TVs answer (to see links fail and retry), "Idle +10 s / +2 min" to jump to dim, screen-off and deep sleep, the live power and radio state, and the event log, which shows every IR and BLE send.
 
 Keyboard shortcuts in the Bleep window:
 
@@ -91,7 +91,8 @@ The terminal shows the same log with timestamps.
 - **Keys**: go to the active target, which is the last thing you chose. Opening a device from the Devices tab selects it on every screen. Starting or tapping an activity hands the keys to the activity. The status bar pill shows the active target, and tapping it goes back there. With nothing active, a key gives a "no" buzz and a hint.
 - **Home**: six rooms with a card for every HA domain in the design. Service calls change state the way HA would. The alarm code is 1234.
 - **Radio policy**: Wi-Fi only on the Home tab, with 20 s linger, or while an HA device or the Now playing source needs it. BLE follows the running activity and stays up while warm. IR is ready only for IR devices. The receiver is on only while learning.
-- **Power**: Active → Dim (lock/ambient screen) after 8 s → screen off after the "Sleep after" setting → deep sleep 2 min later. A key wake sends the key at once. A touch or pick-up wake shows the Wake screen. On USB the charging screen stays up.
+- **Power**: Active → Dim (lock/ambient screen) after 8 s → screen off after the "Sleep after" setting → deep sleep 2 min later. On the remote a wake from deep sleep is a reboot, and the emulator reboots too: the SDL build starts itself again and the browser page reloads (its log carries on). Only what the remote keeps in RTC memory survives (`app/retained.c`): what's running, which devices are on, the page, and each key's code, so a key that wakes it goes out over IR before the app is up. A touch or pick-up wake shows the Wake screen. A key held down while it sleeps can't wake it, and three pick-ups in a row that come to nothing turn lift-to-wake off until a key wakes it. On USB the charging screen stays up.
+- **Held keys**: IR repeats while a key is held (the log shows the repeat frames at the release), Bluetooth sends key down and key up, and Home Assistant volume and D-pad repeat every 250 ms.
 - **Battery**: the low-battery sheet at 8 %, and battery saver (brightness cap, shorter timeouts, no pick-up wake).
 - **Home Assistant sign-in**: Settings > Home Assistant finds two emulated servers ("Home" and "Holiday flat"). "Sign in with your phone" shows a QR code; the emulated phone opens it after 3 s and finishes 4 s later. "Sign in on the remote" accepts `sam` / `correcthorse` (then asks for the two-factor code `123456`) or `alex` / `correcthorse` (no two-factor).
 - **Settings**: brightness (auto from the light sensor), haptic strength, idle and sleep timeouts, the HA server, and Dark / Light / Auto theme.
@@ -110,7 +111,7 @@ firmware/sim/test.sh --docker   # inside sim/Dockerfile, no local packages neede
 firmware/sim/test.sh --wasm     # compiled to WebAssembly like the browser build, run under node
 ```
 
-The script runs every scenario in `sim/tests/*.txt` headlessly with simulated time. It saves screenshots and logs to `build/sim-shots/`, and each scenario's saved setup to `NAME.store`. A `reboot` in a scenario is a real one: the process ends, and a new one carries on from the next line on the same store, so nothing in memory survives. `store FILE` as the first command starts from a given saved file (`sim/tests/fixtures/`). `config_v1` loads a frozen file in today's format: it must keep passing in every later firmware, and the fixture must never be edited to make it pass (rules at the top of `app/config.h`). Scripts tap and click by label text, press keys, change battery and USB, wait, and check text on screen. The commands are listed at the top of `sim/script.c`.
+The script runs every scenario in `sim/tests/*.txt` headlessly with simulated time. It saves screenshots and logs to `build/sim-shots/`, and each scenario's saved setup to `NAME.store`. A `reboot` in a scenario is a real one (a power cycle): the process ends, and a new one carries on from the next line on the same store, so nothing in memory survives. A wake from deep sleep and a restart after an update end the run the same way, with the RTC block and the wake cause handed over in `NAME.store.state` (`sim/boot.c`). `reach wifi|ble on|off` makes the router or the TVs stop answering. `store FILE` as the first command starts from a given saved file (`sim/tests/fixtures/`). `config_v1` loads a frozen file in today's format: it must keep passing in every later firmware, and the fixture must never be edited to make it pass (rules at the top of `app/config.h`). Scripts tap and click by label text, press keys, change battery and USB, wait, and check text on screen. The commands are listed at the top of `sim/script.c`.
 
 `--wasm` writes to `build/sim-shots-wasm/`. Its screenshots and logs should be byte-for-byte the same as the native run's, which shows the browser emulator runs the same firmware code. One known difference is harmless: LVGL 9.6.0 can log `lv_image_src_get_type: ... invalid magic` when a QR code is deleted (its canvas destructor reads a pointer field as an image header), and whether that appears depends on memory addresses.
 

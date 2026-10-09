@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "config.h"
 #include "hal.h"
 #include "sim.h"
@@ -174,6 +175,27 @@ void hal_config_erase(void)
     loaded_secrets = true;
     secrets_store();
     hal_log("config: erased (file, secrets, Bluetooth bonds)");
+}
+
+/* The store as a file, for a reboot that starts a new process: one kept in
+ * memory moves to a temporary file first (with its secrets) */
+const char *sim_store_file(void)
+{
+#if WEB
+    return NULL;
+#else
+    if (g_sim.store_path) return g_sim.store_path;
+    static char tmp[] = "/tmp/bleep-sim-XXXXXX";
+    int fd = mkstemp(tmp);
+    if (fd < 0) return NULL;
+    close(fd);
+    char *config = mem_config ? strdup(mem_config) : NULL;
+    g_sim.store_path = tmp;
+    if (config) raw_set("config", config);
+    free(config);
+    if (loaded_secrets) secrets_store();
+    return tmp;
+#endif
 }
 
 /* Put a given file in the emulator's flash before boot (a test's "store FILE") */

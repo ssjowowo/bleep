@@ -24,7 +24,7 @@ tap 160 240
 wait 200
 usb off
 battery 8
-wait 300
+wait 1100
 expect Battery at 8%
 shot 14_low_battery
 click Battery saver

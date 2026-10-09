@@ -15,15 +15,19 @@
  *   type TEXT          type into the open text box
  *   clear              empty the open text box
  *   battery PCT | usb on|off | lux N
+ *   reach wifi|ble on|off   the router / the TVs answer or not (Wi-Fi, Bluetooth links)
  *   shot NAME          save NAME.png
  *   expect TEXT        fail unless a label on screen contains TEXT
  *   expect-no TEXT     fail if a label on screen contains TEXT
  *   mark               start a fresh log for expect-log
  *   expect-log TEXT    fail unless a log line since the mark contains TEXT (expect-log-no: fail if one does)
+ *   expect-log-count N TEXT   fail unless exactly N log lines since the mark contain TEXT
  *   expect-before A | B   fail unless label A comes before label B (top to bottom, left to right)
  *   factory            first command only: boot with nothing saved, as a new remote
  *   store FILE         first command only: the flash holds this saved file (path next to the script)
- *   reboot             end the run here; test.sh starts a fresh one on the same store, from the next line
+ *   reboot             power cycle: end the run here; test.sh starts a fresh one on the same store,
+ *                      from the next line. A wake from deep sleep, or a restart, ends a run the same
+ *                      way: the input that woke it was the last command of the old one.
  *   dump [DEPTH]       print the object tree with coordinates
  *   # comment
  */
@@ -56,10 +60,15 @@ static void read_cb(lv_indev_t *indev, lv_indev_data_t *data)
     data->state = sim_touch_filter(pressed) ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
 }
 
+/* Time passes. Asleep, nothing runs: only a touch can still wake it. */
 static void run(uint32_t ms)
 {
     for (uint32_t t = 0; t < ms; t += 5) {
         now_ms += 5;
+        if (g_sim.asleep) {
+            sim_touch_filter(pressed);
+            continue;
+        }
         lv_timer_handler();
         app_tick();
     }
@@ -128,6 +137,7 @@ int script_run(const char *path, const char *shot_dir)
         return 2;
     }
     g_sim.fixed_clock = true;
+    g_sim.headless = true;
     /* "factory" has to act before app_init() loads the saved setup */
     char line[256];
     while (!g_sim.script_from && fgets(line, sizeof(line), f)) {   /* not again after a reboot */
@@ -163,6 +173,7 @@ int script_run(const char *path, const char *shot_dir)
     lv_indev_set_type(ind, LV_INDEV_TYPE_POINTER);
     lv_indev_set_read_cb(ind, read_cb);
     sim_backlight_layer();
+    app_early();
     app_init();
     run(300);
 
@@ -289,7 +300,13 @@ int script_run(const char *path, const char *shot_dir)
             g_sim.battery = atoi(rest);
             run(50);
         } else if (!strcmp(cmd, "usb") && rest) {
-            g_sim.usb = !strcmp(rest, "on");
+            sim_set_usb(!strcmp(rest, "on"));
+            run(50);
+        } else if (!strcmp(cmd, "reach") && rest) {
+            bool on = strstr(rest, " on") != NULL;
+            if (!strncmp(rest, "wifi", 4)) g_sim.reach_wifi = on;
+            else g_sim.reach_ble = on;
+            hal_log("emulator: %s %s", !strncmp(rest, "wifi", 4) ? "router" : "TVs' Bluetooth", on ? "answering" : "not answering");
             run(50);
         } else if (!strcmp(cmd, "lux") && rest) {
             g_sim.lux = atoi(rest);
@@ -333,6 +350,13 @@ int script_run(const char *path, const char *shot_dir)
             bool found = strstr(sim_log_since_mark(), rest) != NULL, want = !strcmp(cmd, "expect-log");
             printf("%s: %s \"%s\"\n", found == want ? "ok  " : "FAIL", cmd, rest);
             if (found != want) failures++;
+        } else if (!strcmp(cmd, "expect-log-count") && rest) {
+            int want = atoi(rest), got = 0;
+            const char *text = strchr(rest, ' ');
+            text = text ? text + 1 : "";
+            for (const char *p = sim_log_since_mark(); (p = strstr(p, text)); p++) got++;
+            printf("%s: expect-log-count %d \"%s\" (%d)\n", got == want ? "ok  " : "FAIL", want, text, got);
+            if (got != want) failures++;
         } else if (!strcmp(cmd, "mark")) {
             sim_log_mark();
         } else if (!strcmp(cmd, "expect-before") && rest) {
@@ -355,17 +379,22 @@ int script_run(const char *path, const char *shot_dir)
             printf("%s: expect-before \"%s\" | \"%s\"\n", ok ? "ok  " : "FAIL", rest, bar ? bar + 3 : "?");
             if (!ok) failures++;
         } else if (!strcmp(cmd, "reboot")) {
-            /* A real one: this process ends and test.sh starts a new one on the
-             * same --store file, from the next line. Nothing in RAM survives;
-             * what wasn't saved yet is lost, as when the remote resets. */
-            fclose(f);
-            printf("reboot after line %d (%d failure(s) so far)\n", n, failures);
-            fflush(stdout);
-            exit(failures ? 43 : 42);
+            /* A power cycle: this process ends and test.sh starts a new one on
+             * the same --store file, from the next line. Nothing in RAM
+             * survives, not even the RTC block; what wasn't saved is lost. */
+            sim_reboot(BOOT_COLD, 0, 0);
         } else if (!strcmp(cmd, "factory") || !strcmp(cmd, "store")) {
             /* handled before boot */
         } else {
             fprintf(stderr, "%s:%d: can't parse: %s\n", path, n, cmd);
+        }
+        if (g_sim.reboot_pending) {
+            /* a wake from deep sleep, a restart, a power cycle: the next run
+             * carries on from the next line (boot.c wrote what survives) */
+            fclose(f);
+            printf("reboot after line %d (%d failure(s) so far)\n", n, failures);
+            fflush(stdout);
+            exit(failures ? 43 : 42);
         }
     }
     fclose(f);

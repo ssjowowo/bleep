@@ -51,6 +51,12 @@ bool config_load(model_t *m);
 bool config_save(const model_t *m);
 
 /* The JSON itself, for the emulator's demo house and the tests. to_json
- * returns a malloc'd string (free it), from_json false if it isn't ours. */
+ * returns a string from hal_big_alloc (config_free it), from_json false if
+ * it isn't ours. */
 char *config_to_json(const model_t *m);
 bool config_from_json(const char *json, model_t *m);
+void config_free(char *json);
+
+/* A fingerprint of the file as last loaded or saved (0 = none): what the
+ * indexes kept through deep sleep refer to (app/retained.c). */
+uint32_t config_file_hash(void);

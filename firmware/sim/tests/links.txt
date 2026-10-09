@@ -1,0 +1,48 @@
+# Links come from the HAL: a TV that doesn't answer over Bluetooth, a router that's off
+click Start
+wait 300
+reach ble off
+click Shield TV
+wait 3000
+key OK
+wait 2000
+expect-log Shield TV didn't answer
+expect didn't answer over Bluetooth
+shot 72_ble_no_answer
+# It tries again by itself (2 s, then 5, 10, 30); a key tries at once
+reach ble on
+mark
+key OK
+wait 1000
+expect-log ble: connected
+expect-log BLE > 0x07:0x028
+# The TV goes out of range: the link drops and comes back by itself
+mark
+reach ble off
+wait 300
+expect-log ble: Shield TV disconnected
+reach ble on
+wait 3000
+expect-log ble: connected
+# Wi-Fi: the router is off
+click Activities
+wait 300
+key PWR
+wait 1500
+reach wifi off
+click Home
+wait 4000
+expect can't join Wi-Fi, retrying
+shot 73_wifi_retry
+reach wifi on
+wait 6000
+expect-no can't join Wi-Fi
+expect-log wifi: connected
+# Lost while connected: it reconnects at once
+mark
+reach wifi off
+wait 300
+expect-log wifi: connection lost
+reach wifi on
+wait 1000
+expect-log wifi: connected

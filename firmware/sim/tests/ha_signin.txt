@@ -28,6 +28,9 @@ expect homeassistant.local:8123
 click Sign in with your phone
 wait 500
 expect Scan with your phone's camera
+# its own ID with Home Assistant: one per remote, never the IP
+expect-log client_id https://bleepremote.com/ha/r/7c2f1a/
+expect-log redirect_uri https://bleepremote.com/ha/callback
 shot 71_ha_phone_qr
 wait 3200
 expect Now sign in on your phone

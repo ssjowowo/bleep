@@ -29,8 +29,8 @@ The industrial design comes from a concept pack made in Claude Design (design **
 |---|---|
 | Main board v1 | **Ordered** from JLCPCB on 2026-10-08 (5 boards, 2 assembled). The design is locked: the files in `hardware/mainboard/` are the ones in production. |
 | Enclosure | Ready to print. The back plate is flat, with room for a 4.0 × 50 × 85 mm Li-Po (405085) under the screen. |
-| Display | BuyDisplay ER-TFT035IPS-6 + capacitive touch, to order. Its cable fold gets checked on the real panel before assembly. |
-| Battery | Not bought yet (405085 planned). |
+| Display | BuyDisplay ER-TFT035IPS-6 + capacitive touch, **ordered** 2026-10-09. Its cable fold gets checked on the real panel before assembly. |
+| Battery | **Ordered** 2026-10-09 (405085 planned; if the cell differs, set `BATT` in `layout.py` and rebuild the back plate). |
 | Firmware | App and UI (C + LVGL 9) running in a PC/browser emulator with 32 scripted test scenarios; ESP-IDF port next. [firmware/](firmware/) |
 
 ## Hardware at a glance

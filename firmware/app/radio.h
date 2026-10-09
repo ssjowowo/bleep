@@ -8,7 +8,9 @@
 #include <stdint.h>
 #include "model.h"
 
-typedef enum { LINK_OFF, LINK_CONNECTING, LINK_UP } link_t;
+/* RETRY: it failed or dropped and is waiting for the next try (2, 5, 10,
+ * then every 30 s while it's still wanted; a key for that device tries at once) */
+typedef enum { LINK_OFF, LINK_CONNECTING, LINK_UP, LINK_RETRY } link_t;
 
 typedef struct {
     link_t wifi;
@@ -18,6 +20,7 @@ typedef struct {
     bool ir_rx;                 /* IR receiver powered (learning) */
     bool ble_pairing;           /* advertising as a pairable HID remote */
     uint32_t wifi_off_at;       /* pending Wi-Fi switch-off time, 0 = none */
+    uint8_t wifi_tries, ble_tries;   /* failures in a row */
 } radio_status_t;
 
 /* What the UI is showing; set by the UI when it changes page. */
@@ -38,5 +41,7 @@ void radio_device_deleted(int idx);          /* model_delete_device(): its link 
 void radio_tick(void);
 const radio_status_t *radio_status(void);
 
-/* Send a BLE HID usage to a device's host; queued while the link comes up. */
-void radio_ble_send(int dev, uint16_t page, uint16_t usage);
+/* A BLE HID key down or up to a device's host; queued while the link comes
+ * up. If the host doesn't answer, what's queued for it is dropped (never
+ * sent to another TV) and EV_LINK_FAILED tells the UI. */
+void radio_ble_key(int dev, uint16_t page, uint16_t usage, bool down);

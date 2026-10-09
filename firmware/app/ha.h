@@ -76,9 +76,17 @@ const char *ha_state_text(const ha_entity_t *e, char *buf, int len);
  * grant_type=refresh_token). The token shows in the user's HA profile under
  * "Refresh tokens" and can be revoked there.
  *
- * client_id is http://<remote IP>/ and redirect_uri http://<remote IP>/ha-callback;
- * HA accepts a redirect on the same host as the client_id (IndieAuth).
+ * client_id is https://bleepremote.com/ha/r/<hal_device_id()>/ and
+ * redirect_uri https://bleepremote.com/ha/callback: the same host, so HA
+ * accepts it (IndieAuth checks the scheme and host, not the path). HA ties
+ * the refresh token to the client_id, so it mustn't change with the remote's
+ * IP; one per remote, so several remotes on one HA are told apart in the
+ * user's list of refresh tokens. The callback is one static page for every
+ * remote: it forwards the code to the remote at the LAN address in state.
  */
+
+#define HA_CLIENT_ID     "https://bleepremote.com/ha/r/%s/"   /* %s = hal_device_id() */
+#define HA_REDIRECT_URI  "https://bleepremote.com/ha/callback"
 
 /* mDNS browse for _home-assistant._tcp; ~2 s. poll: -1 while looking, else count. */
 typedef struct {
@@ -105,6 +113,8 @@ typedef enum {
 
 /* Sign in on a phone. The remote serves a page on its own IP:
  * GET /ha-login   -> 302 to <server>/auth/authorize?client_id&redirect_uri&state
+ *                    (state = a nonce and the remote's IP)
+ * bleepremote.com/ha/callback -> the phone's browser to http://<remote IP>/ha-callback?code&state
  * GET /ha-callback?code&state -> POST <server>/auth/token, grant_type=authorization_code
  * qr_url gets the address to put in the QR code. */
 void ha_login_phone_start(const char *server, char *qr_url, int len);

@@ -60,6 +60,63 @@ static void send_ha(const device_t *d, fn_t fn)
     }
 }
 
+/* ---- sending: a press (down) and its release (up) ---- */
+
+#define IR_TAP (-2)             /* ir_owner for a one-off send, not a held key */
+static int ir_owner = -1;       /* the key whose IR code the HAL is repeating */
+
+static void bookkeep(device_t *d, fn_t fn)
+{
+    if (fn == FN_POWER) d->on = !d->on;
+    if (fn == FN_POWER_ON) d->on = true;
+    if (fn == FN_POWER_OFF) d->on = false;
+    if (fn >= FN_INPUT_1 && fn <= FN_INPUT_4) d->input = fn - FN_INPUT_1 + 1;
+}
+
+/* owner: the key holding it, or IR_TAP. False if the device hasn't got fn. */
+static bool code_down(int dev, fn_t fn, int owner)
+{
+    if (dev < 0 || dev >= g_model.n_devices) return false;
+    device_t *d = &g_model.devices[dev];
+    code_t c = d->fn[fn];
+    switch (c.transport) {
+    case TR_IR:
+        hal_ir_start(c.proto, c.a, c.b);
+        ir_owner = owner;
+        break;
+    case TR_BLE:
+        radio_ble_key(dev, c.a, c.b, true);
+        break;
+    case TR_HA:
+        send_ha(d, fn);
+        break;
+    default:
+        hal_log("%s has no %s", d->name, fn_name(fn));
+        return false;
+    }
+    bookkeep(d, fn);
+    return true;
+}
+
+static void code_up(int dev, fn_t fn, int owner)
+{
+    if (dev < 0 || dev >= g_model.n_devices) return;
+    code_t c = g_model.devices[dev].fn[fn];
+    if (c.transport == TR_IR && ir_owner == owner) {
+        hal_ir_stop();   /* not if another key or a tap has taken the LED since */
+        ir_owner = -1;
+    } else if (c.transport == TR_BLE) {
+        radio_ble_key(dev, c.a, c.b, false);
+    }
+}
+
+void ir_send_once(const code_t *c)
+{
+    hal_ir_start(c->proto, c->a, c->b);
+    hal_ir_stop();
+    ir_owner = -1;
+}
+
 bool device_send(int dev, fn_t fn)
 {
     if (!device_send_quiet(dev, fn)) {
@@ -73,32 +130,19 @@ bool device_send(int dev, fn_t fn)
 
 bool device_send_quiet(int dev, fn_t fn)
 {
-    if (dev < 0 || dev >= g_model.n_devices) return false;
-    device_t *d = &g_model.devices[dev];
-    code_t c = d->fn[fn];
-    if (!c.transport) {
-        hal_log("%s has no %s", d->name, fn_name(fn));
-        return false;
-    }
-    switch (c.transport) {
-    case TR_IR:
-        hal_ir_send(c.proto, c.a, c.b);
-        break;
-    case TR_BLE:
-        radio_ble_send(dev, c.a, c.b);
-        break;
-    case TR_HA:
-        send_ha(d, fn);
-        break;
-    }
-    if (fn == FN_POWER) d->on = !d->on;
-    if (fn == FN_POWER_ON) d->on = true;
-    if (fn == FN_POWER_OFF) d->on = false;
-    if (fn >= FN_INPUT_1 && fn <= FN_INPUT_4) d->input = fn - FN_INPUT_1 + 1;
+    if (!code_down(dev, fn, IR_TAP)) return false;
+    code_up(dev, fn, IR_TAP);
     return true;
 }
 
 /* ---- keys ---- */
+
+static struct {
+    bool down;
+    int8_t dev;
+    uint8_t fn;
+    uint32_t next;              /* next repeat */
+} held[KEY_COUNT];
 
 int key_target(bleep_key_t key)
 {
@@ -115,8 +159,16 @@ bool key_available(bleep_key_t key)
     return g_model.devices[dev].fn[key_default_fn(key)].transport != 0;
 }
 
-void key_press(bleep_key_t key)
+static void notify_volume(bleep_key_t key)
 {
+    if (key == KEY_VOL_UP) app_notify(EV_VOLUME, 1);
+    else if (key == KEY_VOL_DOWN) app_notify(EV_VOLUME, -1);
+    else if (key == KEY_MUTE) app_notify(EV_VOLUME, 0);
+}
+
+void key_down(bleep_key_t key, bool early)
+{
+    if (key >= KEY_COUNT || held[key].down) return;
     int dev = key_target(key);
     if (dev == KEYDEV_END) {
         activity_end();
@@ -129,12 +181,48 @@ void key_press(bleep_key_t key)
         return;
     }
     fn_t fn = key_default_fn(key);
-    if (device_send(dev, fn)) {
-        if (key == KEY_VOL_UP) app_notify(EV_VOLUME, 1);
-        else if (key == KEY_VOL_DOWN) app_notify(EV_VOLUME, -1);
-        else if (key == KEY_MUTE) app_notify(EV_VOLUME, 0);
-    } else {
+    if (early) {
+        ir_owner = key;   /* app_early started it; the release stops it */
+        bookkeep(&g_model.devices[dev], fn);
+    } else if (!code_down(dev, fn, key)) {
+        app_buzz(HAPTIC_NO);
         app_notify(EV_NO_TARGET, key);
+        return;
+    }
+    app_buzz(HAPTIC_TICK);
+    held[key].down = true;
+    held[key].dev = dev;
+    held[key].fn = fn;
+    held[key].next = hal_millis() + KEY_REPEAT_AFTER_MS;
+    notify_volume(key);
+}
+
+void key_up(bleep_key_t key)
+{
+    if (key >= KEY_COUNT || !held[key].down) return;
+    held[key].down = false;
+    code_up(held[key].dev, held[key].fn, key);
+}
+
+void key_press(bleep_key_t key)
+{
+    key_down(key, false);
+    key_up(key);
+}
+
+/* Held keys: Home Assistant has no "held", so volume and the D-pad are sent
+ * again; the volume overlay stays up while a volume key is held */
+void key_tick(void)
+{
+    uint32_t now = hal_millis();
+    for (int k = 0; k < KEY_COUNT; k++) {
+        if (!held[k].down || (int32_t)(now - held[k].next) < 0) continue;
+        held[k].next = now + KEY_REPEAT_MS;
+        fn_t fn = held[k].fn;
+        device_t *d = &g_model.devices[held[k].dev];
+        bool again = fn == FN_VOL_UP || fn == FN_VOL_DOWN || (fn >= FN_UP && fn <= FN_RIGHT);
+        if (again && d->fn[fn].transport == TR_HA) send_ha(d, fn);
+        if (k == KEY_VOL_UP || k == KEY_VOL_DOWN) notify_volume(k);
     }
 }
 
@@ -224,6 +312,10 @@ void control_delete_device(int idx)
         w++;
     }
     seq_n = w;
+    for (int k = 0; k < KEY_COUNT; k++) {   /* a key held on it: its release sends nothing */
+        if (held[k].dev == idx) held[k].down = false;
+        else if (held[k].dev > idx) held[k].dev--;
+    }
     model_delete_device(idx);
     radio_device_deleted(idx);
     radio_update();
@@ -233,6 +325,7 @@ void control_delete_device(int idx)
 void control_move_device(int from, int to)
 {
     for (int i = seq_i; i < seq_n; i++) seq[i].dev = model_moved_index(seq[i].dev, from, to);
+    for (int k = 0; k < KEY_COUNT; k++) held[k].dev = model_moved_index(held[k].dev, from, to);
     model_move_device(from, to);
     radio_device_moved(from, to);
     radio_update();
@@ -249,17 +342,18 @@ void activity_tick(void)
     snprintf(progress, sizeof(progress), "%s: %s", d->name, fn_name(s->fn));
     /* activity steps don't buzz each time; device_send does, so call the parts directly */
     code_t c = d->fn[s->fn];
-    if (c.transport == TR_IR) hal_ir_send(c.proto, c.a, c.b);
-    else if (c.transport == TR_BLE) radio_ble_send(s->dev, c.a, c.b);
-    else if (c.transport == TR_HA) {
+    if (c.transport == TR_IR) {
+        hal_ir_start(c.proto, c.a, c.b);
+        hal_ir_stop();
+        ir_owner = -1;
+    } else if (c.transport == TR_BLE) {
+        radio_ble_key(s->dev, c.a, c.b, true);
+        radio_ble_key(s->dev, c.a, c.b, false);
+    } else if (c.transport == TR_HA) {
         int e = ha_find(d->ha_entity);
         if (e >= 0) ha_action(e, s->fn == FN_POWER_OFF ? "turn_off" : "turn_on");
     }
-    device_t *dw = &g_model.devices[s->dev];
-    if (s->fn == FN_POWER) dw->on = !dw->on;
-    if (s->fn == FN_POWER_ON) dw->on = true;
-    if (s->fn == FN_POWER_OFF) dw->on = false;
-    if (s->fn >= FN_INPUT_1 && s->fn <= FN_INPUT_4) dw->input = s->fn - FN_INPUT_1 + 1;
+    bookkeep(&g_model.devices[s->dev], s->fn);
     seq_next = hal_millis() + s->delay_ms;
     if (seq_i >= seq_n) progress[0] = 0;
     app_notify(EV_ACTIVITY, g_model.running);
