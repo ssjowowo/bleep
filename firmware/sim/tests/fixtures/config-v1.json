@@ -1,0 +1,1033 @@
+{
+ "version": 1,
+ "settings": {
+  "theme": "light",
+  "auto_brightness": true,
+  "brightness": 70,
+  "wake_on_lift": true,
+  "haptics": 3,
+  "dim_after_s": 60,
+  "sleep_after_s": 90,
+  "deep_after_s": 120,
+  "battery_saver": false,
+  "room": "Lounge",
+  "wifi_ssid": "Home-5G",
+  "ha_url": "http://homeassistant.local:8123",
+  "ha_user": "Sam",
+  "fw_auto_check": true,
+  "fw_checked": 0,
+  "layout_activities": "list",
+  "layout_devices": "grid"
+ },
+ "devices": [
+  {
+   "name": "Shield TV",
+   "kind": "streamer",
+   "transports": [
+    "ble"
+   ],
+   "ble_host": "48:B0:2D:6E:11:A4",
+   "ha_entity": "media_player.shield",
+   "inputs": 0,
+   "on": false,
+   "input": 0,
+   "codes": {
+    "power": {
+     "via": "ble",
+     "a": 12,
+     "b": 48
+    },
+    "up": {
+     "via": "ble",
+     "a": 7,
+     "b": 82
+    },
+    "down": {
+     "via": "ble",
+     "a": 7,
+     "b": 81
+    },
+    "left": {
+     "via": "ble",
+     "a": 7,
+     "b": 80
+    },
+    "right": {
+     "via": "ble",
+     "a": 7,
+     "b": 79
+    },
+    "ok": {
+     "via": "ble",
+     "a": 7,
+     "b": 40
+    },
+    "back": {
+     "via": "ble",
+     "a": 12,
+     "b": 548
+    },
+    "home": {
+     "via": "ble",
+     "a": 12,
+     "b": 547
+    },
+    "menu": {
+     "via": "ble",
+     "a": 12,
+     "b": 64
+    },
+    "vol_up": {
+     "via": "ble",
+     "a": 12,
+     "b": 233
+    },
+    "vol_down": {
+     "via": "ble",
+     "a": 12,
+     "b": 234
+    },
+    "mute": {
+     "via": "ble",
+     "a": 12,
+     "b": 226
+    },
+    "play_pause": {
+     "via": "ble",
+     "a": 12,
+     "b": 205
+    },
+    "rew": {
+     "via": "ble",
+     "a": 12,
+     "b": 180
+    },
+    "fwd": {
+     "via": "ble",
+     "a": 12,
+     "b": 179
+    },
+    "netflix": {
+     "via": "ble",
+     "a": 12,
+     "b": 0
+    },
+    "youtube": {
+     "via": "ble",
+     "a": 12,
+     "b": 0
+    },
+    "subtitles": {
+     "via": "ble",
+     "a": 12,
+     "b": 97
+    },
+    "info": {
+     "via": "ble",
+     "a": 12,
+     "b": 96
+    }
+   }
+  },
+  {
+   "name": "Living room TV",
+   "kind": "tv",
+   "transports": [
+    "ir"
+   ],
+   "ir_source": "LG · code set 1",
+   "inputs": 4,
+   "on": false,
+   "input": 0,
+   "codes": {
+    "power": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 8
+    },
+    "power_on": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 196
+    },
+    "power_off": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 197
+    },
+    "up": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 64
+    },
+    "down": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 65
+    },
+    "left": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 7
+    },
+    "right": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 6
+    },
+    "ok": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 68
+    },
+    "back": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 40
+    },
+    "home": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 124
+    },
+    "menu": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 67
+    },
+    "guide": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 171
+    },
+    "vol_up": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 2
+    },
+    "vol_down": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 3
+    },
+    "mute": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 9
+    },
+    "play_pause": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 176
+    },
+    "netflix": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 86
+    },
+    "input_1": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 206
+    },
+    "input_2": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 204
+    },
+    "input_3": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 233
+    },
+    "input_4": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 218
+    },
+    "digit_0": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 16
+    },
+    "digit_1": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 17
+    },
+    "digit_2": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 18
+    },
+    "digit_3": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 19
+    },
+    "digit_4": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 20
+    },
+    "digit_5": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 21
+    },
+    "digit_6": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 22
+    },
+    "digit_7": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 23
+    },
+    "digit_8": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 24
+    },
+    "digit_9": {
+     "via": "ir",
+     "proto": "nec",
+     "a": 4,
+     "b": 25
+    }
+   }
+  },
+  {
+   "name": "AV receiver",
+   "kind": "avr",
+   "transports": [
+    "ir"
+   ],
+   "ir_source": "Denon · code set 1",
+   "inputs": 4,
+   "on": false,
+   "input": 0,
+   "codes": {
+    "power": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 8
+    },
+    "power_on": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 196
+    },
+    "power_off": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 197
+    },
+    "up": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 64
+    },
+    "down": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 65
+    },
+    "left": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 7
+    },
+    "right": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 6
+    },
+    "ok": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 68
+    },
+    "back": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 40
+    },
+    "home": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 124
+    },
+    "menu": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 67
+    },
+    "guide": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 171
+    },
+    "vol_up": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 2
+    },
+    "vol_down": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 3
+    },
+    "mute": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 9
+    },
+    "input_1": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 206
+    },
+    "input_2": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 204
+    },
+    "input_3": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 233
+    },
+    "input_4": {
+     "via": "ir",
+     "proto": "necext",
+     "a": 10828,
+     "b": 218
+    }
+   }
+  },
+  {
+   "name": "Bedroom Google TV",
+   "kind": "streamer",
+   "transports": [
+    "ble",
+    "ir"
+   ],
+   "ble_host": "F4:F5:D8:02:7C:30",
+   "ir_source": "Samsung · code set 1",
+   "inputs": 0,
+   "on": false,
+   "input": 0,
+   "codes": {
+    "power": {
+     "via": "ir",
+     "proto": "samsung32",
+     "a": 7,
+     "b": 8
+    },
+    "power_on": {
+     "via": "ir",
+     "proto": "samsung32",
+     "a": 7,
+     "b": 196
+    },
+    "power_off": {
+     "via": "ir",
+     "proto": "samsung32",
+     "a": 7,
+     "b": 197
+    },
+    "up": {
+     "via": "ble",
+     "a": 7,
+     "b": 82
+    },
+    "down": {
+     "via": "ble",
+     "a": 7,
+     "b": 81
+    },
+    "left": {
+     "via": "ble",
+     "a": 7,
+     "b": 80
+    },
+    "right": {
+     "via": "ble",
+     "a": 7,
+     "b": 79
+    },
+    "ok": {
+     "via": "ble",
+     "a": 7,
+     "b": 40
+    },
+    "back": {
+     "via": "ble",
+     "a": 12,
+     "b": 548
+    },
+    "home": {
+     "via": "ble",
+     "a": 12,
+     "b": 547
+    },
+    "menu": {
+     "via": "ble",
+     "a": 12,
+     "b": 64
+    },
+    "vol_up": {
+     "via": "ir",
+     "proto": "samsung32",
+     "a": 7,
+     "b": 2
+    },
+    "vol_down": {
+     "via": "ir",
+     "proto": "samsung32",
+     "a": 7,
+     "b": 3
+    },
+    "mute": {
+     "via": "ir",
+     "proto": "samsung32",
+     "a": 7,
+     "b": 9
+    },
+    "play_pause": {
+     "via": "ble",
+     "a": 12,
+     "b": 205
+    },
+    "rew": {
+     "via": "ble",
+     "a": 12,
+     "b": 180
+    },
+    "fwd": {
+     "via": "ble",
+     "a": 12,
+     "b": 179
+    },
+    "netflix": {
+     "via": "ble",
+     "a": 12,
+     "b": 0
+    },
+    "youtube": {
+     "via": "ble",
+     "a": 12,
+     "b": 0
+    },
+    "subtitles": {
+     "via": "ble",
+     "a": 12,
+     "b": 97
+    },
+    "info": {
+     "via": "ble",
+     "a": 12,
+     "b": 96
+    }
+   }
+  },
+  {
+   "name": "Apple TV",
+   "kind": "streamer",
+   "transports": [
+    "ha"
+   ],
+   "ha_entity": "media_player.apple_tv",
+   "inputs": 0,
+   "on": false,
+   "input": 0,
+   "codes": {
+    "power": {
+     "via": "ha",
+     "a": 0,
+     "b": 1
+    },
+    "power_on": {
+     "via": "ha",
+     "a": 0,
+     "b": 2
+    },
+    "power_off": {
+     "via": "ha",
+     "a": 0,
+     "b": 3
+    },
+    "up": {
+     "via": "ha",
+     "a": 0,
+     "b": 4
+    },
+    "down": {
+     "via": "ha",
+     "a": 0,
+     "b": 5
+    },
+    "left": {
+     "via": "ha",
+     "a": 0,
+     "b": 6
+    },
+    "right": {
+     "via": "ha",
+     "a": 0,
+     "b": 7
+    },
+    "ok": {
+     "via": "ha",
+     "a": 0,
+     "b": 8
+    },
+    "back": {
+     "via": "ha",
+     "a": 0,
+     "b": 9
+    },
+    "home": {
+     "via": "ha",
+     "a": 0,
+     "b": 10
+    },
+    "menu": {
+     "via": "ha",
+     "a": 0,
+     "b": 11
+    },
+    "vol_up": {
+     "via": "ha",
+     "a": 0,
+     "b": 13
+    },
+    "vol_down": {
+     "via": "ha",
+     "a": 0,
+     "b": 14
+    },
+    "mute": {
+     "via": "ha",
+     "a": 0,
+     "b": 15
+    },
+    "play_pause": {
+     "via": "ha",
+     "a": 0,
+     "b": 16
+    },
+    "rew": {
+     "via": "ha",
+     "a": 0,
+     "b": 17
+    },
+    "fwd": {
+     "via": "ha",
+     "a": 0,
+     "b": 18
+    }
+   }
+  },
+  {
+   "name": "Kodi box",
+   "kind": "media_box",
+   "transports": [
+    "ha"
+   ],
+   "ha_entity": "media_player.kodi",
+   "inputs": 0,
+   "on": false,
+   "input": 0,
+   "codes": {
+    "power": {
+     "via": "ha",
+     "a": 0,
+     "b": 1
+    },
+    "power_on": {
+     "via": "ha",
+     "a": 0,
+     "b": 2
+    },
+    "power_off": {
+     "via": "ha",
+     "a": 0,
+     "b": 3
+    },
+    "up": {
+     "via": "ha",
+     "a": 0,
+     "b": 4
+    },
+    "down": {
+     "via": "ha",
+     "a": 0,
+     "b": 5
+    },
+    "left": {
+     "via": "ha",
+     "a": 0,
+     "b": 6
+    },
+    "right": {
+     "via": "ha",
+     "a": 0,
+     "b": 7
+    },
+    "ok": {
+     "via": "ha",
+     "a": 0,
+     "b": 8
+    },
+    "back": {
+     "via": "ha",
+     "a": 0,
+     "b": 9
+    },
+    "home": {
+     "via": "ha",
+     "a": 0,
+     "b": 10
+    },
+    "menu": {
+     "via": "ha",
+     "a": 0,
+     "b": 11
+    },
+    "vol_up": {
+     "via": "ha",
+     "a": 0,
+     "b": 13
+    },
+    "vol_down": {
+     "via": "ha",
+     "a": 0,
+     "b": 14
+    },
+    "mute": {
+     "via": "ha",
+     "a": 0,
+     "b": 15
+    },
+    "play_pause": {
+     "via": "ha",
+     "a": 0,
+     "b": 16
+    },
+    "rew": {
+     "via": "ha",
+     "a": 0,
+     "b": 17
+    },
+    "fwd": {
+     "via": "ha",
+     "a": 0,
+     "b": 18
+    }
+   }
+  },
+  {
+   "name": "Sonos",
+   "kind": "speaker",
+   "transports": [
+    "ha"
+   ],
+   "ha_entity": "media_player.sonos",
+   "inputs": 0,
+   "on": false,
+   "input": 0,
+   "codes": {
+    "power": {
+     "via": "ha",
+     "a": 0,
+     "b": 1
+    },
+    "power_on": {
+     "via": "ha",
+     "a": 0,
+     "b": 2
+    },
+    "power_off": {
+     "via": "ha",
+     "a": 0,
+     "b": 3
+    },
+    "up": {
+     "via": "ha",
+     "a": 0,
+     "b": 4
+    },
+    "down": {
+     "via": "ha",
+     "a": 0,
+     "b": 5
+    },
+    "left": {
+     "via": "ha",
+     "a": 0,
+     "b": 6
+    },
+    "right": {
+     "via": "ha",
+     "a": 0,
+     "b": 7
+    },
+    "ok": {
+     "via": "ha",
+     "a": 0,
+     "b": 8
+    },
+    "back": {
+     "via": "ha",
+     "a": 0,
+     "b": 9
+    },
+    "home": {
+     "via": "ha",
+     "a": 0,
+     "b": 10
+    },
+    "menu": {
+     "via": "ha",
+     "a": 0,
+     "b": 11
+    },
+    "vol_up": {
+     "via": "ha",
+     "a": 0,
+     "b": 13
+    },
+    "vol_down": {
+     "via": "ha",
+     "a": 0,
+     "b": 14
+    },
+    "mute": {
+     "via": "ha",
+     "a": 0,
+     "b": 15
+    },
+    "play_pause": {
+     "via": "ha",
+     "a": 0,
+     "b": 16
+    },
+    "rew": {
+     "via": "ha",
+     "a": 0,
+     "b": 17
+    },
+    "fwd": {
+     "via": "ha",
+     "a": 0,
+     "b": 18
+    }
+   }
+  }
+ ],
+ "activities": [
+  {
+   "name": "Watch TV",
+   "sub": "TV + AV receiver",
+   "icon": "TV",
+   "devices": [
+    1,
+    2
+   ],
+   "nav_dev": 1,
+   "vol_dev": 2,
+   "input_dev": 2,
+   "input_fn": "input_1",
+   "np_dev": -1
+  },
+  {
+   "name": "Shield TV",
+   "sub": "TV + Shield",
+   "icon": "Play",
+   "devices": [
+    1,
+    2,
+    0
+   ],
+   "nav_dev": 0,
+   "vol_dev": 2,
+   "input_dev": 1,
+   "input_fn": "input_2",
+   "np_dev": 0
+  },
+  {
+   "name": "Apple TV",
+   "sub": "TV + Apple TV",
+   "icon": "TV",
+   "devices": [
+    1,
+    4
+   ],
+   "nav_dev": 4,
+   "vol_dev": 1,
+   "input_dev": 1,
+   "input_fn": "input_3",
+   "np_dev": 4
+  },
+  {
+   "name": "Kodi",
+   "sub": "TV + Kodi box",
+   "icon": "TV",
+   "devices": [
+    1,
+    2,
+    5
+   ],
+   "nav_dev": 5,
+   "vol_dev": 2,
+   "input_dev": 1,
+   "input_fn": "input_4",
+   "np_dev": 5
+  },
+  {
+   "name": "Sonos",
+   "sub": "Music, TV off",
+   "icon": "Music",
+   "devices": [
+    6
+   ],
+   "nav_dev": 6,
+   "vol_dev": 6,
+   "input_dev": -1,
+   "input_fn": "none",
+   "np_dev": 6
+  },
+  {
+   "name": "All off",
+   "sub": "Every device in room",
+   "icon": "Power",
+   "all_off": true,
+   "devices": [],
+   "nav_dev": -1,
+   "vol_dev": -1,
+   "input_dev": -1,
+   "input_fn": "none",
+   "np_dev": -1
+  }
+ ],
+ "routines": [
+  {
+   "name": "Movie night",
+   "icon": "Media",
+   "steps": [
+    {
+     "kind": "ha",
+     "entity": "light.ceiling",
+     "op": "set",
+     "value": 20,
+     "wait": 0.5
+    },
+    {
+     "kind": "ha",
+     "entity": "light.floor_lamp",
+     "op": "off",
+     "wait": 0
+    },
+    {
+     "kind": "activity_start",
+     "activity": 1,
+     "wait": 1
+    },
+    {
+     "kind": "device",
+     "device": 0,
+     "fn": "home",
+     "repeat": 1,
+     "wait": 0
+    }
+   ]
+  },
+  {
+   "name": "Bedtime",
+   "icon": "Night",
+   "steps": [
+    {
+     "kind": "activity_end",
+     "wait": 2
+    },
+    {
+     "kind": "ha",
+     "entity": "light.ceiling",
+     "op": "off",
+     "wait": 1
+    },
+    {
+     "kind": "ha",
+     "entity": "light.floor_lamp",
+     "op": "set",
+     "value": 10,
+     "wait": 0
+    }
+   ]
+  },
+  {
+   "name": "Louder",
+   "icon": "Sound",
+   "steps": [
+    {
+     "kind": "device",
+     "device": 2,
+     "fn": "vol_up",
+     "repeat": 5,
+     "wait": 0
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,24 @@
+# Deleting a device with a live Bluetooth link takes the link down; the next
+# Bluetooth device gets its own link, not the deleted device's
+click Start
+wait 300
+tap 120 450
+wait 300
+click Bedroom Google TV
+wait 1000
+expect-log ble: connecting to Bedroom Google TV
+tap 20 70
+wait 300
+hold 160 312 600
+wait 300
+mark
+click Delete device
+wait 300
+click Delete
+wait 500
+expect-log ble: off (its device was deleted)
+expect-no Bedroom Google TV
+# the Shield now sits where the deleted device's number points: it gets its own link
+click Shield TV
+wait 1000
+expect-log ble: connecting to Shield TV

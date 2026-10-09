@@ -1,0 +1,30 @@
+# Walk through the main screens and save a screenshot of each
+click Start
+wait 300
+expect Activities
+shot 01_activities
+click Shield TV
+wait 3000
+expect Film title
+expect Settings
+shot 02_now_playing
+key VOL+
+wait 100
+shot 03_volume
+wait 2000
+click End
+wait 500
+expect Activities
+click Home
+wait 900
+expect Ceiling light
+shot 04_home
+click Devices
+wait 300
+shot 05_devices
+click Living room TV
+wait 300
+shot 06_device_page
+click Settings
+wait 300
+shot 07_settings

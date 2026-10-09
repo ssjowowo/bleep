@@ -1,0 +1,72 @@
+# Leaving with unsaved changes always asks; BACK/HOME move around the UI where
+# they can't mean anything to a device; the screen stays on while editing
+click Start
+wait 300
+click Watch TV
+wait 3500
+tap 40 450
+wait 300
+# an edit in the activity editor, then the status-bar pill: asked first
+hold 85 180 600
+wait 300
+click Icon
+wait 300
+click Music
+wait 300
+tap 98 18
+wait 300
+expect Discard changes to this activity?
+# BACK on a sheet is Cancel
+key BACK
+wait 300
+expect-no Discard changes to this activity?
+expect START SEQUENCE
+# the physical BACK on an editor goes back (and asks), it doesn't go to the TV
+mark
+key BACK
+wait 300
+expect Discard changes to this activity?
+expect-log-no IR  >
+click Discard
+wait 300
+expect-no START SEQUENCE
+# the physical HOME on a settings page goes to Activities
+tap 280 450
+wait 300
+click Display & haptics
+wait 300
+mark
+key HOME
+wait 300
+expect Watch TV
+expect-log-no IR  >
+# on a control page the keys still go to the device: BACK reaches the TV
+click Watch TV
+wait 3000
+mark
+key BACK
+wait 300
+expect-log IR  >
+# nothing selected or running: BACK and HOME move around instead of a toast
+key PWR
+wait 300
+tap 280 450
+wait 300
+click Display & haptics
+wait 300
+key BACK
+wait 300
+expect Display & haptics
+expect-no Select a device
+# typing keeps the screen on: 20 s on the keyboard, no dimming
+click Wi-Fi
+wait 300
+click Network
+wait 300
+mark
+wait 20000
+expect-log-no Active -> Dim
+shot 170_keyboard_awake
+# but only up to 2 minutes after the last touch
+wait 115000
+expect-log Active -> Dim

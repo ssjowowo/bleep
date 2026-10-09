@@ -1,0 +1,42 @@
+store fixtures/config-partial.json
+# A saved file from another firmware: fields missing (they keep their defaults),
+# unknown ones (ignored), out-of-range values (clamped), broken references (dropped)
+expect Start
+click Start
+wait 300
+expect Old movies
+expect-no Watch TV
+# the activity kept its device; the reference to a device that isn't there is gone
+hold 85 201 600
+wait 300
+expect Old TV
+expect Input
+expect Old TV · HDMI 2
+tap 20 70
+wait 300
+# the routine: the unknown step and the step for a missing device are dropped,
+# repeat and wait are clamped (10 presses, 60 s), the rest is kept
+click Routines
+wait 300
+expect 2 steps
+hold 85 201 600
+wait 300
+expect 1. Old TV · Volume + × 10
+expect 60 s
+expect 2. End the running activity
+tap 20 70
+wait 300
+# devices: an unknown kind becomes Other; unknown transports and functions are dropped
+tap 120 450
+wait 300
+expect Old TV
+expect Hologram
+shot 142_config_compat
+# settings: light theme kept, brightness clamped to 100 %, a missing layout is the default
+tap 280 450
+wait 300
+expect Light
+click Display & haptics
+wait 300
+expect Grid
+expect List

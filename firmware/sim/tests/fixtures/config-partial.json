@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "settings": {"theme": "light", "brightness": 250, "wifi_ssid": "Home-5G", "future_setting": true},
+  "devices": [
+    {"name": "Old TV", "kind": "tv", "transports": ["ir"], "inputs": 2,
+     "codes": {"power": {"via": "ir", "proto": "nec", "a": 4, "b": 8},
+               "vol_up": {"via": "ir", "proto": "nec", "a": 4, "b": 2},
+               "teleport": {"via": "ir", "proto": "nec", "a": 4, "b": 99}}},
+    {"name": "Hologram", "kind": "holo_projector", "transports": ["ir", "quantum"]}
+  ],
+  "activities": [
+    {"name": "Old movies", "icon": "Popcorn", "devices": [0, 7], "nav_dev": 0, "vol_dev": 9, "input_dev": 0,
+     "input_fn": "input_2", "np_dev": -1}
+  ],
+  "routines": [
+    {"name": "Odd", "steps": [{"kind": "warp", "wait": 1}, {"kind": "device", "device": 0, "fn": "vol_up", "repeat": 99, "wait": 999},
+                              {"kind": "device", "device": 5, "fn": "power"},
+                              {"kind": "activity_end"}]}
+  ]
+}

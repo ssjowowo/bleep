@@ -1,0 +1,58 @@
+# Power off and on: PWR held 5 s asks; Settings > Power off; off, only a 2 s PWR hold
+# turns it on; on USB while off the charging screen shows, unplugged it stays off
+click Start
+wait 300
+click Watch TV
+wait 3500
+# a short PWR press still acts (ends the activity), on release
+keydown PWR
+wait 300
+keyup PWR
+wait 300
+expect-no Running
+click Watch TV
+wait 3500
+# held 5 s: the question, and letting go doesn't end the activity
+keydown PWR
+wait 5200
+expect Power off?
+keyup PWR
+wait 300
+expect Power off?
+shot 130_power_off_ask
+click Cancel
+wait 300
+expect-no Power off?
+# Settings > Power off, and confirm
+tap 280 450
+wait 1500
+click Power off
+wait 300
+expect Power off?
+click Power off
+wait 500
+shot 131_off
+# off: touch, other keys and a short PWR press do nothing
+tap 160 240
+key OK
+keydown PWR
+wait 1000
+keyup PWR
+wait 1000
+shot 132_still_off
+# USB while off: the charging screen, still off
+usb on
+wait 500
+expect Off · hold PWR for 2 s to turn it on
+shot 133_off_charging
+usb off
+wait 500
+expect-no Off · hold PWR
+shot 134_off_unplugged
+# held 2 s: on, to the splash
+keydown PWR
+wait 2200
+keyup PWR
+wait 500
+expect Start
+shot 135_on

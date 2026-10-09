@@ -1,0 +1,9 @@
+# Activity editor and alarm code entry
+click Start
+wait 300
+hold 85 201 600
+wait 200
+expect START SEQUENCE
+shot 70_editor
+drag 160 400 160 100
+shot 71_editor_2

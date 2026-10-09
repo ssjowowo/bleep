@@ -1,0 +1,63 @@
+# Add devices: Bluetooth pairing, IR library, IR learning, HA media player
+click Start
+wait 300
+click Devices
+click Add device
+shot 30_add_device
+click Bluetooth TV or stick
+wait 1000
+shot 31_pairing
+wait 4000
+expect Device name
+shot 32_name_entry
+type  Lounge
+tap 294 455
+wait 300
+expect Google TV Lounge
+shot 33_new_ble_device
+click Devices
+click Add device
+click IR from the library
+shot 34_brands
+click Samsung
+shot 35_ir_test
+click No, try the next set
+click Yes, it works
+tap 294 455
+wait 300
+expect Samsung TV
+click Devices
+click Add device
+click Learn from its remote
+click Power
+wait 1700
+shot 36_learn_capture
+click Save
+wait 1700
+click Save
+wait 200
+shot 37_learn_list
+# Skip a key the old remote hasn't got, then stop
+expect Skip
+click Skip
+wait 200
+expect Press Mute on the old remote
+click Stop
+# back with learned keys asks; Cancel keeps them
+tap 20 70
+wait 300
+expect Discard the learned keys?
+click Cancel
+wait 300
+click Done
+tap 294 455
+wait 300
+expect Living room TV
+click Devices
+click Add device
+click Home Assistant media player
+click Kodi ·
+tap 294 455
+wait 300
+expect Kodi
+shot 38_ha_device

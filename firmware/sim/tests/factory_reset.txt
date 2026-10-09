@@ -1,0 +1,52 @@
+# Settings > Power & reset > Reset to factory settings: asks, erases everything, restarts as new
+click Start
+wait 300
+tap 280 450
+wait 1500
+expect POWER & RESET
+expect Power off
+drag 160 400 160 100
+shot 150_power_reset_group
+click Reset to factory settings
+wait 300
+expect Reset to factory settings?
+expect This can't be undone.
+shot 151_factory_reset_ask
+click Cancel
+wait 300
+expect-no This can't be undone.
+expect Home-5G
+click Reset to factory settings
+wait 300
+click Reset
+wait 2500
+# restarted: the splash, then a remote with nothing set up
+expect Start
+click Start
+wait 300
+expect-no Watch TV
+expect New activity
+click Routines
+wait 300
+expect-no Movie night
+tap 120 450
+wait 300
+expect-no Living room TV
+expect Add device
+tap 280 450
+wait 300
+expect Not set up
+expect Not signed in
+shot 152_after_factory_reset
+tap 200 450
+wait 800
+expect Connect Home Assistant
+expect-no Ceiling light
+# and it stays that way across a real reboot (no demo house coming back)
+reboot
+click Start
+wait 300
+expect-no Watch TV
+tap 280 450
+wait 300
+expect Not set up

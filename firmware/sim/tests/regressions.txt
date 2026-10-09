@@ -1,0 +1,47 @@
+store fixtures/config-soundbar.json
+# Bugs found in the review, kept fixed
+click Start
+wait 300
+tap 120 450
+wait 300
+# 1. Deleting a device rebuilt activities from the wrong devices: with the
+#    soundbar gone, Telly's TV start step became "Power on", which the TV hasn't got
+hold 160 102 600
+wait 300
+click Delete device
+wait 300
+expect also removed from its activities and routines
+click Delete
+wait 300
+expect-no Soundbar
+tap 40 450
+wait 300
+mark
+click Telly
+wait 2000
+expect-log NEC addr 0x04 cmd 0x08
+expect-log-no has no Power on
+# 2. A Power press used to make the setup "changed" and cost a flash write
+key PWR
+wait 300
+click Telly
+wait 2000
+mark
+key VOL+
+key PWR
+wait 3500
+expect-log NEC addr 0x04 cmd 0x08
+expect-log-no config: saved
+# 3. ...but a real change still saves, 2 s after the last change
+tap 280 450
+wait 300
+click Display & haptics
+wait 300
+mark
+click Theme
+wait 300
+click Light
+wait 1000
+expect-log-no config: saved
+wait 2500
+expect-log config: saved

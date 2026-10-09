@@ -1,0 +1,24 @@
+# Keys with nothing running, on a device page, and in an activity
+click Start
+wait 300
+key OK
+wait 100
+expect Select a device or start an activity first
+shot 20_no_target
+click Devices
+click Living room TV
+key VOL+
+key OK
+click HDMI 3
+wait 100
+shot 21_device_keys
+click Activities
+click Watch TV
+wait 3000
+key NFLX
+key VOL-
+wait 50
+shot 22_activity_keys
+key PWR
+wait 1500
+expect Activities

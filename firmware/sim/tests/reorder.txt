@@ -1,0 +1,89 @@
+# Hold and drag to reorder activities, routines and devices; hold and let go to edit
+click Start
+wait 300
+# Watch TV running, so the running activity's index has to follow the move
+click Watch TV
+wait 3500
+tap 40 450
+wait 300
+expect-before Watch TV | Shield TV
+# drag Watch TV onto Kodi's place: Shield TV, Apple TV, Kodi, Watch TV, Sonos, All off
+holddrag 85 201 234 299
+wait 300
+expect-before Shield TV | Apple TV
+expect-before Kodi | Watch TV
+expect-before Watch TV | Sonos
+expect Watch TV
+shot 114_reordered_activities
+# the running activity followed its tile: still the pill, still Running on its tile
+expect Running
+# hold and let go: the editor, nothing moved
+hold 234 299 600
+wait 300
+expect START SEQUENCE
+expect Watch TV
+tap 20 70
+wait 300
+expect-before Kodi | Watch TV
+# drag out and back to where it was: nothing moves, no editor
+holddrag 85 201 85 120
+wait 300
+expect-before Shield TV | Apple TV
+expect-no START SEQUENCE
+# All off stays last: dragging Sonos onto it does nothing
+holddrag 85 397 234 397
+wait 300
+expect-before Sonos | All off
+# routine steps follow the activities they start: Movie night still starts Shield TV
+click Routines
+wait 300
+expect-before Movie night | Bedtime
+# drag Louder in front of Movie night
+holddrag 85 299 85 201
+wait 300
+expect-before Louder | Movie night
+expect-before Movie night | Bedtime
+shot 115_reordered_routines
+hold 234 201 600
+wait 300
+expect 3. Start Shield TV
+tap 20 70
+wait 300
+# devices
+tap 120 450
+wait 300
+expect-before Living room TV | AV receiver
+expect-before AV receiver | Shield TV
+# Shield TV to the top
+holddrag 160 266 160 126
+wait 300
+expect-before Shield TV | Living room TV
+expect-before Living room TV | AV receiver
+shot 116_reordered_devices
+# Living room TV to the bottom: the list scrolls while the finger stays at the edge
+holddrag 160 196 160 412 1500
+wait 300
+expect-before Apple TV | Living room TV
+shot 117_device_to_bottom
+drag 160 150 160 400
+wait 300
+# hold and let go: Edit device
+hold 160 126 600
+wait 300
+expect Edit device
+tap 20 70
+wait 300
+# references follow the devices: Movie night's Bluetooth step is still the Shield,
+# and Watch TV's volume still goes to the receiver
+tap 40 450
+wait 300
+hold 234 201 600
+wait 300
+expect 4. Shield TV · Home
+tap 20 70
+wait 300
+click Activities
+wait 300
+key VOL+
+wait 200
+expect AV receiver

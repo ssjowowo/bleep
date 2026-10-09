@@ -1,0 +1,41 @@
+# After a routine, what was selected before it (the pill) is selected again.
+# Nothing is sent for that; an activity the routine itself ended stays ended.
+click Start
+wait 300
+click Watch TV
+wait 3500
+tap 40 450
+wait 300
+click Routines
+wait 300
+expect Watch TV
+# Movie night starts Shield TV on the way; at the end Watch TV is selected again
+click Movie night
+wait 9000
+expect-no Step 4 of 4
+expect Watch TV
+shot 111_after_movie_activity
+# a device selected before: still selected after a routine that only presses buttons,
+# and selected again after one that starts an activity
+tap 120 450
+wait 300
+click Bedroom Google TV
+wait 500
+tap 40 450
+wait 300
+expect Bedroom Google TV
+click Louder
+wait 4000
+expect Bedroom Google TV
+click Movie night
+wait 9000
+expect Bedroom Google TV
+shot 112_after_movie_device
+# Bedtime ends the running activity: it stays ended; the device stays selected
+click Bedtime
+wait 7000
+expect Bedroom Google TV
+click Activities
+wait 300
+expect-no Running
+shot 113_after_bedtime

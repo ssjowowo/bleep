@@ -1,0 +1,77 @@
+factory
+# A new remote: nothing saved. No Wi-Fi, signed out of HA, no devices or activities.
+expect Firmware 0.1.0
+click Start
+wait 300
+shot 80_factory_activities
+expect-no Watch TV
+tap 120 450
+wait 300
+shot 81_factory_devices
+expect-no Living room TV
+tap 200 450
+wait 800
+expect Connect Home Assistant
+expect Set up Wi-Fi
+expect-no Ceiling light
+shot 82_factory_home
+tap 280 450
+wait 300
+expect Not set up
+expect Not signed in
+shot 83_factory_settings
+click Software update
+wait 300
+click Check for updates
+wait 300
+expect Wi-Fi isn't set up
+shot 84_factory_update_no_wifi
+click Wi-Fi settings
+wait 300
+expect Not set
+# set up Wi-Fi from scratch: scan, pick the home network, password, Connect
+click Scan
+wait 2500
+click Home-5G
+wait 300
+type correcthorse
+tap 294 455
+wait 300
+click Connect
+wait 1500
+expect Connected and saved
+shot 85_factory_wifi_saved
+# the daily update check rode along on the new Wi-Fi connection
+tap 20 70
+wait 1800
+expect Version 0.2.0 is available
+# Home now offers HA sign-in; signing in on the remote brings the house
+tap 20 70
+wait 300
+tap 200 450
+wait 800
+expect Connect Home Assistant
+expect Sign in
+shot 86_factory_home_signin
+click Sign in
+wait 300
+expect SERVER
+click Address
+wait 2000
+expect FOUND ON YOUR NETWORK
+click Home
+wait 300
+click Sign in with your phone
+wait 8200
+expect Signed in as
+expect Connected
+# the house arrives with the first sign-in
+tap 20 70
+wait 300
+tap 200 450
+wait 800
+expect Ceiling light
+expect Kitchen
+expect-no Connect Home Assistant
+shot 87_factory_home_after_signin
+wait 3000

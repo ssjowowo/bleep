@@ -1,0 +1,172 @@
+# Routines: the Activities | Routines switch, running with the progress window, Stop, the editors
+click Start
+wait 300
+click Routines
+wait 300
+expect Movie night
+expect Bedtime
+expect Louder
+shot 100_routines
+# Louder: one step, five presses; the window closes by itself
+click Louder
+wait 100
+expect Step 1 of 1
+expect AV receiver · Volume + × 5
+shot 101_routine_running
+wait 1500
+expect Done
+expect Its step ran
+expect Close
+expect-no Stop
+shot 102_routine_done
+wait 2500
+expect-no Done
+# Movie night: Home Assistant (Wi-Fi comes up for it), an activity, Bluetooth
+click Movie night
+wait 200
+expect Step 1 of 4
+shot 103_movie_1
+expect Waiting for Home Assistant…
+wait 1500
+expect Step 3 of 4
+expect Start Shield TV
+expect Living room TV: Power on
+shot 104_movie_3
+wait 3200
+expect Done
+shot 105_movie_done
+wait 2500
+# Stop: Bedtime ends the activity, then waits 2 s; stopped during the wait
+click Bedtime
+wait 600
+expect Next step in
+shot 106_bedtime_wait
+click Stop
+wait 300
+expect Bedtime stopped
+expect-no Next step in
+wait 3000
+# edit Louder: change its button, Update
+hold 85 299 600
+wait 300
+expect STEPS
+expect 1. AV receiver · Volume + × 5
+shot 107_routine_editor
+click 1. AV receiver · Volume + × 5
+wait 300
+expect Presses
+expect This is the last step
+shot 108_step_editor
+# the row stepper: one tap on + and on -; tapped just outside the drawn circle,
+# inside its 44 px tap area
+tap 308 208
+wait 300
+tap 188 208
+wait 300
+tap 188 208
+wait 300
+shot 108c_presses
+click Button
+wait 300
+click Mute
+wait 300
+expect Mute
+tap 20 70
+wait 300
+expect 1. AV receiver · Mute × 4
+click Update
+wait 300
+expect Routine updated
+wait 2500
+# Bedtime's brightness step: the Value row's stepper goes in 5 % steps
+hold 234 201 600
+wait 300
+click 3. Floor lamp · Brightness 10 %
+wait 300
+expect 10 %
+tap 308 208
+wait 300
+expect 15 %
+shot 108d_value
+tap 20 70
+wait 300
+expect 3. Floor lamp · Brightness 15 %
+tap 20 70
+wait 300
+click Discard
+wait 300
+# a new routine from scratch: a device button, a Home Assistant action, an activity
+click New routine
+wait 300
+expect No steps yet.
+click Add step
+wait 300
+click Press a device button
+wait 300
+expect Living room TV
+expect Power on
+tap 20 70
+wait 300
+click Add step
+wait 300
+click Home Assistant action
+wait 300
+expect Ceiling light
+click Action
+wait 300
+click Turn off
+wait 300
+expect Turn off
+tap 20 70
+wait 300
+click Add step
+wait 300
+click Start an activity
+wait 300
+expect Watch TV
+# move the activity step up one
+click Move up
+wait 300
+expect Step 2
+tap 20 70
+wait 300
+expect 2. Start Watch TV
+expect 3. Ceiling light · Turn off
+# drag the first step's wait to 5 s
+click 1. Living room TV · Power on
+wait 300
+slide Wait after 10
+expect 5 s
+shot 108b_wait_slider
+# - / + fine-tune in half seconds: + once, - twice
+tap 289 258
+wait 300
+expect 5.5 s
+tap 207 258
+wait 300
+tap 207 258
+wait 300
+expect 4.5 s
+shot 108e_wait_buttons
+tap 20 70
+wait 300
+expect 4.5 s
+click Name
+clear
+type Test routine
+tap 294 455
+wait 300
+shot 109_new_routine
+click Create
+wait 300
+expect Routine created
+expect Test routine
+click Test routine
+wait 7000
+expect Done
+shot 110_test_routine_done
+# Close doesn't wait for the window to close itself
+click Close
+wait 300
+expect-no Done
+wait 3000

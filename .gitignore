@@ -6,3 +6,6 @@ _autosave-*
 *.lck
 # Python
 __pycache__/
+# Firmware build output and downloaded fonts
+build/
+firmware/tools/fonts/

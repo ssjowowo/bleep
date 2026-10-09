@@ -1,0 +1,81 @@
+# Software update: check, Install only on USB, unplugging stops it, install restarts into the new version
+expect Firmware 0.1.0
+click Start
+wait 300
+tap 280 450
+wait 300
+expect Software update
+click Software update
+wait 300
+expect Installed
+expect 0.1.0
+expect Never checked
+shot 70_update_page
+click Check for updates
+wait 200
+expect Checking…
+shot 71_update_checking
+wait 2500
+expect Version 0.2.0 is available
+expect Checked just now
+expect Plug in USB-C to install
+shot 72_update_available
+# the button stays disabled on battery
+click Plug in USB-C to install
+wait 300
+expect Plug in USB-C to install
+# plug in: no charging screen on this page, Install appears at once
+usb on
+wait 300
+expect Install
+expect Version 0.2.0 is available
+shot 73_update_usb
+click Install
+wait 3000
+expect Installing 0.2.0
+expect keep the remote plugged in
+shot 74_update_installing
+# unplug: the update stops and nothing changes
+usb off
+wait 300
+expect Update stopped
+expect Nothing was changed
+expect 0.1.0
+expect Plug in USB-C to install
+shot 75_update_stopped
+# back in, install again, all the way
+usb on
+wait 300
+expect Try 0.2.0 again
+# idle on USB on this page: it only dims
+wait 9000
+shot 75b_update_idle_usb
+expect Try 0.2.0 again
+tap 160 400
+wait 300
+click Try 0.2.0 again
+wait 4000
+# leaving the page doesn't stop it; the Settings row shows it
+tap 20 70
+wait 300
+expect Installing…
+click Software update
+wait 300
+wait 3800
+expect Restarting…
+shot 76_update_restarting
+wait 2000
+expect Firmware 0.2.0
+shot 77_update_rebooted
+click Start
+wait 300
+tap 280 450
+wait 300
+expect 0.2.0
+click Software update
+wait 300
+click Check for updates
+wait 2500
+expect Bleep is up to date
+expect Version 0.2.0 is the latest.
+shot 78_update_up_to_date

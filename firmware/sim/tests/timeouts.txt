@@ -1,0 +1,31 @@
+# Haptics, idle and sleep sliders; the timeouts they set
+click Start
+wait 300
+tap 280 450
+wait 300
+click Display & haptics
+wait 300
+slide Haptics 3
+expect Strong
+tap 20 70
+wait 300
+click Power & sleep
+wait 300
+slide Idle after 0
+expect 5 s
+shot 58_settings_sliders
+# idle 1 min pushes sleep up to 1.5 min
+slide Idle after 6
+expect 1 min
+expect 1.5 min
+# sleep 15 s pulls idle down to 10 s
+slide Sleep after 0
+expect 15 s
+expect 10 s
+shot 58_settings_sliders_2
+# check they apply: dims 10 s after the last touch, screen off at 15 s
+wait 9000
+expect Sleep after
+wait 1500
+expect Pick up or press any key
+shot 58_idle_lock

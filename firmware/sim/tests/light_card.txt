@@ -1,0 +1,22 @@
+# RGB light card: slider knob and the chosen colour's ring are drawn whole
+click Start
+wait 300
+tap 200 450
+wait 900
+drag 160 400 160 160
+wait 300
+shot 76_rgb_card
+click Kitchen
+wait 300
+shot 77_rgb_card_kitchen
+# colour temperature: drag the knob to the cool end
+click Living room
+wait 300
+drag 160 300 160 400
+wait 300
+shot 78_ct_before
+expect 3000 K
+drag 230 225 300 225
+wait 300
+expect 6500 K
+shot 78_ct_cool

@@ -1,0 +1,12 @@
+# Boot splash: logo and Start; other keys are ignored, OK or Start goes on
+expect Start
+shot 00_splash
+key VOL+
+key UP
+wait 200
+expect Start
+wait 9000
+shot 00_splash_dim
+key OK
+wait 400
+expect Activities

@@ -1,0 +1,81 @@
+# Home Assistant without tokens: find the server, sign in with a phone or on the remote
+click Start
+wait 300
+tap 280 450
+wait 300
+click Home Assistant
+wait 600
+expect Signed in as
+shot 68_ha_signed_in
+# sign out: the Home tab says so
+click Sign out
+wait 200
+click Sign out
+wait 300
+expect Not signed in
+expect Sign in with your phone
+shot 69_ha_signed_out
+# server: found on the network
+click Address
+wait 2000
+expect FOUND ON YOUR NETWORK
+expect Holiday flat
+shot 70_ha_server
+click Home
+wait 300
+expect homeassistant.local:8123
+# phone sign-in: QR, phone opens it, signs in
+click Sign in with your phone
+wait 500
+expect Scan with your phone's camera
+shot 71_ha_phone_qr
+wait 3200
+expect Now sign in on your phone
+shot 72_ha_phone_open
+wait 4500
+expect Signed in as
+expect Sam
+expect Connected
+wait 800
+# on the remote: wrong password, then the two-factor code
+click Sign out
+wait 200
+click Sign out
+wait 300
+click Sign in on the remote
+wait 300
+click Username
+type sam
+tap 294 455
+wait 300
+click Password
+type wrong
+tap 294 455
+wait 300
+click Sign in
+wait 200
+expect Signing in…
+wait 1200
+expect Wrong username or password
+shot 73_ha_bad_password
+click Password
+clear
+type correcthorse
+tap 294 455
+wait 300
+click Sign in
+wait 1300
+expect Two-factor code
+shot 74_ha_mfa
+type 111111
+tap 266 455
+wait 1300
+expect That code didn't match
+click Enter two-factor code
+wait 300
+type 123456
+tap 266 455
+wait 1300
+expect Signed in as
+expect Sam
+shot 75_ha_signed_in_again

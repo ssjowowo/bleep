@@ -1,0 +1,12 @@
+{
+ "version": 1,
+ "devices": [
+  {"name": "Soundbar", "kind": "speaker", "transports": ["ir"],
+   "codes": {"power_on": {"via": "ir", "proto": "nec", "a": 1, "b": 17}, "vol_up": {"via": "ir", "proto": "nec", "a": 1, "b": 18}}},
+  {"name": "Old TV", "kind": "tv", "transports": ["ir"],
+   "codes": {"power": {"via": "ir", "proto": "nec", "a": 4, "b": 8}, "vol_up": {"via": "ir", "proto": "nec", "a": 4, "b": 2}}}
+ ],
+ "activities": [
+  {"name": "Telly", "icon": "TV", "devices": [1], "nav_dev": 1, "vol_dev": 1, "input_dev": -1, "np_dev": -1}
+ ]
+}

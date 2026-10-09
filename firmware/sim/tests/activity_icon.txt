@@ -1,0 +1,32 @@
+# Activity editor: pick an icon; the tile, the editor row and the status pill follow it
+click Start
+wait 300
+hold 85 201 600
+wait 200
+expect Icon
+expect TV
+shot 90_editor_icon_row
+click Icon
+wait 300
+expect Music
+expect Morning
+shot 91_icon_picker
+click Night
+wait 300
+expect START SEQUENCE
+expect Night
+shot 92_editor_icon_night
+click Update
+wait 300
+shot 93_activities_night_tile
+# it sticks: open the picker again and Night is the selected one
+hold 85 201 600
+wait 200
+click Icon
+wait 300
+shot 94_icon_picker_night
+# tapping the round button itself picks once (one step back, to the editor)
+tap 124 307
+wait 300
+expect START SEQUENCE
+expect Scene

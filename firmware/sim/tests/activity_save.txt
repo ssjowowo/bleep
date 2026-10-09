@@ -1,0 +1,68 @@
+# Activities are saved only with Create / Update; leaving with changes asks first
+click Start
+wait 300
+# new activity, left without changes: no question, nothing created
+click New activity
+wait 300
+expect Create
+expect-no Delete activity
+shot 95_new_activity
+tap 20 70
+wait 300
+expect Watch TV
+# name it, then leave: asked, discarded, nothing created
+click New activity
+wait 300
+click Name
+clear
+type Movie night
+tap 294 455
+wait 300
+expect Movie night
+tap 20 70
+wait 300
+expect Discard new activity?
+shot 96_discard_new
+click Discard
+wait 300
+expect-no Movie night
+# again, with a device, and Create
+click New activity
+wait 300
+click Name
+clear
+type Movie night
+tap 294 455
+wait 300
+tap 283 229
+wait 300
+click Create
+wait 300
+expect Activity created
+expect Movie night
+shot 97_created
+# edit: Update does nothing until something changes
+hold 85 201 600
+wait 300
+expect Update
+click Update
+wait 300
+expect START SEQUENCE
+click Icon
+wait 300
+click Music
+wait 300
+# back with a change: asked; Cancel keeps editing
+tap 20 70
+wait 300
+expect Discard changes to this activity?
+click Cancel
+wait 300
+expect START SEQUENCE
+expect Music
+shot 98_edit_changed
+click Update
+wait 300
+expect Activity updated
+shot 99_updated
+wait 2500

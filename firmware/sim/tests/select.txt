@@ -1,0 +1,41 @@
+# A selected device keeps the keys on every screen and shows in the status bar
+click Start
+wait 300
+tap 120 450
+click Bedroom Google TV
+wait 600
+expect Active: the remote's keys control this device
+tap 200 450
+wait 900
+expect Bedroom Goo
+shot 95_active_on_home
+key VOL+
+key OK
+wait 100
+expect Volume +
+tap 280 450
+key DOWN
+wait 100
+shot 96_active_on_settings
+# starting an activity takes the keys over
+tap 40 450
+click Watch TV
+wait 3000
+expect Watch TV
+key VOL+
+wait 100
+expect AV receiver
+# selecting a device while the activity runs takes them back
+tap 120 450
+click Shield TV
+wait 600
+key OK
+wait 100
+tap 40 450
+expect Shield TV
+shot 97_device_over_activity
+# tapping the running activity hands the keys back to it
+click Watch TV
+wait 300
+tap 40 450
+shot 98_back_to_activity

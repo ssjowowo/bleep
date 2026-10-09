@@ -1,0 +1,70 @@
+# Wi-Fi: Connect tests the draft and saves only on success; Scan lists networks
+click Start
+wait 300
+tap 280 450
+wait 300
+click Wi-Fi
+wait 800
+expect Connected · Home-5G
+shot 60_wifi_settings
+# wrong password: error, nothing saved
+click Password
+clear
+type wrongpass
+tap 294 455
+wait 300
+expect NOT SAVED YET
+click Connect
+wait 300
+expect Connecting…
+shot 61_wifi_connecting
+wait 2600
+expect Couldn't connect, nothing saved
+expect turned the password down
+shot 62_wifi_bad_password
+# leave and come back: the saved password still works
+tap 20 70
+wait 300
+click Wi-Fi
+wait 300
+click Connect
+wait 1500
+expect Connected and saved
+# scan, pick the open guest network
+click Scan
+wait 300
+expect Scanning…
+wait 2200
+expect NETWORKS IN RANGE
+expect DIRECT-HP-LaserJet
+shot 65_wifi_scan
+click Guest
+wait 300
+expect None (open)
+click Connect
+wait 1500
+expect Connected and saved
+expect Connected · Guest
+shot 66_wifi_guest_saved
+# a weak network times out
+click Shed
+wait 300
+expect Password
+clear
+type correcthorse
+tap 294 455
+wait 300
+click Connect
+wait 6500
+expect didn't answer in time
+expect Connected · Guest
+# a name that isn't in range
+click Network
+clear
+type Nowhere
+tap 294 455
+wait 300
+click Connect
+wait 3200
+expect No network called “Nowhere”
+shot 67_wifi_not_found

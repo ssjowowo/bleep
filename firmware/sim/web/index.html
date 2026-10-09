@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bleep emulator</title>
+<style>
+  :root {
+    --bg: #0c0d0e; --panel: #141618; --line: #23272a; --key: #1d2124; --key-hi: #2a3034;
+    --text: #e6eef0; --text2: #8d9a9e; --accent: #50d9ef; --warn: #f7ac4d;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; }
+  main { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start; padding: 24px 16px; }
+  .device { padding: 12px; background: #050505; border-radius: 26px; box-shadow: 0 0 0 1px #2a2d30; }
+  canvas { display: block; border-radius: 14px; background: #000; touch-action: none; outline: none; }
+  .side { width: 340px; max-width: 100%; display: flex; flex-direction: column; gap: 14px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  h2 { margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
+  .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .pad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 40px); gap: 6px; justify-content: center; margin: 10px 0; }
+  button { background: var(--key); color: var(--text); border: 1px solid var(--line); border-radius: 9px; height: 40px;
+           font: 600 12px system-ui, sans-serif; cursor: pointer; }
+  button:hover { background: var(--key-hi); }
+  button:active { border-color: var(--accent); color: var(--accent); }
+  .pad .ok { border-radius: 50%; }
+  .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .row label { width: 88px; color: var(--text2); }
+  .row input[type=range] { flex: 1; accent-color: var(--accent); }
+  .row output { width: 58px; text-align: right; font-variant-numeric: tabular-nums; }
+  .state { display: grid; grid-template-columns: 90px 1fr; gap: 3px 10px; }
+  .state dt { color: var(--text2); }
+  .state dd { margin: 0; }
+  .on { color: var(--accent); }
+  .haptic { color: var(--warn); min-height: 18px; margin-top: 6px; }
+  #log { height: 220px; overflow-y: auto; margin: 0; font: 11px/1.5 ui-monospace, monospace; color: #b7c2c5; white-space: pre-wrap; }
+  .hint { color: var(--text2); font-size: 12px; }
+  .zoom { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
+  .zoom button { height: 28px; padding: 0 10px; }
+  .zoom button.sel { border-color: var(--accent); color: var(--accent); }
+  #loading { position: absolute; color: var(--text2); padding: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <div class="device">
+      <div id="loading">Loading…</div>
+      <canvas id="canvas" width="320" height="480" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+    </div>
+    <div class="zoom" id="zoom"></div>
+  </div>
+
+  <div class="side">
+    <section>
+      <h2>Physical keys</h2>
+      <div class="keys">
+        <button data-k="9">PWR</button><button data-k="5">NFLX</button><button data-k="6">YT</button><button data-k="13">PLEX</button>
+      </div>
+      <div class="pad">
+        <span></span><button data-k="1">▲</button><span></span>
+        <button data-k="3">◀</button><button data-k="0" class="ok">OK</button><button data-k="4">▶</button>
+        <span></span><button data-k="2">▼</button><span></span>
+      </div>
+      <div class="keys">
+        <button data-k="10">BACK</button><button data-k="11">HOME</button><button data-k="12">MUTE</button><button id="lift">Pick up</button>
+        <button data-k="8">VOL −</button><button data-k="7">VOL +</button>
+        <button data-skip="10000">Idle +10 s</button><button data-skip="120000">Idle +2 min</button>
+      </div>
+      <p class="hint">Hold PWR 5 s to power off; when off, hold it 2 s to turn on. PC keyboard: arrows = D-pad, Enter = OK, Esc = BACK, H = HOME, P = PWR, + / − = volume, M = MUTE, N, Y, X = NFLX, YT, PLEX, L = pick up.</p>
+    </section>
+
+    <section>
+      <h2>Sensors</h2>
+      <div class="row"><label for="batt">Battery</label><input id="batt" type="range" min="0" max="100" value="82"><output id="batt-o">82 %</output></div>
+      <div class="row"><label for="lux">Light</label><input id="lux" type="range" min="0" max="100" value="63"><output id="lux-o">400 lux</output></div>
+      <div class="row"><label for="usb">USB-C</label><input id="usb" type="checkbox"><span class="hint">plugged in</span></div>
+    </section>
+
+    <section>
+      <h2>State</h2>
+      <dl class="state" id="state"></dl>
+      <div class="haptic" id="haptic"></div>
+    </section>
+
+    <section>
+      <h2>Event log</h2>
+      <pre id="log"></pre>
+    </section>
+  </div>
+</main>
+
+<script>
+  const logEl = document.getElementById('log');
+  function log(line) {
+    const atEnd = logEl.scrollTop + logEl.clientHeight >= logEl.scrollHeight - 4;
+    logEl.textContent += line + '\n';
+    if (logEl.textContent.length > 60000) logEl.textContent = logEl.textContent.slice(-40000);
+    if (atEnd) logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  const canvas = document.getElementById('canvas');
+  // ?demo: forget what this browser saved, start over with the demo house
+  // (?factory: a new remote, nothing set up)
+  const params = new URLSearchParams(location.search);
+  if (params.has('demo')) {
+    try { localStorage.removeItem('bleep-config'); localStorage.removeItem('bleep-secrets'); } catch (e) {}
+  }
+  var Module = {
+    canvas,
+    arguments: params.has('factory') ? ['--factory'] : [],   // ?factory: a new remote
+    print: log,
+    printErr: (t) => console.warn(t),
+    onRuntimeInitialized() { document.getElementById('loading').remove(); startPanel(); },
+  };
+
+  // Zoom: CSS scaling; SDL maps pointer positions back to 320 x 480
+  const zoomEl = document.getElementById('zoom');
+  function setZoom(z) {
+    canvas.style.width = 320 * z + 'px';
+    canvas.style.height = 480 * z + 'px';
+    [...zoomEl.children].forEach(b => b.classList.toggle('sel', +b.dataset.z === z));
+    try { localStorage.setItem('bleep-zoom', z); } catch (e) {}
+  }
+  [1, 1.5, 2].forEach(z => {
+    const b = document.createElement('button');
+    b.textContent = z + '×'; b.dataset.z = z; b.onclick = () => setZoom(z);
+    zoomEl.appendChild(b);
+  });
+  let z0 = 1.5;
+  try { z0 = +localStorage.getItem('bleep-zoom') || z0; } catch (e) {}
+  if (window.innerWidth < 900) z0 = 1;
+  setZoom(z0);
+
+  function startPanel() {
+    const call = (name, ...args) => Module.ccall(name, null, args.map(() => 'number'), args);
+    // keys go down and up with the mouse button, so they can be held (PWR: 5 s = power off, 2 s = on)
+    document.querySelectorAll('[data-k]').forEach(b => {
+      const k = +b.dataset.k;
+      b.addEventListener('pointerdown', (e) => { b.setPointerCapture(e.pointerId); call('web_key_down', k); });
+      b.addEventListener('pointerup', () => call('web_key_up', k));
+      b.addEventListener('pointercancel', () => call('web_key_up', k));
+    });
+    document.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => call('web_skip_idle', +b.dataset.skip));
+    document.getElementById('lift').onclick = () => call('web_lift');
+
+    const batt = document.getElementById('batt'), lux = document.getElementById('lux');
+    batt.oninput = () => { call('web_battery', +batt.value); document.getElementById('batt-o').textContent = batt.value + ' %'; };
+    lux.oninput = () => {
+      const v = Math.round(lux.value * lux.value / 10);   // finer at the dark end, up to 1000 lux
+      call('web_lux', v); document.getElementById('lux-o').textContent = v + ' lux';
+    };
+    document.getElementById('usb').onchange = (e) => call('web_usb', e.target.checked ? 1 : 0);
+
+    // Keys typed while a panel control has focus still reach the remote
+    document.querySelectorAll('button, input').forEach(el => el.addEventListener('mouseup', () => canvas.focus()));
+
+    const stateEl = document.getElementById('state'), hapticEl = document.getElementById('haptic');
+    const status = Module.cwrap('web_status', 'string', []);
+    setInterval(() => {
+      const s = JSON.parse(status());
+      const rows = [
+        ['Power', s.power + (s.usb ? ' (USB)' : '')],
+        ['Backlight', s.lcd_sleep ? 'off, LCD asleep' : s.backlight + ' %'],
+        ['Wi-Fi', s.wifi], ['Bluetooth', s.ble], ['IR', s.ir],
+        ['Activity', s.activity || 'none'],
+      ];
+      stateEl.innerHTML = rows.map(([k, v]) =>
+        `<dt>${k}</dt><dd class="${/^(on|ready|receiving|pairing)$/.test(v) ? 'on' : ''}">${v}</dd>`).join('');
+      hapticEl.textContent = s.haptic ? 'Haptic: ' + s.haptic : '';
+    }, 150);
+    canvas.focus();
+    // what the remote saves lives in this browser's localStorage; save the last changes on leaving
+    window.addEventListener('pagehide', () => call('web_save'));
+  }
+</script>
+<script src="bleep.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+# Light theme across the main screens, then Auto following the light sensor
+click Start
+wait 300
+click Settings
+click Display & haptics
+click Theme
+click Light
+wait 300
+expect Settings
+shot 80_light_settings
+tap 20 70
+wait 300
+click Activities
+click Shield TV
+wait 3000
+shot 81_light_now_playing
+click End
+click Home
+wait 900
+shot 82_light_home
+click Devices
+click Living room TV
+shot 83_light_device
+click Settings
+click Display & haptics
+click Theme
+click Auto
+wait 300
+lux 20
+wait 1500
+shot 84_auto_dark

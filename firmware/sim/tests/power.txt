@@ -1,0 +1,32 @@
+# Dim -> lock screen, screen off, deep sleep, wake paths, charging, low battery
+click Start
+wait 300
+click Shield TV
+wait 3000
+wait 9000
+expect Pick up or press any key
+shot 10_lock_dim
+tap 160 240
+wait 200
+expect Film title
+wait 31000
+shot 11_warm_off
+wait 125000
+lift
+wait 300
+expect Or start
+shot 12_wake
+usb on
+wait 300
+expect Charging
+shot 13_charging
+tap 160 240
+wait 200
+usb off
+battery 8
+wait 300
+expect Battery at 8%
+shot 14_low_battery
+click Battery saver
+wait 300
+expect Battery saver on

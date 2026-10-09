@@ -1,0 +1,28 @@
+# Home Assistant interactions: toggles, steppers, hold to unlock, alarm code
+click Start
+wait 300
+click Home
+wait 800
+click Kitchen
+wait 200
+expect Coffee machine
+click Water heater
+click Hallway
+wait 200
+expect Locked
+click Hold to unlock
+expect Locked
+click Off
+wait 200
+expect Enter code
+shot 90_alarm_code
+type 1234
+shot 91_alarm_code_typed
+tap 266 455
+wait 300
+expect Disarmed
+click Bedroom
+wait 200
+tap 191 232
+wait 200
+expect speed 3

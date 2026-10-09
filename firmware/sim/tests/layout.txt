@@ -1,0 +1,73 @@
+# Settings in groups; grid or list for activities and routines, and for devices
+click Start
+wait 300
+tap 280 450
+wait 1500
+expect REMOTE
+expect CONNECTIONS
+expect SYSTEM
+shot 120_settings_groups
+click Display & haptics
+wait 300
+expect SCREEN
+expect LAYOUT
+expect FEEL
+shot 121_display
+click Activities & routines
+wait 300
+click List
+wait 300
+expect List
+click Devices
+wait 300
+click Grid
+wait 300
+expect Grid
+tap 20 70
+wait 300
+click Power & sleep
+wait 300
+expect Idle after
+expect Battery saver
+shot 122_power
+tap 20 70
+wait 300
+tap 40 450
+wait 300
+shot 123_activities_list
+expect-before Watch TV | Shield TV
+# list mode: drag Watch TV below Apple TV
+holddrag 160 184 160 324
+wait 300
+expect-before Shield TV | Apple TV
+expect-before Apple TV | Watch TV
+expect-before Watch TV | Kodi
+# hold and let go on a row: its editor
+hold 160 324 600
+wait 300
+expect START SEQUENCE
+expect Watch TV
+tap 20 70
+wait 300
+# routines follow the same setting
+click Routines
+wait 300
+expect Tap to run
+shot 124_routines_list
+holddrag 160 324 160 184
+wait 300
+expect-before Louder | Movie night
+# devices as a grid
+tap 120 450
+wait 300
+shot 125_devices_grid
+expect-before Living room TV | AV receiver
+# grid mode: drag AV receiver to the first place
+holddrag 234 155 85 155
+wait 300
+expect-before AV receiver | Living room TV
+# tap still opens and selects the device
+click Shield TV
+wait 300
+expect Shield TV
+expect Active

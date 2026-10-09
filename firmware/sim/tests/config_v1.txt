@@ -1,0 +1,48 @@
+store fixtures/config-v1.json
+# A file saved by firmware with config version 1, frozen. Every later firmware
+# must keep reading it exactly like this: don't edit the fixture to make this pass.
+click Start
+wait 300
+# its "room" is a retired key now: read past and ignored
+expect-no Lounge
+# activities as a list, in order; Watch TV's devices and roles intact
+expect-before Watch TV | Shield TV
+hold 160 184 600
+wait 300
+expect Living room TV
+expect AV receiver
+expect AV receiver · HDMI 1
+tap 20 70
+wait 300
+# routines with their steps, waits and repeats
+click Routines
+wait 300
+hold 160 184 600
+wait 300
+expect 1. Ceiling light · Brightness 20 %
+expect 2. Floor lamp · Turn off
+expect 3. Start Shield TV
+expect 4. Shield TV · Home
+tap 20 70
+wait 300
+# devices as a grid, Shield TV first, with its codes: its page has the Bluetooth controls
+tap 120 450
+wait 300
+expect-before Shield TV | Living room TV
+click Living room TV
+wait 300
+expect HDMI 1
+tap 20 70
+wait 300
+# settings
+tap 280 450
+wait 300
+expect Light
+expect Home-5G
+expect Sleep after 1 min
+click Display & haptics
+wait 300
+expect List
+expect Grid
+expect Strong
+shot 160_config_v1
