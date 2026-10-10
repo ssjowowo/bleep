@@ -74,7 +74,6 @@ add_executable(bleep_sim
   store.c
   ${cjson_SOURCE_DIR}/cJSON.c
   ha_mock.c
-  ir_library_demo.c
   panel.c
   script.c
   png.c

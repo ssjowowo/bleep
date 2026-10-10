@@ -23,6 +23,6 @@ wait 300
 expect Disarmed
 click Bedroom
 wait 200
-tap 191 232
+tap 191 221
 wait 200
 expect speed 3

@@ -6,6 +6,7 @@
 #include "app.h"
 #include "control.h"
 #include "ha.h"
+#include "home.h"
 #include "hal.h"
 #include "radio.h"
 
@@ -138,7 +139,7 @@ const char *routine_step_text(const rstep_t *s, char *buf, int len)
         break;
     case RS_HA: {
         int e = ha_find(s->entity);
-        const char *name = e >= 0 ? ha_get(e)->name : s->entity;
+        const char *name = e >= 0 ? home_card_name(ha_get(e)) : s->entity;
         if (s->op == HAOP_SET) {
             int lo, hi;
             const char *unit;
@@ -242,15 +243,17 @@ static void step_fail(const char *why)
     step_done();
 }
 
-void routine_run(int idx)
+const routine_t *routine_current(void) { return &cur; }
+
+static void start(const routine_t *r, int idx)
 {
-    if (idx < 0 || idx >= g_model.n_routines || routine_busy()) return;
-    cur = g_model.routines[idx];
+    cur = *r;
     memset(&st, 0, sizeof(st));
     st.idx = idx;
+    st.test = idx < 0;
     st.n = cur.n_steps;
-    snprintf(st.name, sizeof(st.name), "%s", cur.name);
-    hal_log("routine: run %s (%d steps)", st.name, st.n);
+    snprintf(st.name, sizeof(st.name), "%s", cur.name[0] ? cur.name : "New routine");
+    hal_log("routine: %s %s (%d steps)", st.test ? "test" : "run", st.name, st.n);
     orig_dev = g_model.active_dev;
     orig_act = g_model.running;
     orig_ended = false;
@@ -263,6 +266,18 @@ void routine_run(int idx)
     /* Wi-Fi from the start, so Home Assistant is ready by the time a step needs it */
     radio_hold_routine(true, needs_wifi, -1);
     begin_step(0);
+}
+
+void routine_run(int idx)
+{
+    if (idx < 0 || idx >= g_model.n_routines || routine_busy()) return;
+    start(&g_model.routines[idx], idx);
+}
+
+void routine_test(const routine_t *draft)
+{
+    if (!draft->n_steps || routine_busy()) return;
+    start(draft, -1);
 }
 
 void routine_stop(void)

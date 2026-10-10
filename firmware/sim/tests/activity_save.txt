@@ -36,6 +36,14 @@ tap 294 455
 wait 300
 tap 283 229
 wait 300
+# Test sends its start steps without saving anything
+mark
+click Test
+wait 1500
+expect Testing: its start steps are going out
+expect-log activity: test Movie night
+expect-log IR  >
+shot 97b_activity_test
 click Create
 wait 300
 expect Activity created

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../ha.h"
+#include "../home.h"
 #include "../model.h"
 #include "../routine.h"
 #include "ui.h"
@@ -34,6 +35,13 @@ void ui_routine_edit(int idx)
 static void ed_changed(void)
 {
     if (ui_current() == &page_routine_edit) ui_refresh();
+}
+
+/* Test: run it as it is in the editor, in the usual progress window; nothing is saved */
+static void ed_test_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+    routine_test(&draft);
 }
 
 static void ed_save_cb(lv_event_t *e)
@@ -215,7 +223,8 @@ static void ed_build(lv_obj_t *root, int arg)
     }
 
     bool can = draft.n_steps > 0 && (ed < 0 || ed_dirty());
-    w_save_bar_why(root, ed < 0 ? "Create" : "Update", can, draft.n_steps ? NULL : "Add a step to it first", ed_save_cb);
+    w_save_bar_test(root, ed < 0 ? "Create" : "Update", can, draft.n_steps ? NULL : "Add a step to it first", ed_save_cb,
+                    ed_test_cb, draft.n_steps > 0);
 }
 
 /* Unsaved changes: asked about by every way out (ui.c) */
@@ -300,7 +309,7 @@ static void pick_cb(lv_event_t *e)
             if (!ha_ops_for(i, ops)) continue;
             const ha_entity_t *en = ha_get(i);
             if (strlen(en->id) >= sizeof(s->entity)) continue;   /* can't be stored whole */
-            snprintf(opt_text[n], sizeof(opt_text[n]), "%s · %s", en->name, ha_room_name(en->room));
+            snprintf(opt_text[n], sizeof(opt_text[n]), en->area >= 0 ? "%s · %s" : "%s", home_card_name(en), ha_area_name(en->area));
             if (!strcmp(en->id, s->entity)) sel = n;
             opt_map[n++] = i;
         }
@@ -322,7 +331,7 @@ static void pick_cb(lv_event_t *e)
             opt_map[n++] = ops[i];
         }
         for (int i = 0; i < n; i++) opts[i] = opt_text[i];
-        ui_choice(ha_get(en)->name, "Action", opts, n, sel, op_done, NULL);
+        ui_choice(home_card_name(ha_get(en)), "Action", opts, n, sel, op_done, NULL);
         break;
     }
     case 4:   /* activity */
@@ -432,8 +441,8 @@ static void step_build(lv_obj_t *root, int idx)
     }
     case RS_HA: {
         int en = ha_find(s->entity);
-        picker_row(col, en >= 0 ? (ha_get(en)->icon ? ha_get(en)->icon : ha_domain_icon(ha_get(en)->domain)) : ICON_HOME,
-                   "Entity", en >= 0 ? ha_get(en)->name : s->entity, 2);
+        picker_row(col, en >= 0 ? home_card_icon(ha_get(en)) : ICON_HOME, "Entity",
+                   en >= 0 ? home_card_name(ha_get(en)) : s->entity, 2);
         if (en < 0) {
             w_label(col, F_LABEL, T->warning, "Not in Home Assistant right now. Sign in, or pick another.");
             break;
@@ -472,6 +481,7 @@ static void step_build(lv_obj_t *root, int idx)
     lv_obj_set_style_text_color(wait_value, T->accent, 0);
     wait_text_set();
     lv_obj_t *sl = wait_slider = w_slider(wb, s->wait, 0, RSTEP_WAIT_MAX);
+    w_slider_detents(sl, 2);   /* a tick a second */
     lv_obj_set_style_margin_left(sl, 28, 0);   /* lines up with the title; the right inset leaves room for the knob */
     lv_obj_set_style_margin_right(sl, 9, 0);
     lv_obj_set_style_margin_top(sl, 6, 0);

@@ -1,0 +1,95 @@
+store fixtures/config-ha.json
+# Edit > Add a card: any entity HA has, into the room
+click Start
+wait 300
+click Home
+wait 800
+click Kitchen
+wait 300
+click Edit
+wait 300
+click Add a card
+wait 300
+expect Search
+expect Settings and diagnostics
+shot 186_home_add
+# the kitchen's own show ticked; settings and diagnostics only on request
+expect Coffee machine
+expect-no Coffee machine child lock
+expect-no Garage hub battery
+# a light in no area: added at the end of the room, and back to Edit
+click No area
+wait 300
+expect Porch light
+expect-no Coffee machine
+click Porch light
+wait 300
+expect Done
+expect-before Doorbell chime | Porch light
+# search: a to-do list; once in the room it's ticked, and a tap does nothing
+click Add a card
+wait 300
+click Search
+wait 300
+type shop
+tap 294 455
+wait 300
+expect Shopping list
+expect-no Porch light
+click Shopping list
+wait 300
+expect Done
+expect-before Porch light | Shopping list
+click Add a card
+wait 300
+click Shopping list
+wait 300
+expect Settings and diagnostics
+shot 186_home_add_ticked
+tap 26 62
+wait 300
+# one of the kitchen's own, hidden here: adding it shows it again
+tap 270 353
+wait 300
+expect Hidden in this room
+click Add a card
+wait 300
+tap 281 118
+wait 300
+expect Search
+click Kitchen
+wait 300
+click Coffee machine
+wait 300
+expect Done
+expect-no Hidden in this room
+# settings and diagnostics, when asked for
+click Add a card
+wait 300
+click All
+wait 300
+tap 284 163
+wait 300
+expect Coffee machine child lock
+expect Garage hub battery
+expect Garage · diagnostic
+expect Showing 50 of
+shot 187_home_add_diag
+tap 26 62
+wait 300
+click Done
+wait 300
+expect Porch light
+expect Shopping list
+# saved
+wait 2500
+reboot
+click Start
+wait 300
+click Home
+wait 800
+click Kitchen
+wait 300
+expect-before Doorbell chime | Porch light
+expect-before Porch light | Shopping list
+expect Coffee machine

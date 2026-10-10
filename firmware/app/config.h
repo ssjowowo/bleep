@@ -15,21 +15,24 @@
  *
  *  1. Never rename or reuse a key or a name in the file: JSON keys, and the
  *     ids in config.c (fn_ids, kind_ids, proto_ids, step_ids, op_ids,
- *     theme_ids, layout_ids, transport names, activity_icons[].name, the
- *     secret key "wifi_pass"). Add new ones instead. A setting that's dropped
- *     altogether may stop being written; its key is then retired: older files
- *     still have it and it's ignored, and it's never used again for anything
- *     else. Retired: settings.room (the room label above the tab titles,
- *     removed 2026-10-09); devices[].on and devices[].input (runtime state,
- *     not settings: kept in RTC memory, 2026-10-09).
+ *     theme_ids, layout_ids, size_ids, transport names, activity_icons[].name,
+ *     home_icons[].name, the secret key "wifi_pass"). Add new ones instead. A
+ *     setting that's dropped altogether may stop being written; its key is
+ *     then retired: older files still have it and it's ignored, and it's
+ *     never used again for anything else. Retired: settings.room (the room
+ *     label above the tab titles, removed 2026-10-09); devices[].on and
+ *     devices[].input (runtime state, not settings: kept in RTC memory,
+ *     2026-10-09).
  *  2. A new field gets a default (model_init_defaults) and is read as optional.
  *  3. Changing what an existing field means (units, ranges, structure) needs
  *     CONFIG_VERSION + 1 and an upgrade step in config_from_json() that turns
  *     the old shape into the new one. Old steps are never deleted.
  *  4. Each released config version gets a frozen fixture,
  *     sim/tests/fixtures/config-vN.json, and a scenario that loads it
- *     (sim/tests/config_vN.txt). Never edit a fixture to make a test pass: if
- *     it fails, the firmware broke compatibility.
+ *     (sim/tests/config_vN.txt); so does a part added within a version, saved
+ *     by the firmware that added it (config-v1-home.json: the Home tab's
+ *     layout). Never edit a fixture to make a test pass: if it fails, the
+ *     firmware broke compatibility.
  *  5. Going back (an OTA rollback to older firmware) reads a newer file too:
  *     unknown fields are skipped. But its next save drops them, so whatever
  *     only the newer firmware knew falls back to defaults if it's re-installed.

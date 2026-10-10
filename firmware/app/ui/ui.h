@@ -22,6 +22,9 @@ typedef struct page {
     /* Unsaved changes: the question to ask before they're thrown away
      * ("Discard changes?"), or NULL when there's nothing to lose. Optional. */
     const char *(*dirty)(void);
+    /* Every physical key, while it's on screen (the games), instead of the
+     * device or activity. Optional. */
+    bool (*key)(bleep_key_t key);
 } page_t;
 
 /* resume: a wake from deep sleep, which is a reboot: no splash, ui_resume follows */
@@ -57,13 +60,17 @@ extern const page_t page_activities, page_wake, page_now_playing, page_activity_
     page_icon_pick, page_routine_edit, page_routine_step;
 /* Pick one of activity_icons[] into *icon; changed() runs after a pick */
 void ui_pick_icon(const char *sub, uint8_t *icon, void (*changed)(void));
+/* The same from another list (Home cards: home_icons), with a first cell for
+ * HA's own icon (ha_glyph, picked as -1) unless NULL; picked() gets the index */
+void ui_pick_icon_from(const char *sub, const activity_icon_t *icons, int n, const char *ha_glyph, int sel,
+                       void (*picked)(int idx));
 void ui_routine_edit(int idx);                  /* -1 = a new routine */
 
 /* The input / keypad / controls / power-and-volume block of a device page.
  * vol_dev gets the volume buttons; on_power (if set) replaces Power. */
 void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(void));
 extern const page_t page_devices, page_device, page_device_edit, page_add_device;
-extern const page_t page_pair_ble, page_ir_brands, page_ir_test, page_ir_learn;
+extern const page_t page_pair_ble, page_ir_brands, page_ir_detect, page_ir_test, page_ir_learn;
 extern const page_t page_home;
 extern const page_t page_settings, page_display, page_power, page_brightness, page_wifi_settings, page_ha_settings,
     page_about, page_update;
@@ -89,6 +96,27 @@ typedef void (*text_done_cb)(const char *text, void *ctx);
 void ui_text_entry(const char *sub, const char *title, const char *label, const char *initial,
                    const char *helper, kb_mode_t mode, int max_len, text_done_cb cb, void *ctx);
 lv_obj_t *kb_textarea(void);                    /* the text box being edited, or NULL */
+/* Typing straight to a TV: live gets the whole text after every change, ✓ calls done */
+typedef void (*text_live_cb)(const char *text, void *ctx);
+void ui_text_live(const char *sub, const char *title, const char *label, const char *helper, text_live_cb live,
+                  text_done_cb done, void *ctx);
+/* The keyboard and trackpad for a device (scr_remote.c) */
+void ui_type_on(int dev);
+extern const page_t page_trackpad;
+
+/* The Fun Zone (scr_fun.c), the easter egg: Firmware in About, tapped 7
+ * times, adds it to Settings. Snake (scr_snake.c) and Bleep Blocks (scr_blocks.c). */
+extern const page_t page_fun_zone, page_snake, page_blocks;
+void ui_fun_zone_unlock(void);
+void ui_snake_open(void);
+void ui_blocks_open(void);
+/* What the games share: the score strip and the card for Ready, Paused and
+ * Game over (hidden while playing) */
+typedef struct {
+    lv_obj_t *score, *best, *card, *title, *text;
+} game_chrome_t;
+void game_chrome(lv_obj_t *root, int top_h, game_chrome_t *g);
+void game_card(lv_obj_t *parent, game_chrome_t *g, int y);
 
 /* A list of options with a tick on the selected one */
 typedef void (*choice_cb)(int idx, void *ctx);
@@ -101,6 +129,7 @@ void ov_power(pwr_state_t s);
 void ov_battery(bool usb_changed);
 void ov_volume(int dir);
 void ov_toast(const char *msg);
+void ov_toast_clear(void);                     /* hide it now */
 void ov_power_off_ask(void);
 bool ov_sheet_open(void);                       /* a confirm / low-battery sheet is up */
 void ov_sheet_cancel(void);                     /* BACK: as Cancel */

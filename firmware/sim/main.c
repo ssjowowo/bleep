@@ -126,6 +126,7 @@ static void web_loop(void)
 {
     lv_timer_handler();
     if (!g_sim.asleep) app_tick();   /* asleep, the remote runs nothing until a wake reloads the page */
+    else sim_sleep_tick();
 }
 
 /* Browser: one canvas for the remote; the controls are HTML (sim/web) */
@@ -166,6 +167,7 @@ static int run_sdl(float zoom)
     while (1) {
         uint32_t idle = lv_timer_handler();
         if (!g_sim.asleep) app_tick();   /* asleep: nothing runs until a wake starts it again */
+        else sim_sleep_tick();
         usleep((idle > 5 ? 5 : idle) * 1000);
     }
     return 0;

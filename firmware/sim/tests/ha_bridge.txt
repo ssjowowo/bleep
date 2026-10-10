@@ -1,0 +1,45 @@
+# The remote in Home Assistant: its battery as entities, key presses as events
+click Start
+wait 300
+click Home
+wait 2000
+expect-log ha: state sensor.bleep_7c2f1a_battery = 82
+expect-log ha: state binary_sensor.bleep_7c2f1a_charging = off
+# a change is reported again; no change, nothing
+mark
+battery 64
+wait 1500
+expect-log-count 1 ha: state sensor.bleep_7c2f1a_battery = 64
+wait 3000
+expect-log-count 1 ha: state sensor.bleep_7c2f1a_battery
+# key events are off by default
+mark
+key MUTE
+wait 300
+expect-log-no fire_event
+# turn them on (Settings > Home Assistant)
+tap 280 450
+wait 300
+click Home Assistant
+wait 600
+expect THIS REMOTE IN HOME ASSISTANT
+expect Key presses as events
+shot 84_ha_bridge
+tap 284 405
+wait 300
+tap 20 70
+wait 300
+tap 40 450
+wait 300
+click Watch TV
+wait 3000
+# Wi-Fi is off with an IR activity; a press brings it up, the event waits for HA
+wait 25000
+expect-log wifi: off
+mark
+key VOL+
+wait 3000
+expect-log IR  > 
+expect-log wifi: connecting
+expect-log ha: fire_event bleep_key
+expect-log "remote":"7c2f1a","key":"VOL+","activity":"Watch TV"

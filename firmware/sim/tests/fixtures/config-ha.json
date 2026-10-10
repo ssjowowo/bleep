@@ -1,0 +1,8 @@
+{
+ "version": 1,
+ "settings": {
+  "wifi_ssid": "Home-5G",
+  "ha_url": "http://homeassistant.local:8123",
+  "ha_user": "Sam"
+ }
+}

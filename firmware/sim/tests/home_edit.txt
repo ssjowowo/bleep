@@ -1,0 +1,98 @@
+store fixtures/config-ha.json
+# The Home tab's Edit: hide and show cards and rooms, move them
+click Start
+wait 300
+click Home
+wait 800
+click Edit
+wait 300
+expect Done
+expect Show this room
+shot 180_home_edit
+# Hallway: Alarm, Front door, Siren, Front porch (the camera)
+click Hallway
+wait 300
+expect-before Alarm | Front door
+expect-before Siren | Front porch
+# the eye hides Siren here: it moves to the bottom
+tap 270 360
+wait 300
+expect Hidden in this room
+expect-before Front porch | Siren
+expect Hidden here
+shot 181_home_edit_hidden
+# hold Front porch and drag it to the top
+holddrag 120 360 120 228
+wait 300
+expect-before Front porch | Alarm
+click Done
+wait 300
+expect Edit
+expect-no Siren
+expect-before Front porch | Alarm
+shot 182_home_edited
+# rooms: hide the garden; it stays in Edit, dimmed, to show again
+click Edit
+wait 300
+click Garden
+wait 300
+tap 284 165
+wait 300
+expect Garden
+click Done
+wait 300
+expect-no Garden
+# hold the kitchen's chip and drag it before the living room's
+click Edit
+wait 300
+click Bedroom
+wait 300
+holddrag 151 113 40 113
+wait 300
+expect-before Kitchen | Living room
+shot 183_home_room_moved
+click Done
+wait 300
+# leaving the tab ends Edit
+click Edit
+wait 300
+tap 40 450
+wait 300
+tap 200 450
+wait 800
+expect Edit
+expect-no Done
+# all of it saved
+wait 2500
+reboot
+click Start
+wait 300
+click Home
+wait 800
+expect-no Garden
+expect-before Kitchen | Living room
+click Hallway
+wait 300
+expect-no Siren
+expect-before Front porch | Alarm
+# Siren comes back from the bottom of the Hallway's list
+click Hallway
+wait 300
+click Edit
+wait 300
+drag 160 400 160 100
+wait 300
+shot 184_home_hidden_bottom
+tap 270 333
+wait 300
+expect-no Hidden in this room
+click Garden
+wait 300
+tap 284 165
+wait 300
+click Done
+wait 300
+expect Garden
+click Hallway
+wait 300
+expect Siren

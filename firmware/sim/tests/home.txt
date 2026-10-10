@@ -22,7 +22,6 @@ wait 200
 shot 47_bedroom
 drag 160 400 160 100
 shot 48_bedroom_2
-drag 200 116 20 116
 click Hallway
 wait 200
 shot 49_hallway
@@ -30,19 +29,12 @@ drag 160 400 160 100
 shot 50_hallway_2
 drag 160 400 160 100
 shot 51_hallway_3
-drag 200 116 0 116
+drag 160 400 160 100
+shot 51_hallway_4
+drag 160 400 160 100
+shot 51_hallway_5
 click Garden
 wait 200
 shot 52_garden
 drag 160 400 160 100
 shot 53_garden_2
-drag 200 116 0 116
-click Home
-wait 200
-shot 54_homeroom
-drag 160 400 160 100
-shot 55_homeroom_2
-drag 160 400 160 100
-shot 56_homeroom_3
-drag 160 400 160 100
-shot 57_homeroom_4

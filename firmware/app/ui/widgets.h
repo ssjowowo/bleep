@@ -46,6 +46,9 @@ lv_obj_t *w_chip(lv_obj_t *parent, const char *text, const char *icon, bool sele
 /* Controls */
 lv_obj_t *w_switch(lv_obj_t *parent, bool on);
 lv_obj_t *w_slider(lv_obj_t *parent, int value, int min, int max);
+/* A faint haptic tick each time the knob passes a multiple of step while
+ * dragged (0: a 20th of the range). Stepped sliders have one per step. */
+void w_slider_detents(lv_obj_t *s, int step);
 lv_obj_t *w_segmented(lv_obj_t *parent, const char *options, int selected, lv_event_cb_t cb);
 void w_segmented_select(lv_obj_t *seg, int selected);
 /* A setting with fixed steps: title and current value, then a slider that
@@ -81,6 +84,9 @@ lv_obj_t *w_ring(lv_obj_t *parent, int size, int width, int percent);
  * scrolls under it. root is the page root from page_t.build. */
 lv_obj_t *w_save_bar(lv_obj_t *root, const char *text, bool enabled, lv_event_cb_t cb);
 /* The same, with a line above the button saying why it's greyed out ("Add a device to create it") */
+/* The same with a Test button on its left (runs the draft without saving it) */
+lv_obj_t *w_save_bar_test(lv_obj_t *root, const char *text, bool enabled, const char *why, lv_event_cb_t cb,
+                          lv_event_cb_t test_cb, bool can_test);
 lv_obj_t *w_save_bar_why(lv_obj_t *root, const char *text, bool enabled, const char *why, lv_event_cb_t cb);
 
 /* Activities, routines and devices in either layout (Settings > Display):
@@ -91,10 +97,12 @@ lv_obj_t *w_items(lv_obj_t *root, int layout);
 lv_obj_t *w_item(lv_obj_t *box, int layout, const char *icon, const char *name, const char *sub, bool on, bool chevron);
 lv_obj_t *w_items_add(lv_obj_t *box, const char *text);
 
-/* Hold to reorder (activity and routine tiles, the device list). Hold an
- * item and it lifts; drag it out of its own bounds and it trades places with
- * the item under the finger as it goes, and letting go keeps the new order:
- * moved(from, to). Let go without leaving it and edit(idx) runs instead.
+/* Hold to reorder (activity and routine tiles, the device list, the Home
+ * tab's rooms and cards in Edit). Hold an item and it lifts; drag it out of
+ * its own bounds and it trades places with the item under the finger as it
+ * goes, and letting go keeps the new order: moved(from, to). Let go without
+ * leaving it and edit(idx) runs instead. Near the edge of the list it
+ * scrolls, sideways in a row that scrolls sideways.
  * The reorderable items are the container's children first .. first+count-1;
  * the item's own tap should be on LV_EVENT_SHORT_CLICKED. */
 typedef struct {

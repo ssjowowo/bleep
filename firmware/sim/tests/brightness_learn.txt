@@ -1,0 +1,42 @@
+# Auto brightness learns: the slider sets the level for light like this, and it sticks
+click Start
+wait 300
+tap 280 450
+wait 300
+click Display & haptics
+wait 300
+click Brightness
+wait 300
+# 400 lux: the standard curve says 70 %
+expect backlight now 70%
+expect-no Forget what it learned
+mark
+slider 0 50
+expect backlight now 50%
+expect Forget what it learned
+shot 85_bright_learned
+# the room gets darker: the neighbouring band moved halfway too (45 % - 10)
+lux 200
+wait 1100
+tap 20 70
+wait 300
+click Brightness
+wait 300
+expect Light sensor: 200 lux · backlight now 35%
+# brighter again: back to what it learned there, after a restart too
+lux 400
+wait 3500
+reboot
+click Start
+wait 300
+tap 280 450
+wait 300
+click Display & haptics
+wait 300
+click Brightness
+wait 300
+expect backlight now 50%
+click Forget what it learned
+wait 300
+expect backlight now 70%
+expect Back to the standard levels

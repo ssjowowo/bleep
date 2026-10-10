@@ -273,9 +273,42 @@ const page_t page_wake = {"Wake", TAB_ACTIVITIES, wake_build, activities_event, 
 
 /* ================= Now playing ================= */
 
+/* ---- sleep timer (Now playing and the activity page) ---- */
+
+static const char *const sleep_opts[] = {"Off", "15 min", "30 min", "45 min", "1 h", "1.5 h", "2 h"};
+static const int sleep_mins[] = {0, 15, 30, 45, 60, 90, 120};
+
+static void sleep_pick_done(int i, void *ctx)
+{
+    LV_UNUSED(ctx);
+    sleep_timer_set(sleep_mins[i]);
+    if (sleep_mins[i]) ui_toast("Everything in it switches off in %s", sleep_opts[i]);
+}
+
+static void sleep_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+    if (g_model.running < 0) return;
+    int left = sleep_timer_left_min(), sel = 0;
+    for (int i = 1; i < 7; i++)
+        if (left && left <= sleep_mins[i] && !sel) sel = i;
+    ui_choice(g_model.activities[g_model.running].name, "Sleep timer", sleep_opts, 7, sel, sleep_pick_done, NULL);
+}
+
+/* "In 25 min", "In 1 h 10 min"; short: "25 min", "1 h 10" */
+static const char *sleep_text(char *buf, int len, bool sentence)
+{
+    int m = sleep_timer_left_min();
+    if (!m) snprintf(buf, len, "%s", sentence ? "Off" : "");
+    else if (m < 60) snprintf(buf, len, "%s%d min", sentence ? "In " : "", m);
+    else if (m % 60) snprintf(buf, len, "%s%d h %d%s", sentence ? "In " : "", m / 60, m % 60, sentence ? " min" : "");
+    else snprintf(buf, len, "%s%d h", sentence ? "In " : "", m / 60);
+    return buf;
+}
+
 static struct {
     int act, ent;
-    lv_obj_t *title, *sub, *slider, *pos, *dur, *play;
+    lv_obj_t *title, *sub, *slider, *pos, *dur, *play, *sleep;
 } np;
 
 static void np_end_cb(lv_event_t *e)
@@ -285,11 +318,22 @@ static void np_end_cb(lv_event_t *e)
     ui_tab(TAB_ACTIVITIES);
 }
 
-/* Media keys go to the device that gets the D-pad (BLE for the Shield). */
-static void np_send(fn_t fn)
+/* The device the media keys go to (the D-pad's: BLE for the Shield) */
+static int np_dev(void)
 {
     const activity_t *a = &g_model.activities[np.act];
-    int dev = a->nav_dev >= 0 ? a->nav_dev : a->np_dev;
+    return a->nav_dev >= 0 ? a->nav_dev : a->np_dev;
+}
+
+static bool np_has(fn_t fn)
+{
+    int dev = np_dev();
+    return dev >= 0 && g_model.devices[dev].fn[fn].transport;
+}
+
+static void np_send(fn_t fn)
+{
+    int dev = np_dev();
     if (!device_send(dev, fn)) return;
 #ifdef BLEEP_SIM
     /* Emulator only: the real player would report its new state to HA */
@@ -304,6 +348,19 @@ static void np_send(fn_t fn)
 }
 
 static void np_btn_cb(lv_event_t *e) { np_send((fn_t)ARG_INT(e)); }
+static void np_kb_cb(lv_event_t *e) { ui_type_on(ARG_INT(e)); }
+
+/* A plain icon in the top row, like the moon and End: 32 px, 44 to touch */
+static void top_icon(lv_obj_t *top, const char *icon, lv_event_cb_t cb, int arg)
+{
+    lv_obj_t *b = w_box(top);
+    lv_obj_set_size(b, 32, 32);
+    lv_obj_center(w_icon(b, icon, 16, T->text2));
+    lv_obj_set_ext_click_area(b, 6);
+    lv_obj_set_style_margin_right(b, 4, 0);
+    w_on_click(b, cb, arg);
+}
+static void np_pad_cb(lv_event_t *e) { ui_open(&page_trackpad, ARG_INT(e)); }
 
 static void np_seek_cb(lv_event_t *e)
 {
@@ -337,8 +394,10 @@ static void np_update(void)
     lv_label_set_text(lv_obj_get_child(np.play, 0), m->on ? ICON_PAUSE : ICON_PLAY);
 }
 
+/* −10 and +30; nothing if the device can't */
 static lv_obj_t *round_btn(lv_obj_t *parent, const char *text, fn_t fn)
 {
+    if (!np_has(fn)) return NULL;
     lv_obj_t *b = w_button(parent, text, NULL, BTN_OUTLINE);
     lv_obj_set_size(b, 48, 48);
     lv_obj_set_style_pad_hor(b, 0, 0);
@@ -350,6 +409,7 @@ static lv_obj_t *round_btn(lv_obj_t *parent, const char *text, fn_t fn)
 /* Subtitles and audio track: smaller, icon only, at the ends of the row */
 static lv_obj_t *small_btn(lv_obj_t *parent, const char *icon, fn_t fn)
 {
+    if (!np_has(fn)) return NULL;
     lv_obj_t *b = w_icon_button(parent, icon, 40, BTN_DEFAULT);
     lv_obj_set_ext_click_area(b, 4);   /* 48 px to touch */
     lv_obj_add_event_cb(b, np_btn_cb, LV_EVENT_CLICKED, ARG(fn));
@@ -370,6 +430,20 @@ static void np_build(lv_obj_t *root, int act)
     snprintf(buf, sizeof(buf), "%s%s%s", a->name, m && m->artist[0] ? " · " : "", m ? m->artist : "");
     lv_obj_t *t = w_label(top, F_LABEL, T->text2, buf);
     lv_obj_set_flex_grow(t, 1);
+    lv_label_set_long_mode(t, LV_LABEL_LONG_MODE_DOTS);
+    /* typing and the trackpad, for the device that gets the D-pad */
+    int nav = a->nav_dev >= 0 ? a->nav_dev : a->np_dev;
+    if (device_can_type(nav)) top_icon(top, ICON_KEYBOARD, np_kb_cb, nav);
+    if (nav >= 0 && g_model.devices[nav].fn[FN_UP].transport) top_icon(top, ICON_TOUCHPAD, np_pad_cb, nav);
+    /* the sleep timer: a moon, and the minutes left once it's set */
+    lv_obj_t *zz = w_row(top, 4);
+    lv_obj_set_width(zz, LV_SIZE_CONTENT);
+    lv_obj_set_height(zz, 32);
+    lv_obj_set_style_margin_right(zz, 10, 0);
+    w_icon(zz, ICON_MOON, 14, sleep_timer_at() ? T->accent : T->text2);
+    np.sleep = w_label(zz, F_LABEL_B, T->accent, sleep_text(buf, sizeof(buf), false));
+    lv_obj_set_ext_click_area(zz, 8);
+    w_on_click(zz, sleep_cb, 0);
     lv_obj_t *end = w_row(top, 4);
     lv_obj_set_width(end, LV_SIZE_CONTENT);
     lv_obj_set_height(end, 32);
@@ -409,6 +483,7 @@ static void np_build(lv_obj_t *root, int act)
     round_btn(ctl, "−10", FN_REW);
     np.play = w_icon_button(ctl, ICON_PAUSE, 60, BTN_PRIMARY);
     lv_obj_add_event_cb(np.play, np_btn_cb, LV_EVENT_CLICKED, ARG(FN_PLAY_PAUSE));
+    lv_obj_set_hidden(np.play, !np_has(FN_PLAY_PAUSE));   /* kept: np_update sets its icon */
     round_btn(ctl, "+30", FN_FWD);
     small_btn(ctl, ICON_AUDIO, FN_AUDIO);
 
@@ -424,6 +499,11 @@ static void np_build(lv_obj_t *root, int act)
 
 static void np_event(app_event_t ev, int arg)
 {
+    char buf[16];
+    if (ev == EV_CLOCK) lv_label_set_text(np.sleep, sleep_text(buf, sizeof(buf), false));
+    if (ev == EV_ACTIVITY && g_model.running == np.act && !activity_busy() &&
+        strcmp(lv_label_get_text(np.sleep), sleep_text(buf, sizeof(buf), false)))
+        ui_refresh();   /* the timer was set or cleared: the moon's colour too */
     if (ev == EV_HA && (arg == np.ent || arg < 0)) np_update();
     if (ev == EV_ACTIVITY && g_model.running != np.act && !activity_busy()) ui_tab(TAB_ACTIVITIES);
 }
@@ -469,6 +549,14 @@ static void ap_build(lv_obj_t *root, int idx)
         lv_obj_set_style_pad_hor(l, PAD, 0);
         lv_obj_set_width(l, lv_pct(100));
     }
+    if (g_model.running == idx) {
+        char buf[24];
+        lv_obj_t *col = w_col(root, 0);
+        lv_obj_set_style_pad_hor(col, PAD, 0);
+        lv_obj_t *r = w_list_row(col, ICON_MOON, "Sleep timer", sleep_text(buf, sizeof(buf), true), NULL);
+        if (sleep_timer_at()) lv_obj_set_style_text_color(lv_obj_get_child(r, 2), T->accent, 0);
+        w_on_click(r, sleep_cb, 0);
+    }
     ui_device_controls(root, a->nav_dev, a->vol_dev, ap_end);
 }
 
@@ -479,6 +567,7 @@ static void ap_event(app_event_t ev, int arg)
         if (g_model.running != ap) ui_tab(TAB_ACTIVITIES);
         else ui_refresh();   /* e.g. the input it just selected */
     }
+    if (ev == EV_CLOCK && sleep_timer_at()) ui_refresh();   /* the minutes left */
 }
 
 const page_t page_activity_page = {"Activity", TAB_ACTIVITIES, ap_build, ap_event, NULL};
@@ -506,6 +595,15 @@ static void ed_changed(void)
 {
     model_activity_rebuild(&draft);
     if (ui_current() == &page_activity_edit) ui_refresh();   /* Update follows the changes */
+}
+
+/* Test: its start steps go out now, as starting it would send them; nothing is saved */
+static void ed_test_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+    if (!draft.n_devices) return;
+    activity_test(&draft);
+    ui_toast("Testing: its start steps are going out");
 }
 
 static void ed_save_cb(lv_event_t *e)
@@ -708,8 +806,8 @@ static void ed_build(lv_obj_t *root, int arg)
     }
 
     bool has = a->n_devices > 0;
-    w_save_bar_why(root, ed < 0 ? "Create" : "Update", has && (ed < 0 || ed_dirty()),
-                   has ? NULL : "Add a device to it first", ed_save_cb);
+    w_save_bar_test(root, ed < 0 ? "Create" : "Update", has && (ed < 0 || ed_dirty()),
+                    has ? NULL : "Add a device to it first", ed_save_cb, ed_test_cb, has);
 }
 
 static void ed_event(app_event_t ev, int arg)
@@ -727,28 +825,52 @@ static const char *ed_dirty_q(void)
 
 const page_t page_activity_edit = {"Edit activity", -1, ed_build, ed_event, NULL, false, ed_dirty_q};
 
-/* ================= Icon picker (activities and routines) ================= */
+/* ================= Icon picker (activities, routines, Home cards) ================= */
 
 #define ICON_COLS 4
 
 static struct {
     char sub[NAME_LEN];
-    uint8_t *icon;
+    const activity_icon_t *icons;
+    int n;
+    const char *ha_glyph;       /* a first cell for HA's own icon (-1), or NULL */
+    int sel;
+    uint8_t *icon;              /* activities and routines: set on a pick */
     void (*changed)(void);
+    void (*picked)(int idx);
 } pick;
 
 void ui_pick_icon(const char *sub, uint8_t *icon, void (*changed)(void))
 {
+    memset(&pick, 0, sizeof(pick));
     snprintf(pick.sub, sizeof(pick.sub), "%s", sub);
+    pick.icons = activity_icons;
+    pick.n = activity_icon_count;
     pick.icon = icon;
+    pick.sel = *icon;
     pick.changed = changed;
+    ui_open(&page_icon_pick, 0);
+}
+
+void ui_pick_icon_from(const char *sub, const activity_icon_t *icons, int n, const char *ha_glyph, int sel,
+                       void (*picked)(int idx))
+{
+    memset(&pick, 0, sizeof(pick));
+    snprintf(pick.sub, sizeof(pick.sub), "%s", sub);
+    pick.icons = icons;
+    pick.n = n;
+    pick.ha_glyph = ha_glyph;
+    pick.sel = sel;
+    pick.picked = picked;
     ui_open(&page_icon_pick, 0);
 }
 
 static void icon_pick_cb(lv_event_t *e)
 {
-    *pick.icon = ARG_INT(e);
+    int i = ARG_INT(e);
+    if (pick.icon) *pick.icon = i;
     app_buzz(HAPTIC_TICK);
+    if (pick.picked) pick.picked(i);
     if (pick.changed) pick.changed();
     ui_back();
 }
@@ -762,14 +884,14 @@ static void icon_build(lv_obj_t *root, int arg)
     lv_obj_set_style_pad_row(g, 14, 0);
     lv_obj_set_style_pad_column(g, 0, 0);
     int cell = (SCREEN_W - 2 * PAD) / ICON_COLS;
-    for (int i = 0; i < activity_icon_count; i++) {
-        bool sel = i == *pick.icon;
+    for (int i = pick.ha_glyph ? -1 : 0; i < pick.n; i++) {
+        bool sel = i == pick.sel;
         lv_obj_t *c = w_col(g, 6);
         lv_obj_set_width(c, cell);
         lv_obj_set_flex_align(c, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-        lv_obj_t *b = w_icon_button(c, activity_icons[i].glyph, 56, sel ? BTN_SELECTED : BTN_DEFAULT);
+        lv_obj_t *b = w_icon_button(c, i < 0 ? pick.ha_glyph : pick.icons[i].glyph, 56, sel ? BTN_SELECTED : BTN_DEFAULT);
         lv_obj_set_event_bubble(b, true);   /* the button shows the press, the cell takes the tap */
-        w_label(c, F_CAPTION, sel ? T->accent : T->text2, activity_icons[i].name);
+        w_label(c, F_CAPTION, sel ? T->accent : T->text2, i < 0 ? "From HA" : pick.icons[i].name);
         w_on_click(c, icon_pick_cb, i);   /* icon or name */
     }
 }

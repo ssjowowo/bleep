@@ -34,6 +34,7 @@ void retained_store(void)
         r->dev_input[i] = g_model.devices[i].input;
     }
     ui_place(&r->tab, &r->page, &r->page_arg);
+    r->sleep_at = sleep_timer_at();
     /* The key table: a key that wakes the remote goes out over IR from this,
      * before the setup is even loaded (app_early) */
     for (int k = 0; k < KEY_COUNT; k++) {
@@ -58,5 +59,6 @@ bool retained_restore(void)
         g_model.devices[i].on = (r->dev_on >> i) & 1;
         g_model.devices[i].input = r->dev_input[i];
     }
+    if (g_model.running >= 0 && r->sleep_at) sleep_timer_restore(r->sleep_at);
     return true;
 }

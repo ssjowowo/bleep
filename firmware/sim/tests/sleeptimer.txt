@@ -1,0 +1,33 @@
+# Sleep timer: ends the running activity after some minutes, even from deep
+# sleep (the RTC timer wakes it with the screen off, then it sleeps again)
+click Start
+wait 300
+click Watch TV
+wait 3000
+click Sleep timer
+wait 300
+expect 1.5 h
+shot 74_sleep_choice
+click 15 min
+wait 300
+expect In 15 min
+expect Everything in it switches off in 15 min
+shot 75_sleep_set
+# idle: deep sleep with the timer armed
+wait 155000
+expect-log deep sleep: wakes on 14 key(s), touch, lift, tap, USB, timer
+# 15 min after it was set, the timer wakes it (a reboot)
+wait 760000
+wait 1500
+expect-log boot: wake by the sleep timer
+expect-log sleep timer: ending Watch TV
+expect-log activity: end Watch TV
+expect-log IR  >
+expect-log-no lcd: Sleep Out
+wait 3000
+expect-log power: Warm (screen off) -> Deep sleep
+# a key later: nothing is running any more
+key OK
+wait 300
+expect-log-no still running
+expect-log no device selected and no activity running

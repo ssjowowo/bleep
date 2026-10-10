@@ -1,0 +1,12 @@
+store fixtures/config-v1.json
+# A file from before the Home tab could be changed (no "home" key): every
+# HA area with what a dashboard would show, in HA's order
+click Start
+wait 300
+click Home
+wait 800
+expect-before Living room | Kitchen
+expect-before Kitchen | Bedroom
+expect-no Garage
+expect Ceiling light
+expect-no Ceiling light signal

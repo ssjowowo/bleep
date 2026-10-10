@@ -3,6 +3,7 @@
 #include <string.h>
 #include "../control.h"
 #include "../ha.h"
+#include "../home.h"
 #include "../model.h"
 #include "../radio.h"
 #include "ui.h"
@@ -111,18 +112,6 @@ static void dv_send_cb(lv_event_t *e)
     }
 }
 
-static lv_obj_t *fn_button(lv_obj_t *parent, int dev, const char *text, const char *icon, fn_t fn, int w, int h)
-{
-    bool has = (fn == FN_POWER && power_override) || (dev >= 0 && g_model.devices[dev].fn[fn].transport != 0);
-    lv_obj_t *b = w_button(parent, text, icon, has ? BTN_DEFAULT : BTN_DISABLED);
-    lv_obj_set_size(b, w, h);
-    lv_obj_set_style_radius(b, 14, 0);
-    lv_obj_set_style_pad_hor(b, 4, 0);
-    if (text && !icon) lv_obj_set_style_text_font(lv_obj_get_child(b, 0), strlen(text) == 1 ? F_BODY_B : F_LABEL_B, 0);
-    if (has) lv_obj_add_event_cb(b, dv_send_cb, LV_EVENT_CLICKED, ARG(BTN_ARG(dev, fn)));
-    return b;
-}
-
 static lv_obj_t *wrap_row(lv_obj_t *root, int gap)
 {
     lv_obj_t *r = w_row(root, gap);
@@ -131,20 +120,71 @@ static lv_obj_t *wrap_row(lv_obj_t *root, int gap)
     return r;
 }
 
+static bool has_fn(int dev, fn_t fn)
+{
+    return (fn == FN_POWER && power_override) || (dev >= 0 && g_model.devices[dev].fn[fn].transport != 0);
+}
+
+/* A button for what the device can do; nothing for what it can't (NULL) */
+static lv_obj_t *fn_button(lv_obj_t *parent, int dev, const char *text, const char *icon, fn_t fn, int w, int h)
+{
+    if (!has_fn(dev, fn)) return NULL;
+    lv_obj_t *b = w_button(parent, text, icon, BTN_DEFAULT);
+    lv_obj_set_size(b, w, h);
+    lv_obj_set_style_radius(b, 14, 0);
+    lv_obj_set_style_pad_hor(b, 4, 0);
+    if (text && !icon) lv_obj_set_style_text_font(lv_obj_get_child(b, 0), strlen(text) == 1 ? F_BODY_B : F_LABEL_B, 0);
+    lv_obj_add_event_cb(b, dv_send_cb, LV_EVENT_CLICKED, ARG(BTN_ARG(dev, fn)));
+    return b;
+}
+
+/* A section only if it has a button: its title, then a row of them */
+static lv_obj_t *fn_section(lv_obj_t *root, const char *title, int dev, const fn_t *fns, int n)
+{
+    bool any = false;
+    for (int i = 0; i < n && !any; i++) any = has_fn(dev, fns[i]);
+    if (!any) return NULL;
+    lv_obj_set_style_pad_hor(w_section(root, title), PAD, 0);
+    return wrap_row(root, 8);
+}
+
+static void trackpad_cb(lv_event_t *e) { ui_open(&page_trackpad, ARG_INT(e)); }
+static void keyboard_cb(lv_event_t *e) { ui_type_on(ARG_INT(e)); }
+
 void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(void))
 {
     power_override = on_power;
     lv_obj_set_style_pad_gap(root, 8, 0);
     const device_t *d = dev >= 0 ? &g_model.devices[dev] : NULL;
 
-    if (d && d->inputs) {
-        lv_obj_set_style_pad_hor(w_section(root, "INPUT"), PAD, 0);
-        input_row = w_row(root, 8);
-        lv_obj_set_style_pad_hor(input_row, PAD, 0);
-        for (int i = 0; i < d->inputs && i < 4; i++) {
-            lv_obj_t *b = fn_button(input_row, dev, fn_name(FN_INPUT_1 + i), NULL, FN_INPUT_1 + i, 66, 48);
-            if (d->input == i + 1) w_button_set_kind(b, BTN_SELECTED);
+    /* the trackpad (any D-pad) and typing on the TV (Bluetooth) */
+    bool pad = d && d->fn[FN_UP].transport, kb = device_can_type(dev);
+    if (pad || kb) {
+        lv_obj_t *r = w_row(root, 8);
+        lv_obj_set_style_pad_hor(r, PAD, 0);
+        if (pad) {
+            lv_obj_t *b = w_button(r, "Trackpad", ICON_TOUCHPAD, BTN_DEFAULT);
+            lv_obj_set_flex_grow(b, 1);
+            lv_obj_add_event_cb(b, trackpad_cb, LV_EVENT_CLICKED, ARG(dev));
         }
+        if (kb) {
+            lv_obj_t *b = w_button(r, "Type", ICON_KEYBOARD, BTN_DEFAULT);
+            lv_obj_set_flex_grow(b, 1);
+            lv_obj_add_event_cb(b, keyboard_cb, LV_EVENT_CLICKED, ARG(dev));
+        }
+    }
+
+    /* Only what the device can do: a button it hasn't got isn't shown, and a
+     * section with none isn't either */
+    static const fn_t input_fns[] = {FN_INPUT_1, FN_INPUT_2, FN_INPUT_3, FN_INPUT_4, FN_SOURCE};
+    input_row = d ? fn_section(root, "INPUT", dev, input_fns, 5) : NULL;
+    if (input_row) {
+        for (int i = 0; d->inputs && i < d->inputs && i < 4; i++) {
+            lv_obj_t *b = fn_button(input_row, dev, fn_name(FN_INPUT_1 + i), NULL, FN_INPUT_1 + i, 66, 48);
+            if (b && d->input == i + 1) w_button_set_kind(b, BTN_SELECTED);
+        }
+        /* next to the HDMI buttons, or a row of its own when they fill one */
+        fn_button(input_row, dev, "Source", ICON_INPUT, FN_SOURCE, !d->inputs ? 140 : d->inputs < 4 ? 66 : 288, 48);
     }
 
     if (d && d->fn[FN_DIGIT_1].transport) {
@@ -153,24 +193,41 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(v
         static const char *const keys[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "Guide", "0", "Menu"};
         static const fn_t fns[] = {FN_DIGIT_1, FN_DIGIT_2, FN_DIGIT_3, FN_DIGIT_4, FN_DIGIT_5, FN_DIGIT_6,
                                    FN_DIGIT_7, FN_DIGIT_8, FN_DIGIT_9, FN_GUIDE, FN_DIGIT_0, FN_MENU};
-        for (int i = 0; i < 12; i++) fn_button(pad, dev, keys[i], NULL, fns[i], 90, 44);
+        for (int i = 0; i < 12; i++)
+            if (!fn_button(pad, dev, keys[i], NULL, fns[i], 90, 44)) {
+                lv_obj_t *gap = w_box(pad);   /* the digits stay where they are on a phone */
+                lv_obj_set_size(gap, 90, 44);
+            }
     } else if (d) {
-        lv_obj_set_style_pad_hor(w_section(root, "CONTROLS"), PAD, 0);
-        lv_obj_t *pad = wrap_row(root, 8);
         static const struct { const char *t, *i; fn_t fn; } c[] = {
             {"Home", ICON_HOME, FN_HOME}, {"Back", ICON_BACK, FN_BACK}, {"Menu", ICON_DOTS, FN_MENU},
             {"Netflix", NULL, FN_NETFLIX}, {"YouTube", NULL, FN_YOUTUBE}, {"Info", ICON_INFO, FN_INFO},
             {NULL, ICON_REW, FN_REW}, {NULL, ICON_PLAY, FN_PLAY_PAUSE}, {NULL, ICON_FWD, FN_FWD},
         };
-        for (int i = 0; i < 9; i++) fn_button(pad, dev, c[i].t, c[i].i, c[i].fn, 90, 44);
+        fn_t fns[9];
+        for (int i = 0; i < 9; i++) fns[i] = c[i].fn;
+        lv_obj_t *pad = fn_section(root, "CONTROLS", dev, fns, 9);
+        for (int i = 0; pad && i < 9; i++) fn_button(pad, dev, c[i].t, c[i].i, c[i].fn, 90, 44);
     }
 
-    lv_obj_set_style_pad_hor(w_section(root, "POWER AND VOLUME"), PAD, 0);
-    lv_obj_t *pv = wrap_row(root, 8);
-    fn_button(pv, dev, NULL, ICON_POWER, FN_POWER, 66, 44);
-    fn_button(pv, vol_dev, NULL, ICON_VOLUME_LOW, FN_VOL_DOWN, 66, 44);
-    fn_button(pv, vol_dev, NULL, ICON_MUTE, FN_MUTE, 66, 44);
-    fn_button(pv, vol_dev, NULL, ICON_VOLUME, FN_VOL_UP, 66, 44);
+    static const fn_t ch_fns[] = {FN_CH_DOWN, FN_CH_UP};
+    lv_obj_t *ch = d ? fn_section(root, "CHANNEL", dev, ch_fns, 2) : NULL;
+    if (ch) {
+        fn_button(ch, dev, "Channel", ICON_CHEV_DOWN, FN_CH_DOWN, 140, 44);
+        fn_button(ch, dev, "Channel", ICON_CHEV_UP, FN_CH_UP, 140, 44);
+    }
+
+    /* power is the device's, volume the activity's volume device */
+    bool any = has_fn(dev, FN_POWER) || has_fn(vol_dev, FN_VOL_DOWN) || has_fn(vol_dev, FN_MUTE) ||
+               has_fn(vol_dev, FN_VOL_UP);
+    if (any) {
+        lv_obj_set_style_pad_hor(w_section(root, "POWER AND VOLUME"), PAD, 0);
+        lv_obj_t *pv = wrap_row(root, 8);
+        fn_button(pv, dev, NULL, ICON_POWER, FN_POWER, 66, 44);
+        fn_button(pv, vol_dev, NULL, ICON_VOLUME_LOW, FN_VOL_DOWN, 66, 44);
+        fn_button(pv, vol_dev, NULL, ICON_MUTE, FN_MUTE, 66, 44);
+        fn_button(pv, vol_dev, NULL, ICON_VOLUME, FN_VOL_UP, 66, 44);
+    }
 }
 
 static void dv_select_cb(lv_event_t *e)
@@ -192,7 +249,7 @@ static void dv_build(lv_obj_t *root, int idx)
     char sub[64], tr[48];
     snprintf(sub, sizeof(sub), "Devices · %s", dev_transport_text(d, tr, sizeof(tr)));
     lv_obj_t *hdr = w_header(root, sub, d->name, ui_back_cb);
-    lv_obj_t *edit = w_icon_button(hdr, ICON_DOTS, 40, BTN_DEFAULT);
+    lv_obj_t *edit = w_icon_button(hdr, ICON_GEAR, 40, BTN_DEFAULT);   /* its settings */
     lv_obj_set_ext_click_area(edit, 2);   /* taps: 44 px */
     lv_obj_set_style_margin_right(edit, 10, 0);
     lv_obj_add_event_cb(edit, dv_edit_cb, LV_EVENT_CLICKED, NULL);
@@ -326,12 +383,15 @@ static void de_build(lv_obj_t *root, int idx)
         w_list_row(col, ICON_HOME, d->transports & TR_HA ? "Controlled by" : "Now playing", d->ha_entity, NULL);
     }
 
-    w_section(col, "KEY MAP");
+    /* what the remote's keys send it, and how; keys it has nothing for aren't listed */
     static const fn_t shown[] = {FN_UP, FN_OK, FN_BACK, FN_HOME, FN_NETFLIX, FN_YOUTUBE, FN_PLAY_PAUSE,
                                  FN_VOL_UP, FN_VOL_DOWN, FN_MUTE, FN_POWER};
+    bool section = false;
     for (unsigned i = 0; i < sizeof(shown) / sizeof(shown[0]); i++) {
         uint8_t t = d->fn[shown[i]].transport;
-        const char *how = t == TR_BLE ? "Bluetooth" : t == TR_IR ? "IR" : t == TR_HA ? "Home Assistant" : "—";
+        if (!t) continue;
+        if (!section) w_section(col, "KEY MAP"), section = true;
+        const char *how = t == TR_BLE ? "Bluetooth" : t == TR_IR ? "IR" : "Home Assistant";
         w_list_row(col, NULL, shown[i] == FN_UP ? "D-pad" : fn_name(shown[i]), how, NULL);
     }
 
@@ -375,7 +435,7 @@ static void add_choice_cb(lv_event_t *e)
         for (int i = 0; i < ha_count() && n < 16; i++) {
             ha_entity_t *ent = ha_get(i);
             if (ent->domain != HA_MEDIA || strlen(ent->id) >= sizeof(((device_t *)0)->ha_entity)) continue;
-            snprintf(names[n], sizeof(names[n]), "%s · %s", ent->name, ha_room_name(ent->room));
+            snprintf(names[n], sizeof(names[n]), ent->area >= 0 ? "%s · %s" : "%s", home_card_name(ent), ha_area_name(ent->area));
             opts[n] = names[n];
             ha_pick_map[n++] = i;
         }
@@ -392,7 +452,7 @@ static void add_choice_cb(lv_event_t *e)
 static void ha_name_done(const char *text, void *ctx)
 {
     ha_entity_t *ent = ha_get((int)(intptr_t)ctx);
-    device_t *d = model_add_device(*text ? text : ent->name, DEV_STREAMER);
+    device_t *d = model_add_device(*text ? text : home_card_name(ent), DEV_STREAMER);
     if (!d) return;
     model_set_ha(d, ent->id);
     show_new_device(d);
@@ -402,7 +462,7 @@ static void ha_pick_done(int idx, void *ctx)
 {
     LV_UNUSED(ctx);
     ha_entity_t *ent = ha_get(ha_pick_map[idx]);
-    ui_text_entry("Add device", "Device name", "Name", ent->name, "Shown on activities and the Devices tab",
+    ui_text_entry("Add device", "Device name", "Name", home_card_name(ent), "Shown on activities and the Devices tab",
                   KB_NAME, NAME_LEN - 1, ha_name_done, (void *)(intptr_t)ha_pick_map[idx]);
 }
 
@@ -574,25 +634,155 @@ static void brand_cb(lv_event_t *e)
     ui_open(&page_ir_test, 0);
 }
 
+static void detect_open_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+    ui_open(&page_ir_detect, ir_target);
+}
+
 static void brands_build(lv_obj_t *root, int target)
 {
     ir_target = target;
     w_header(root, target >= 0 ? g_model.devices[target].name : "Add device · IR", "Brand", ui_back_cb);
     lv_obj_t *col = w_col(root, 0);
     lv_obj_set_style_pad_hor(col, PAD, 0);
+    /* one press on the old remote usually says which brand it is */
+    lv_obj_t *find = w_button(col, "Find it from its old remote", ICON_IR, BTN_OUTLINE);
+    lv_obj_set_width(find, lv_pct(100));
+    lv_obj_set_style_margin_bottom(find, 8, 0);
+    lv_obj_add_event_cb(find, detect_open_cb, LV_EVENT_CLICKED, NULL);
+    /* the library comes grouped: TVs, soundbars, AV receivers */
     for (int i = 0; i < ir_brand_count; i++) {
-        char v[32];
-        snprintf(v, sizeof(v), "%s · %d set%s", ir_brands[i].kind == DEV_TV ? "TV" : "AV receiver", ir_brands[i].sets,
-                 ir_brands[i].sets > 1 ? "s" : "");
-        lv_obj_t *r = w_list_row(col, ir_brands[i].kind == DEV_TV ? ICON_TV : ICON_VOLUME, ir_brands[i].brand, v, NULL);
+        const ir_brand_t *b = &ir_brands[i];
+        if (!i || b->kind != ir_brands[i - 1].kind)
+            w_section(col, b->kind == DEV_TV ? "TVS" : b->kind == DEV_SPEAKER ? "SOUNDBARS" : "AV RECEIVERS");
+        char v[24];
+        snprintf(v, sizeof(v), "%d code set%s", b->sets, b->sets > 1 ? "s" : "");
+        lv_obj_t *r = w_list_row(col, b->kind == DEV_TV ? ICON_TV : b->kind == DEV_SPEAKER ? ICON_SPEAKER : ICON_VOLUME,
+                                 b->brand, v, NULL);
         w_on_click(r, brand_cb, i);
     }
-    lv_obj_t *n = w_label(col, F_CAPTION, T->text2, "A small built-in set from Flipper-IRDB. Not listed? Learn the keys instead.");
+    lv_obj_t *n = w_label(col, F_CAPTION, T->text2, "Codes from Flipper-IRDB. Not listed, or none of the sets work? "
+                                                    "Learn the keys from its own remote instead.");
     lv_obj_set_width(n, lv_pct(100));
     lv_obj_set_style_pad_top(n, 10, 0);
 }
 
 const page_t page_ir_brands = {"IR brands", -1, brands_build, NULL, NULL};
+
+/* ================= Brand detection ================= */
+
+/* Point the old remote at Bleep and press Power: the receiver catches the
+ * code and the library says whose it is. Then the usual test page. */
+static struct {
+    lv_timer_t *timer;
+    bool got;
+    code_t code;
+    int match, brand, set;
+} dt;
+
+static void detect_tick(lv_timer_t *t)
+{
+    LV_UNUSED(t);
+    uint8_t p;
+    uint32_t a, c;
+    if (dt.got || !hal_ir_receive(&p, &a, &c)) return;
+    dt.got = true;
+    dt.code = (code_t){TR_IR, p, a, c};
+    dt.match = ir_library_match(p, a, c, &dt.brand, &dt.set);
+    radio_hold_ir_rx(false);
+    hal_log("ir: detect %s 0x%02X 0x%02X -> %s", ir_proto_name(p), (unsigned)a, (unsigned)c,
+            dt.match ? ir_brands[dt.brand].brand : "no match");
+    app_buzz(dt.match ? HAPTIC_CONFIRM : HAPTIC_NO);
+    ui_refresh();
+}
+
+static void detect_btn_cb(lv_event_t *e)
+{
+    switch (ARG_INT(e)) {
+    case 0:   /* test the suggested set */
+        ir_brand = dt.brand;
+        ir_set = dt.set;
+        ui_replace(&page_ir_test, 0);
+        break;
+    case 1:   /* listen again */
+        dt.got = false;
+        radio_hold_ir_rx(true);
+        ui_refresh();
+        break;
+    case 2:   /* learn the keys instead */
+        open_learn(ir_target, true);
+        break;
+    default:  /* back to the brand list */
+        ui_back();
+        break;
+    }
+}
+
+static lv_obj_t *detect_button(lv_obj_t *col, const char *text, btn_kind_t kind, int what)
+{
+    lv_obj_t *b = w_button(col, text, NULL, kind);
+    lv_obj_set_width(b, lv_pct(100));
+    lv_obj_add_event_cb(b, detect_btn_cb, LV_EVENT_CLICKED, ARG(what));
+    return b;
+}
+
+static void detect_build(lv_obj_t *root, int target)
+{
+    LV_UNUSED(target);
+    if (!dt.timer) dt.timer = lv_timer_create(detect_tick, 100, NULL);
+    w_header(root, ir_target >= 0 ? g_model.devices[ir_target].name : "Add device · IR", "Find the brand", ui_back_cb);
+    lv_obj_t *col = w_col(root, 14);
+    lv_obj_set_style_pad_hor(col, PAD, 0);
+    lv_obj_t *mid = w_col(col, 8);
+    lv_obj_set_flex_align(mid, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_ver(mid, 16, 0);
+    w_icon_circle(mid, dt.got ? (dt.match ? ICON_CHECK : ICON_X) : ICON_IR, 56, dt.got && dt.match);
+    char buf[64];
+    lv_obj_t *title, *text;
+    if (!dt.got) {
+        radio_hold_ir_rx(true);
+        title = w_label(mid, F_TITLE, T->text, "Press Power on the old remote");
+        text = w_label(mid, F_BODY, T->text2, "Point it at Bleep, 5 to 10 cm away. Bleep listens for its code.");
+    } else if (dt.match) {
+        snprintf(buf, sizeof(buf), "Looks like %s", ir_brands[dt.brand].brand);
+        title = w_label(mid, F_TITLE, T->text, buf);
+        snprintf(buf, sizeof(buf), "%s code set %d. Test it to be sure.", dt.match == 2 ? "Its" : "Probably", dt.set + 1);
+        text = w_label(mid, F_BODY, T->text2, buf);
+    } else {
+        title = w_label(mid, F_TITLE, T->text, "Not in the library");
+        text = w_label(mid, F_BODY, T->text2, "Bleep can learn its keys one by one instead.");
+    }
+    lv_obj_set_width(title, lv_pct(100));
+    lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_width(text, lv_pct(100));
+    lv_obj_set_style_text_align(text, LV_TEXT_ALIGN_CENTER, 0);
+    if (dt.got) {
+        snprintf(buf, sizeof(buf), "%s · address 0x%02X · command 0x%02X", ir_proto_name(dt.code.proto),
+                 (unsigned)dt.code.a, (unsigned)dt.code.b);
+        w_label(mid, F_CAPTION, T->text2, buf);
+    }
+    if (!dt.got) {
+        detect_button(col, "Choose the brand myself", BTN_DEFAULT, 3);
+    } else if (dt.match) {
+        detect_button(col, "Test it", BTN_PRIMARY, 0);
+        detect_button(col, "Try again", BTN_DEFAULT, 1);
+    } else {
+        detect_button(col, "Learn its keys", BTN_PRIMARY, 2);
+        detect_button(col, "Try again", BTN_DEFAULT, 1);
+        detect_button(col, "Choose the brand myself", BTN_DEFAULT, 3);
+    }
+}
+
+static void detect_leave(void)
+{
+    radio_hold_ir_rx(false);
+    if (dt.timer) lv_timer_delete(dt.timer);
+    dt.timer = NULL;
+    dt.got = false;
+}
+
+const page_t page_ir_detect = {"IR detect", -1, detect_build, NULL, detect_leave};
 
 static device_t ir_trial;
 
@@ -624,7 +814,8 @@ static void test_cb(lv_event_t *e)
             ui_back_to(&page_device_edit);
         } else {
             char name[NAME_LEN];
-            snprintf(name, sizeof(name), "%s %s", b->brand, b->kind == DEV_TV ? "TV" : "receiver");
+            snprintf(name, sizeof(name), "%s %s", b->brand,
+                     b->kind == DEV_TV ? "TV" : b->kind == DEV_SPEAKER ? "soundbar" : "receiver");
             ui_text_entry("Add device · IR", "Device name", "Name", name, "Shown on activities and the Devices tab",
                           KB_NAME, NAME_LEN - 1, ir_name_done, NULL);
         }
@@ -677,7 +868,8 @@ const page_t page_ir_test = {"IR test", -1, test_build, NULL, NULL};
 /* ================= IR learning ================= */
 
 static const fn_t learn_fns[] = {FN_POWER, FN_VOL_UP, FN_VOL_DOWN, FN_MUTE, FN_UP, FN_DOWN, FN_LEFT,
-                                 FN_RIGHT, FN_OK, FN_BACK, FN_HOME, FN_MENU, FN_INPUT_1, FN_INPUT_2};
+                                 FN_RIGHT, FN_OK, FN_BACK, FN_HOME, FN_MENU, FN_INPUT_1, FN_INPUT_2,
+                                 FN_SOURCE, FN_CH_UP, FN_CH_DOWN};
 #define N_LEARN ((int)(sizeof(learn_fns) / sizeof(learn_fns[0])))
 
 static struct {

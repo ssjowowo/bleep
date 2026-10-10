@@ -1,0 +1,85 @@
+store fixtures/config-ha.json
+# Home > Edit > tap a card: its name, icon, size and rooms
+click Start
+wait 300
+click Home
+wait 800
+click Kitchen
+wait 300
+click Edit
+wait 300
+click Coffee machine
+wait 300
+expect Name
+expect Icon
+expect Rooms
+expect Compact
+expect switch.coffee · Kitchen
+shot 188_home_card
+# rename it
+click Name
+wait 300
+clear
+type Espresso
+tap 294 455
+wait 300
+expect Espresso
+# an icon of its own
+click Icon
+wait 300
+expect From HA
+shot 189_home_card_icon
+click Power
+wait 300
+expect Power
+# compact: one line, the switch on it
+click Compact
+wait 300
+expect One line
+shot 190_home_card_compact
+# show it in the living room too
+click Rooms
+wait 300
+click Living room
+wait 300
+shot 191_home_card_rooms
+tap 26 62
+wait 300
+expect 2 rooms
+tap 26 62
+wait 300
+expect Espresso
+expect-no Coffee machine
+click Done
+wait 300
+expect Espresso
+drag 160 400 160 160
+wait 300
+shot 192_home_compact_kitchen
+click Living room
+wait 300
+expect Espresso
+# saved; and its name in routines' entity list too
+wait 2500
+reboot
+click Start
+wait 300
+click Home
+wait 800
+click Living room
+wait 300
+expect Espresso
+# HA's name back: an empty name
+click Kitchen
+wait 300
+click Edit
+wait 300
+click Espresso
+wait 300
+click Name
+wait 300
+clear
+tap 294 455
+wait 300
+expect Coffee machine
+expect-no Espresso

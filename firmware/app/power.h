@@ -15,7 +15,7 @@ typedef enum { PWR_ACTIVE, PWR_DIM, PWR_WARM, PWR_DEEP, PWR_OFF } pwr_state_t;
 #define POWER_OFF_HOLD_MS 5000      /* PWR held this long: the power-off question */
 #define POWER_ON_HOLD_MS  2000      /* PWR held this long from Off: on */
 
-typedef enum { WAKE_KEY, WAKE_TOUCH, WAKE_LIFT, WAKE_USB } wake_cause_t;
+typedef enum { WAKE_KEY, WAKE_TOUCH, WAKE_LIFT, WAKE_USB, WAKE_TIMER, WAKE_TAP } wake_cause_t;
 
 /* At boot. was_off: the remote was powered off (retained.c) and this is PWR
  * or USB waking it: it stays Off (dark, or the charging screen) until PWR
@@ -41,9 +41,21 @@ uint8_t power_backlight(void);          /* current backlight % */
  * pairing, an old remote's key, a phone signing in) keep it awake: no dim,
  * no screen off, no deep sleep. Each flow has its own bit. */
 enum { AWAKE_PAIRING = 1, AWAKE_IR_LEARN = 2, AWAKE_HA_LOGIN = 4, AWAKE_UPDATE = 8, AWAKE_ROUTINE = 16,
-       AWAKE_EDITING = 32 /* typing or unsaved changes: ui.c, for EDIT_AWAKE_MS after the last touch */ };
+       AWAKE_EDITING = 32 /* typing or unsaved changes: ui.c, for EDIT_AWAKE_MS after the last touch */,
+       AWAKE_GAME = 64 /* a game of Snake is on (scr_snake.c) */ };
 #define EDIT_AWAKE_MS 120000
 void power_keep_awake(unsigned reason, bool on);
 void power_apply_backlight(void);       /* re-read settings and set the backlight */
+
+/* Auto brightness that learns. The light sensor picks one of five bands
+ * (under 5, 50, 300, 1000 lux, and brighter); each has a level, the default
+ * curve plus what was learned (settings.bright_learn). Moving the slider with
+ * Auto on teaches the current band (and half of it to its neighbours),
+ * keeping the curve rising with the light. */
+int power_light_band(void);
+int power_auto_level(int band);         /* %, before the battery saver and USB caps */
+void power_teach(int percent);
+void power_unlearn(void);
+bool power_learned(void);
 uint32_t power_idle_ms(void);
 uint32_t power_user_idle_ms(void);      /* since the last real touch, key or lift (keep-awake doesn't count) */

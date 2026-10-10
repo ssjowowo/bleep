@@ -19,11 +19,13 @@ typedef struct {
     bool lcd_sleep;
     bool asleep;            /* in deep sleep: the app doesn't run until a wake reboots it */
     hal_wake_mask_t wake_mask;
+    uint32_t asleep_at;     /* hal_millis() it went to sleep (the timer wake) */
     hal_wake_t wake;        /* why this run booted (boot.c) */
     bool reboot_pending;    /* headless: end this run after the current command */
     bool wifi, ble, ir_rx;
     uint32_t haptic_at;     /* last buzz, for the panel */
     const char *haptic;
+    uint16_t haptics[8];    /* buzzes per haptic_t since the last mark (script: expect-haptic) */
     /* clock */
     bool fixed_clock;       /* headless runs start at Thu 8 Oct 2026 21:40 */
     int64_t clock_base;     /* hal_time() at hal_millis() 0 with the fixed clock; carried over reboots */
@@ -54,12 +56,15 @@ void sim_key(bleep_key_t k);          /* press and release a physical key */
 void sim_key_down(bleep_key_t k);     /* hold it ... */
 void sim_key_up(bleep_key_t k);       /* ... and let go */
 void sim_lift(void);                  /* accelerometer pick-up */
+void sim_double_tap(void);            /* a double tap on the case */
+void sim_face_down(void);             /* laid face down */
 void sim_set_usb(bool on);            /* plug in / unplug USB-C (plugging in wakes it) */
 
 /* boot.c: emulated reboots (deep-sleep wakes, hal_restart, a script's reboot) */
 void sim_state_load(void);            /* first thing in main(): what the last run left */
 void sim_reboot(hal_boot_t boot, hal_woke_t by, bleep_key_t key);
 bool sim_wake_by(hal_woke_t by, bleep_key_t key);   /* an input while asleep: true = it was used (or ignored) */
+void sim_sleep_tick(void);            /* while asleep: the RTC timer */
 uint8_t *sim_rtc(void);               /* the RTC block (hal_rtc_mem) */
 void sim_fw_state(char **version, bool **pending_verify);   /* hal_sim.c's installed firmware */
 

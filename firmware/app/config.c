@@ -5,6 +5,7 @@
 #include <string.h>
 #include "cJSON.h"
 #include "hal.h"
+#include "home.h"
 
 /* A full remote (16 devices with every key, 12 routines of 16 steps) is
  * ~100 KB of JSON; the file, its cJSON tree and the model all sit in PSRAM. */
@@ -49,6 +50,7 @@ static const char *const fn_ids[FN_COUNT] = {
     [FN_DIGIT_4] = "digit_4", [FN_DIGIT_5] = "digit_5", [FN_DIGIT_6] = "digit_6", [FN_DIGIT_7] = "digit_7",
     [FN_DIGIT_8] = "digit_8", [FN_DIGIT_9] = "digit_9",
     [FN_SUBTITLES] = "subtitles", [FN_AUDIO] = "audio", [FN_INFO] = "info",
+    [FN_SOURCE] = "source", [FN_CH_UP] = "ch_up", [FN_CH_DOWN] = "ch_down",
 };
 static const char *const kind_ids[] = {"tv", "streamer", "avr", "speaker", "media_box", "other"};
 static const char *const proto_ids[IR_PROTO_COUNT] = {"nec", "necext", "samsung32", "sirc", "rc5", "rc6", "raw",
@@ -57,6 +59,7 @@ static const char *const step_ids[] = {"device", "ha", "activity_start", "activi
 static const char *const op_ids[HAOP_COUNT] = {"on", "off", "toggle", "set", "run", "open", "close", "lock"};
 static const char *const theme_ids[] = {"dark", "light", "auto"};
 static const char *const layout_ids[] = {"grid", "list"};
+static const char *const size_ids[] = {"full", "compact"};
 #define N(a) ((int)(sizeof(a) / sizeof((a)[0])))
 
 static int id_of(const char *const *ids, int n, const char *s, int fallback)
@@ -105,6 +108,16 @@ char *config_to_json(const model_t *m)
     cJSON_AddBoolToObject(js, "auto_brightness", s->auto_brightness);
     cJSON_AddNumberToObject(js, "brightness", s->brightness);
     cJSON_AddBoolToObject(js, "wake_on_lift", s->wake_on_lift);
+    cJSON_AddBoolToObject(js, "wake_on_tap", s->wake_on_tap);
+    cJSON_AddBoolToObject(js, "face_down_pause", s->face_down_pause);
+    cJSON_AddBoolToObject(js, "nightstand", s->nightstand);
+    cJSON_AddBoolToObject(js, "ha_battery", s->ha_battery);
+    cJSON_AddBoolToObject(js, "ha_key_events", s->ha_key_events);
+    cJSON *bl = cJSON_AddArrayToObject(js, "bright_learn");
+    for (int i = 0; i < 5; i++) cJSON_AddItemToArray(bl, cJSON_CreateNumber(s->bright_learn[i]));
+    cJSON_AddBoolToObject(js, "fun_zone", s->fun_zone);
+    cJSON_AddNumberToObject(js, "snake_best", s->snake_best);
+    cJSON_AddNumberToObject(js, "blocks_best", s->blocks_best);
     cJSON_AddNumberToObject(js, "haptics", s->haptics);
     cJSON_AddNumberToObject(js, "dim_after_s", s->dim_after_s);
     cJSON_AddNumberToObject(js, "sleep_after_s", s->sleep_after_s);
@@ -194,6 +207,36 @@ char *config_to_json(const model_t *m)
         cJSON_AddItemToArray(jr, o);
     }
 
+    /* The Home tab: only what the user changed (model.h, home_layout_t) */
+    const home_layout_t *h = &m->home;
+    cJSON *jh = cJSON_AddObjectToObject(root, "home");
+    cJSON *jhr = cJSON_AddArrayToObject(jh, "rooms");
+    for (int i = 0; i < h->n_rooms; i++) {
+        const home_room_t *hr = &h->rooms[i];
+        cJSON *o = cJSON_CreateObject();
+        cJSON_AddStringToObject(o, "area", hr->area);
+        if (hr->hidden) cJSON_AddBoolToObject(o, "hidden", true);
+        if (hr->n_items) {
+            cJSON *a = cJSON_AddArrayToObject(o, "items");
+            for (int k = 0; k < hr->n_items; k++) cJSON_AddItemToArray(a, cJSON_CreateString(h->ents[hr->items[k]].id));
+        }
+        if (hr->n_hide) {
+            cJSON *a = cJSON_AddArrayToObject(o, "hide");
+            for (int k = 0; k < hr->n_hide; k++) cJSON_AddItemToArray(a, cJSON_CreateString(h->ents[hr->hide[k]].id));
+        }
+        cJSON_AddItemToArray(jhr, o);
+    }
+    /* how cards look, for the ones the user changed */
+    cJSON *jhe = cJSON_AddObjectToObject(jh, "entities");
+    for (int i = 0; i < h->n_ents; i++) {
+        const home_ent_t *he = &h->ents[i];
+        if (!he->name[0] && !he->icon && !he->size) continue;
+        cJSON *o = cJSON_AddObjectToObject(jhe, he->id);
+        if (he->name[0]) cJSON_AddStringToObject(o, "name", he->name);
+        if (he->icon && he->icon <= home_icon_count) cJSON_AddStringToObject(o, "icon", home_icons[he->icon - 1].name);
+        if (he->size) cJSON_AddStringToObject(o, "size", size_ids[he->size < N(size_ids) ? he->size : HOME_FULL]);
+    }
+
     char *out = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
     return out;
@@ -241,6 +284,19 @@ static void read_settings(const cJSON *js, settings_t *s)
     s->auto_brightness = get_bool(js, "auto_brightness", s->auto_brightness);
     s->brightness = get_int(js, "brightness", 5, 100, s->brightness);
     s->wake_on_lift = get_bool(js, "wake_on_lift", s->wake_on_lift);
+    s->wake_on_tap = get_bool(js, "wake_on_tap", s->wake_on_tap);
+    s->face_down_pause = get_bool(js, "face_down_pause", s->face_down_pause);
+    s->nightstand = get_bool(js, "nightstand", s->nightstand);
+    s->ha_battery = get_bool(js, "ha_battery", s->ha_battery);
+    s->ha_key_events = get_bool(js, "ha_key_events", s->ha_key_events);
+    const cJSON *bl = cJSON_GetObjectItemCaseSensitive(js, "bright_learn");
+    for (int i = 0; i < 5 && cJSON_IsArray(bl); i++) {
+        const cJSON *v = cJSON_GetArrayItem(bl, i);
+        if (cJSON_IsNumber(v)) s->bright_learn[i] = v->valueint < -95 ? -95 : v->valueint > 95 ? 95 : v->valueint;
+    }
+    s->fun_zone = get_bool(js, "fun_zone", s->fun_zone);
+    s->snake_best = get_int(js, "snake_best", 0, 9999, s->snake_best);
+    s->blocks_best = get_int(js, "blocks_best", 0, 9999999, s->blocks_best);
     s->haptics = get_int(js, "haptics", 0, 3, s->haptics);
     s->dim_after_s = get_int(js, "dim_after_s", 1, 3600, s->dim_after_s);
     s->sleep_after_s = get_int(js, "sleep_after_s", 1, 3600, s->sleep_after_s);
@@ -341,6 +397,58 @@ static void read_routine(const cJSON *o, routine_t *r, int n_devices, int n_acti
     }
 }
 
+/* A list of entity_ids into a room's items or hide. The room is already
+ * counted in n_rooms and *n grows as it goes, so if model_home_id() tidies
+ * the ids on the way, what's been read so far is renumbered with the rest. */
+static void read_home_ids(const cJSON *a, uint8_t *out, uint8_t *n)
+{
+    const cJSON *v;
+    cJSON_ArrayForEach(v, a) {
+        if (*n >= MAX_ROOM_ITEMS) break;
+        int id = cJSON_IsString(v) ? model_home_id(v->valuestring) : -1;
+        bool dup = false;
+        for (int k = 0; k < *n; k++) dup |= out[k] == id;
+        if (id >= 0 && !dup) out[(*n)++] = (uint8_t)id;
+    }
+}
+
+/* g_model's: the ids go through model_home_id() */
+static void read_home(const cJSON *jh, home_layout_t *h)
+{
+    const cJSON *o;
+    h->n_rooms = h->n_ents = 0;
+    cJSON_ArrayForEach(o, cJSON_GetObjectItemCaseSensitive(jh, "rooms")) {
+        if (h->n_rooms >= MAX_HOME_ROOMS) break;
+        if (!cJSON_IsObject(o)) continue;
+        home_room_t *hr = &h->rooms[h->n_rooms];
+        memset(hr, 0, sizeof(*hr));
+        const char *area = get_id(o, "area");
+        if (!area || !area[0] || strlen(area) >= HA_ID_LEN) continue;   /* doesn't fit: its area's defaults */
+        snprintf(hr->area, sizeof(hr->area), "%s", area);
+        hr->hidden = get_bool(o, "hidden", false);
+        h->n_rooms++;
+        read_home_ids(cJSON_GetObjectItemCaseSensitive(o, "items"), hr->items, &hr->n_items);
+        read_home_ids(cJSON_GetObjectItemCaseSensitive(o, "hide"), hr->hide, &hr->n_hide);
+    }
+    cJSON_ArrayForEach(o, cJSON_GetObjectItemCaseSensitive(jh, "entities")) {
+        if (!cJSON_IsObject(o) || !o->string) continue;
+        char name[sizeof(((home_ent_t *)0)->name)] = "";
+        get_str(o, "name", name, sizeof(name));
+        const char *icon = get_id(o, "icon");
+        int ic = -1;
+        for (int k = 0; icon && k < home_icon_count; k++)
+            if (!strcmp(home_icons[k].name, icon)) ic = k;
+        int size = id_of(size_ids, N(size_ids), get_id(o, "size"), HOME_FULL);
+        if (!name[0] && ic < 0 && size == HOME_FULL) continue;
+        int k = model_home_id(o->string);
+        if (k < 0) continue;
+        home_ent_t *he = &h->ents[k];
+        snprintf(he->name, sizeof(he->name), "%s", name);
+        he->icon = ic + 1;
+        he->size = size;
+    }
+}
+
 /* m must be g_model: activities are rebuilt from its devices */
 bool config_from_json(const char *json, model_t *m)
 {
@@ -382,6 +490,7 @@ bool config_from_json(const char *json, model_t *m)
         if (m->n_routines >= MAX_ROUTINES) break;
         read_routine(o, &m->routines[m->n_routines++], m->n_devices, m->n_activities);
     }
+    read_home(cJSON_GetObjectItemCaseSensitive(root, "home"), &m->home);
     cJSON_Delete(root);
     return true;
 }

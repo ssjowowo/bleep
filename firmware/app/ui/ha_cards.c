@@ -9,6 +9,7 @@
 #include <string.h>
 #include "../ha.h"
 #include "ha_cards.h"
+#include "../home.h"
 #include "ui.h"
 
 #define WHEEL 120
@@ -23,7 +24,7 @@ static int ent_of(lv_event_t *e) { return ARG_INT(e); }
 static lv_obj_t *head(lv_obj_t *card, const ha_entity_t *e, bool on)
 {
     lv_obj_t *row = w_row(card, 12);
-    w_icon_circle(row, e->icon ? e->icon : ha_domain_icon(e->domain), 36, on && !e->alert);
+    w_icon_circle(row, home_card_icon(e), 36, on && !e->alert);
     if (e->alert) {
         lv_obj_t *c = lv_obj_get_child(row, 0);
         lv_obj_set_style_text_color(lv_obj_get_child(c, 0), T->warning, 0);
@@ -31,7 +32,7 @@ static lv_obj_t *head(lv_obj_t *card, const ha_entity_t *e, bool on)
     lv_obj_t *col = w_col(row, 2);
     lv_obj_set_flex_grow(col, 1);
     lv_obj_set_width(col, LV_SIZE_CONTENT);
-    lv_obj_t *n = w_label(col, F_BODY_B, T->text, e->name);
+    lv_obj_t *n = w_label(col, F_BODY_B, T->text, home_card_name(e));
     lv_obj_set_width(n, lv_pct(100));
     lv_label_set_long_mode(n, LV_LABEL_LONG_MODE_DOTS);
     char buf[64];
@@ -78,6 +79,7 @@ static void value_cb(lv_event_t *e)
 static lv_obj_t *slider(lv_obj_t *parent, int idx, int v, int min, int max)
 {
     lv_obj_t *s = w_slider(parent, v, min, max);
+    w_slider_detents(s, 0);   /* brightness, volume, position: every 5 % */
     lv_obj_add_event_cb(s, value_cb, LV_EVENT_RELEASED, ARG(idx));
     return s;
 }
@@ -257,6 +259,7 @@ static void light_card(lv_obj_t *c, int idx, ha_entity_t *e)
         /* the warm-to-cool gradient is the track; no fill, just the knob */
         int ct = e->ct < CT_MIN ? CT_MIN : e->ct > CT_MAX ? CT_MAX : e->ct;
         lv_obj_t *sl = w_slider(c, ct, CT_MIN, CT_MAX);
+        w_slider_detents(sl, 0);
         lv_obj_set_height(sl, 8);
         lv_obj_set_style_margin_top(sl, 12, 0);   /* clear of the brightness knob above */
         lv_obj_set_style_radius(sl, 4, 0);
@@ -416,9 +419,48 @@ static lv_obj_t *field(lv_obj_t *parent, const char *text, const char *icon, boo
 
 /* ---- the card for each domain ---- */
 
+/* Compact (the user's choice, Home > Edit): one row, the head and the main
+ * action, if it has one that's safe on one tap */
+static lv_obj_t *compact_card(lv_obj_t *parent, int idx, ha_entity_t *e)
+{
+    bool on = e->domain == HA_COVER ? e->value > 0 : e->on;
+    switch (e->domain) {
+    case HA_LIGHT: case HA_SWITCH: case HA_INPUT_BOOLEAN: case HA_AUTOMATION: case HA_FAN: case HA_HUMIDIFIER:
+    case HA_COVER: case HA_VALVE: case HA_LOCK: case HA_MEDIA: case HA_VACUUM: case HA_MOWER: case HA_BINARY:
+    case HA_PERSON: case HA_CLIMATE: case HA_SIREN:
+        break;
+    default:
+        on = false;
+        break;
+    }
+    lv_obj_t *c = w_card(parent, on, e->alert);
+    lv_obj_set_style_pad_ver(c, 10, 0);
+    lv_obj_t *h = head(c, e, on);
+    switch (e->domain) {
+    case HA_LIGHT: case HA_SWITCH: case HA_INPUT_BOOLEAN: case HA_AUTOMATION: case HA_FAN: case HA_HUMIDIFIER:
+        toggle(h, idx, e->on);
+        break;
+    case HA_COVER:
+        action_btn(h, idx, e->value > 0 ? "Close" : "Open", NULL, e->value > 0 ? "close" : "open", BTN_DEFAULT);
+        break;
+    case HA_VALVE:
+        action_btn(h, idx, e->on ? "Close" : "Open", NULL, e->on ? "close" : "open", BTN_DEFAULT);
+        break;
+    case HA_LOCK:
+        if (!e->on) action_btn(h, idx, "Lock", ICON_PADLOCK, "lock", BTN_DEFAULT);   /* unlocking: the full card's hold */
+        break;
+    case HA_SCENE: action_btn(h, idx, "Activate", NULL, "turn_on", BTN_DEFAULT); break;
+    case HA_SCRIPT: action_btn(h, idx, "Run", NULL, "run", BTN_DEFAULT); break;
+    case HA_BUTTON: action_btn(h, idx, "Press", NULL, "press", BTN_DEFAULT); break;
+    default: break;
+    }
+    return c;
+}
+
 lv_obj_t *ha_card_create(lv_obj_t *parent, int idx)
 {
     ha_entity_t *e = ha_get(idx);
+    if (home_card_compact(e)) return compact_card(parent, idx, e);
     bool on = e->on;
     switch (e->domain) {
     case HA_SENSOR: case HA_BINARY: case HA_EVENT: case HA_SUN: case HA_WEATHER: case HA_AIR_QUALITY:
@@ -709,7 +751,7 @@ lv_obj_t *ha_card_create(lv_obj_t *parent, int idx)
         lv_obj_set_style_radius(av, LV_RADIUS_CIRCLE, 0);
         lv_obj_set_style_bg_opa(av, LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(av, T->surface2, 0);
-        char ini[2] = {e->name[0], 0};
+        char ini[2] = {home_card_name(e)[0], 0};
         lv_obj_center(w_label(av, F_LABEL_B, T->text, ini));
         break;
     }
@@ -777,7 +819,7 @@ lv_obj_t *ha_scene_row(lv_obj_t *parent, const int *idx, int n)
 {
     lv_obj_t *r = w_row(parent, 8);
     for (int i = 0; i < n; i++) {
-        lv_obj_t *b = action_btn(r, idx[i], ha_get(idx[i])->name, NULL, "turn_on", BTN_OUTLINE);
+        lv_obj_t *b = action_btn(r, idx[i], home_card_name(ha_get(idx[i])), NULL, "turn_on", BTN_OUTLINE);
         lv_obj_set_flex_grow(b, 1);
         lv_obj_set_style_radius(b, 22, 0);
     }

@@ -32,7 +32,7 @@ Bottom tab bar, four tabs:
 
 - **Activities** (first tab): an Activities | Routines switch at the top (routines: section 4), then a 2-column grid of activity tiles (Watch TV, Shield TV, Apple TV, Kodi, Sonos, All off). The running one is highlighted ("Running"). Starting one makes it the active target and opens its page, with the tab bar still showing so you can move between tabs. An activity with a now-playing source opens **Now playing**: artwork, title, progress bar, and one row of subtitles · −10 · play-pause · +30 · audio track (subtitles and audio as small icon buttons at the ends). Any other activity opens an activity page: name, End, which devices get the D-pad and the volume, and the D-pad device's controls, with the volume buttons going to the volume device and Power ending the activity.
 - **Devices**: the device manager (section 4). Each device has a page, e.g. an IR TV with HDMI 1–4 inputs and a number keypad.
-- **Home**: Home Assistant. Room chips, then entity cards (light with brightness, switches, thermostat, scenes). The design has a card for each HA domain: light (including RGB colour wheel), switch, energy, button, climate, fan, humidifier, water heater, air quality, weather, cover, valve, lock (hold to unlock), alarm (code on the number pad), siren, sensors, camera snapshot, media player, remote, vacuum, lawn mower, scene, script, automation, input helpers, timer, counter, person, sun, calendar, to-do, update and notify.
+- **Home**: Home Assistant. Room chips, then entity cards (light with brightness, switches, thermostat, scenes), and Edit in the header to change which rooms and cards show and their order (section 8). The design has a card for each HA domain: light (including RGB colour wheel), switch, energy, button, climate, fan, humidifier, water heater, air quality, weather, cover, valve, lock (hold to unlock), alarm (code on the number pad), siren, sensors, camera snapshot, media player, remote, vacuum, lawn mower, scene, script, automation, input helpers, timer, counter, person, sun, calendar, to-do, update and notify.
 - **Settings**: battery ring and days left, Brightness (Auto), Wake on pick-up, then three stepped sliders: Haptics (Off / Light / Medium / Strong, buzzes at each step), Idle after (5 s to 1 min, default 8 s) and Sleep after (15 s, 20 s, 30 s, 45 s, 1 min, 1.5 min or 2 min, default 30 s); sleep is kept longer than idle, Wi-Fi (its own page: status, network, password, Scan and Connect. Scan lists the networks in range with signal bars, a padlock on secured ones and "Saved" on the current one; tapping one fills in the name and asks for its password. Edits are a draft: Connect joins the network and waits for an IP address, and only then saves the credentials. On failure it shows why (not in range, wrong password, no IP address, no answer) and keeps the old ones), Home Assistant (status, server found on the network or typed, and sign-in: with a phone through a QR code, or on the remote with username, password and two-factor code; see section 8), Theme.
 
 Screens outside the tabs:
@@ -75,7 +75,7 @@ Default key map for a BLE + IR device: D-pad, OK, BACK, HOME, NFLX, YT, play/pau
 
 Devices and activities live in flash (LittleFS, JSON). The running activity's id also lives in RTC memory so a wake needs no flash lookup.
 
-Keys a device doesn't map are greyed out on screen; pressing one gives a short "no" buzz and does nothing.
+On screen, a device shows only what it can do: buttons for functions it has no code for aren't drawn, and a section with none (Input, Keypad, Controls, Channel, Power and volume) isn't either; the same on an activity's page, on Now playing, and in its settings' key map. A physical key it doesn't map gives a short "no" buzz and does nothing.
 
 ### Activities
 
@@ -116,6 +116,10 @@ A routine runs a list of steps with one tap and then is done; unlike an activity
 - Deleting a device or an activity removes the routine steps that use it.
 - When a routine ends (or is stopped), the device or activity that was selected before it (the pill in the status bar) is selected again, even if a step started another activity. Nothing is sent for this: the devices stay as the routine left them; only the keys' target goes back. An activity the routine itself ended (an "End the running activity" step, or starting All off) stays ended.
 
+**Test before saving.** The activity and routine editors have a Test button beside Create / Update. An activity's test sends its start steps as starting it would (power on what's off, the input) without saving it or making it the running one; a routine's runs the draft in the usual progress window.
+
+**Sleep timer.** On the activity page and Now playing (the moon): Off, 15, 30, 45 min, 1, 1.5 or 2 h. When it runs out it ends the running activity, switching its devices off. In deep sleep the RTC timer wakes the remote for it: it does that with the screen off, then sleeps again. Ending or changing the activity clears it; the time left is kept in the RTC block.
+
 ### Adding a device (on demand only)
 
 - **Bluetooth**: start BLE, advertise as a pairable HID remote (appearance: remote control) for up to 2 minutes, the user picks *Pair accessory* on the TV, the bond is stored, advertising stops.
@@ -149,7 +153,9 @@ A routine runs a list of steps with one tap and then is done; unlike an activity
 | Off | Power off (PWR held 5 s, or Settings > Power off), confirmed | ~0.05–0.08 mA (the LDO's 40 µA is most of it) | PWR held 2 s (ext0, GPIO13); USB shows the charging screen and stays off |
 
 - Idle (Active → Dim) and Sleep (→ screen off) are settings, both counted from the last touch or key. Battery saver overrides them with 5 s and 15 s. Warm → Deep sleep stays at 2 min. On USB, stay warm until unplugged.
-- Auto-brightness from the LTR-303ALS (calibrate by eye; the blue window tints it).
+- Auto-brightness from the LTR-303ALS (calibrate by eye; the blue window tints it). It **learns**: five light bands (under 5, 50, 300, 1000 lux, brighter), each with a level that starts on the standard curve (12, 25, 45, 70, 100 %). With Auto on, the Brightness slider teaches the current band, half of it goes to the neighbours, and the curve never gets dimmer in more light. Saved as `bright_learn`; "Forget what it learned" resets it.
+- **Nightstand** (Display & haptics, on by default): idle on USB, the dim screen is a big clock, the date, Home Assistant's weather (the first `weather.*` entity) and the charge, moving a few pixels each minute. Wi-Fi stays on for it (the weather, and a time sync), since power doesn't matter on USB. Off, it's the charging screen as before.
+- **Gestures** (Power & sleep): a double tap on the case wakes it (the accelerometer's pulse detection, also from deep sleep); laid face down while Home Assistant says the running activity's source plays, it pauses (HA `media_pause`, or play/pause to the device that has the D-pad). With no known state it does nothing: a play/pause toggle sent blind could start playback. Pick-ups and taps share one wake-loop count.
 - CPU: power management with frequency scaling (80–240 MHz) and auto light sleep while active.
 - Before deep sleep: LCD Sleep In, backlight off, FT6236 in monitor mode (never hibernate), MMA8452Q armed for motion (standby if lift doesn't wake it), MAX17048 hibernated, IR receiver off and held, LCD bus pins held. The app passes the wake mask (`hal_deep_sleep`): the keys, touch, lift and USB.
 - **Wake-loop guard.** A key that's held down when the remote goes to sleep (under a cushion) is left out of the wake mask, or it would wake it over and over. Three touch or lift wakes in a row that nobody followed up with a touch or key turn that source off until a key wakes the remote. Both are logged.
@@ -191,15 +197,21 @@ Wi-Fi fast reconnect: keep the AP's BSSID and channel in RTC memory, static IP (
 - **Server:** found by mDNS (`_home-assistant._tcp`, name and URL from the TXT record), or typed in. Changing the server signs out.
 - **Sign in with a phone** (main way): the remote shows a QR code for a small page it serves on its own IP. The page redirects to the server's `/auth/authorize`; HA's own login page runs on the phone (two-factor and passkeys work), then redirects back to `/ha-callback` on the remote with an authorization code, which the remote exchanges for the refresh token. The remote stays awake while the QR code is up and gives up after 5 minutes.
 - **Sign in on the remote** (fallback): username and password on the keyboard, through HA's login-flow API (`/auth/login_flow`), then the two-factor code on the number pad if HA asks for it. The password is sent only to the HA server and never stored.
+- **Rooms** (`app/home.c`): HA's areas, with the user's changes on top, saved in the setup as `home` (areas by `area_id`, entities by `entity_id`, so renaming them in HA changes nothing). The order is the user's rooms, then HA's other areas in HA's order. Hidden rooms are left out, as are areas HA no longer has and areas with nothing to show. A room's cards are the user's list in their order, then the area's other entities a dashboard would show: not hidden in HA, not a config or diagnostic entity (`entity_category`), and a control, not a plain sensor, binary sensor, weather, air quality, energy, event, person, sun, calendar, to-do, update, notify, counter, timer or automation. They come lights first, then climate, fans and humidifiers, covers and valves, media, switches, locks and alarm, vacuums and mowers, cameras, input helpers, scenes (one row), scripts and buttons, each group by name. An entity added to an area in HA shows up by itself; one HA no longer has is skipped. The rooms are only HA's areas: no rooms of the remote's own, but a room can hold any entity, from any area or none.
+- **Edit** (the Home tab's header; Done, or leaving the tab, ends it). Every room is listed, hidden ones dimmed, with a "Show this room" switch for the one selected. Rooms and cards are moved by holding and dragging, as on the Activities tab. The cards are plain rows, not live controls, so a hold never clashes with a slider. The eye hides one of the area's own cards in this room only; hidden ones are listed at the bottom, where the eye shows them again. A card that isn't the area's own (added from elsewhere, or one HA no longer has, marked "Not in Home Assistant") has an x that takes it out. **Add a card** at the end of the list opens a picker of every entity HA has: a search (name or entity ID, on the keyboard), a chip for each area plus All and No area, and a "Settings and diagnostics" switch for the entities a room leaves out (HA's config and diagnostic ones, and those hidden in HA). It lists the first 50 by name ("Showing 50 of 212. Search to find the rest."), each with its area; the ones in the room already are ticked. A tap adds one at the end of the room and goes back to Edit, where it shows. One of the area's own that was hidden there shows again in its place. **Tapping a card** (or holding it and letting go) opens its page: a live preview at the top, then **Name** (on the keyboard; empty goes back to HA's), **Icon** (a grid of HA-ish icons, with HA's own first), **Rooms** (tick the rooms that show it; unticking one of an area's own hides it there) and **Size**: Full, or Compact, one line with the name, the state and the main switch or button (a switch for lights, switches, fans, humidifiers, helpers and automations; Open/Close for covers and valves; Lock for an unlocked lock, as unlocking needs the full card's hold; Activate, Run or Press for scenes, scripts and buttons; the state alone for the rest). Name, icon and size belong to the entity, not the room, and are saved by entity_id under `home.entities`; the name shows wherever the remote names the entity (routine steps and the entity pickers too). The first change writes every room into the saved order, so the rooms stay where they are on screen; HA's areas that come later still go at the end. Saved like any other change (2 s later).
 - `subscribe_entities` for only the entities on the visible page; unsubscribe when the page changes.
 - Show the last-known states (cached in flash) at once, with a "connecting" mark until live; queue taps made while connecting.
-- Optional: report the remote's battery % to HA.
+- **The remote in HA** (Settings > Home Assistant, when signed in; both need an admin user):
+  - battery level and charging as `sensor.bleep_<id>_battery` and `binary_sensor.bleep_<id>_charging` (`POST /api/states`), sent whenever HA is connected anyway and when they change, never turning Wi-Fi on for it. On by default. Such entities have no unique id; a custom integration could register them properly later;
+  - optionally (off by default), every key press fires the event `bleep_key` (`{"remote", "key", "activity", "device"}`) for automations. A press brings Wi-Fi up; the event waits up to 10 s for HA, then is dropped (a late trigger is worse than none). Keys still go to their devices.
 - Plain HTTP on the LAN (no TLS handshake per wake).
 
 ## 9. Bluetooth (Google TV)
 
 - NimBLE, HID over GATT: keyboard report (arrows, Enter) and consumer-control report (AC Home 0x223, AC Back 0x224, volume 0xE9/0xEA, mute 0xE2, play/pause 0xCD, power 0x30). A key is a down report and an empty (up) report; held, the TV repeats.
 - Bond with several TVs; connect only to the host of the device the running activity uses, by directed advertising to its address (stored with the device), so only that TV answers.
+- **Typing on the TV**: a device paired over Bluetooth gets a Type button (its page, the activity page, Now playing). The on-screen keyboard sends each character as it's typed (keyboard usages, US layout, Shift for capitals and symbols), a deletion as Backspace, and Done as Enter. Characters outside printable ASCII aren't sent.
+- **Trackpad**: any device with a D-pad (IR, Bluetooth or HA) gets one: a swipe sends a D-pad step per 36 px it travels, with a faint haptic tick each; a tap is OK; Back, Home and Type below it.
 - While connected and idle, ask for a long connection interval with slave latency.
 - To test early on real hardware: the Netflix and YouTube keys (the TV may honour their HID codes only from known remotes), and waking the stick from standby with a BLE key.
 
@@ -207,7 +219,14 @@ Wi-Fi fast reconnect: keep the AP's BSSID and channel in RTC memory, static IP (
 
 - Send: RMT TX on GPIO45, 38 kHz carrier, 33 % duty. Protocols: NEC/NECext, Samsung32, Sony SIRC (12, 15 and 20 bit), RC5, RC6, Kaseikyo (Panasonic), raw. While a key is held: NEC-style repeat codes every ~108 ms, Sony and RC5/RC6 the whole frame (RC5/RC6 keep the toggle bit, which flips on the next press); Sony always at least 3 frames.
 - Learn: GPIO1 high, wait 100 ms, RMT RX on GPIO42 (active low, already demodulated), IR LEDs off; decode to a known protocol or keep raw. GPIO1 low and no pull-up on GPIO42 afterwards. The carrier can't be measured; learned codes are sent at 38 kHz.
-- Library: curated Flipper-IRDB subset in the firmware image.
+- Library (`app/ir_library.c`): generated from Flipper-IRDB (CC0, public domain, so it can ship) by `tools/make_ir_library.py`, the same in the emulator and on the remote. 53 brands, 95 code sets, about 1,500 codes (~18 KB of flash):
+  - **TVs**: Samsung, LG, Sony, TCL, Hisense, Philips, Panasonic, Sharp, Toshiba, Vizio, Grundig, Hitachi, Insignia, JVC, Telefunken, Medion, Magnavox, Element, Sanyo, Haier, Loewe, Westinghouse, Sceptre, Blaupunkt;
+  - **soundbars**: Samsung, LG, Sony, Bose, Sonos, Yamaha, JBL, Vizio, Denon, Polk Audio, Philips, TCL, Hisense, Xiaomi, Klipsch, Sennheiser, Creative, Panasonic, Teufel, Canton, JVC, Toshiba, Grundig;
+  - **AV receivers**: Denon, Marantz, Onkyo, Yamaha, Sony, Harman Kardon.
+  - A brand's remotes are grouped by their Power code (a soundbar's by Volume up if it has no Power, like Sonos); each group is a code set, the most common first, so the test tries the likeliest set first. Gaps in a set are filled from the other remotes in its group.
+  - Only parsed codes in a protocol the remote sends; raw recordings and RCA, RC5X and Pioneer frames are left out, so Thomson TVs, Xiaomi TVs and Pioneer receivers aren't listed (learn their keys).
+  - Only the remote's own functions are mapped: Power (and discrete on/off where the database has them), D-pad, OK, Back, Home, Menu, Guide, volume, mute, play/pause, rewind, forward, Netflix, YouTube, HDMI 1-4, Source, Channel + and −, digits, subtitles, audio, info. Most remotes have only Source, which steps through the inputs (43 of the 95 sets), and few have direct HDMI codes (5 sets; none of the receivers, whose inputs are named after sources), so an activity can switch those devices' input only after their HDMI keys are learned.
+- **One-press brand detection** (Add device > IR from the library > Find it from its old remote): the receiver catches the old remote's Power code and the library says which brand and code set send it (an exact code wins, Power first; the same protocol and address only is "probably"). Then the usual "Did the TV react?" test. Not in the library: learn its keys instead.
 
 ## 11. Setup, settings, updates
 
@@ -231,7 +250,11 @@ Wi-Fi fast reconnect: keep the AP's BSSID and channel in RTC memory, static IP (
   - **Connections**: Wi-Fi, Home Assistant;
   - **System**: Software update, About;
   - **Power & reset**: Power off, and Reset to factory settings (asks first, in amber: signs out of Home Assistant, which revokes the refresh token if HA is reachable, erases the config file, the secrets' NVS and the Bluetooth bonds, saves the defaults and restarts as a new remote).
+- Sliders tick: a faint haptic detent (DRV2605L effect 26, ~10 ms) each time a dragged slider passes a step: 5 % on brightness and volume, each step on stepped sliders, every second on a routine's wait. It plays at the Light haptics setting too.
 - Layout (Display & haptics): activities and routines, and devices, each as a **grid** of tiles (two columns) or a **list** of full-width rows. Defaults: activities and routines as a grid, devices as a list. Both layouts work the same: tap, hold to edit, hold and drag to move.
+- Easter egg, the **Fun Zone** (`app/ui/scr_fun.c`): tapping *Firmware* in About 7 times (a pause over 1.5 s starts the count again; from the 4th tap a toast counts down, "3 more taps") adds a Fun Zone section to Settings and says so ("Fun Zone enabled!"). It's saved (`fun_zone`), and "Hide the Fun Zone" on its page takes it away again. It has two full-screen games, where the whole remote is the controller and no key goes to the TV: BACK goes back to the Fun Zone, HOME to Activities. The screen stays on while playing (not when paused); a sheet such as "Power off?" pauses the game, and a deep sleep ends it (the remote wakes in the normal remote). Best scores are saved (`snake_best`, `blocks_best`).
+  - **Snake** (`scr_snake.c`): the D-pad or a swipe steers, OK or a tap starts, pauses and plays again. It wraps around the edges, so only its own tail kills it, and speeds up as it grows. A tick when it eats, a buzz when it dies.
+  - **Bleep Blocks** (`scr_blocks.c`), falling blocks with a look of its own (not called or styled like Tetris, whose name and look are protected): an 8 x 16 well of big, soft blocks in the remote's colours (shades of the accent and of the logo's gold, from the theme). LEFT and RIGHT move, UP turns, DOWN drops a row, OK drops it all the way; LEFT, RIGHT and DOWN repeat while held. A swipe moves (down too), a tap turns, and Pause is the button beside the well. A 7-piece bag, a faint shadow where it will land, the next piece, 100/300/500/800 points for 1 to 4 lines times the level, and a level (faster) every 10 lines.
 
 ## 12. Stack
 
@@ -239,7 +262,7 @@ Wi-Fi fast reconnect: keep the AP's BSSID and channel in RTC memory, static IP (
 - LVGL 9 on `esp_lcd` i80 (8-bit, ILI9488, 320 × 480, RGB565). Two partial draw buffers in internal DMA RAM.
 - NimBLE for BLE HID, ESP-IDF Wi-Fi + `esp_websocket_client`, RMT for IR.
 - Sensors: the fuel gauge and the light sensor are read once a second, never from a hot path; USB is two GPIOs, polled every tick.
-- PSRAM (2 MB, quad): the model (~30 KB, `HAL_PSRAM` = `EXT_RAM_BSS_ATTR`, needs `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`), the setup's JSON (up to 256 KB) and its cJSON tree (`hal_big_alloc`), and caches. Internal RAM is for Wi-Fi, NimBLE and LVGL's draw buffers.
+- PSRAM (2 MB, quad): the model (~45 KB with the Home tab's layout, `HAL_PSRAM` = `EXT_RAM_BSS_ATTR`, needs `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`), the setup's JSON (up to 256 KB) and its cJSON tree (`hal_big_alloc`), and caches. Internal RAM is for Wi-Fi, NimBLE and LVGL's draw buffers.
 - Flash (8 MB): two OTA app slots + LittleFS. Partition table:
 
   | Name | Type | Size |
@@ -261,7 +284,11 @@ Wi-Fi fast reconnect: keep the AP's BSSID and channel in RTC memory, static IP (
 4. **Google TV over BLE**: HID, pairing, reconnect on wake.
 5. **IR**: send, learn, library.
 
-## 14. Open
+## 14. Later (decided, not built yet)
+
+- **Setup site on bleepremote.com over USB (WebSerial)** (section 11): edit, back up and restore the setup; import Flipper `.ir` files; flash firmware from the browser (esp-web-tools). For a product it's also how a buyer recovers a broken remote. The user put it off (2026-10-09).
+
+## 15. Open
 
 Decisions needed (the design and the radio rules disagree):
 

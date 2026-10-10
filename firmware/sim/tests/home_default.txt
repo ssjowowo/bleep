@@ -1,0 +1,45 @@
+store fixtures/config-ha.json
+# The Home tab before the user changes anything: each HA area with what a
+# dashboard would show, controls first
+click Start
+wait 300
+click Home
+wait 800
+expect-before Living room | Kitchen
+expect-before Kitchen | Bedroom
+expect-before Hallway | Garden
+# the garage has only a hub's settings and diagnostics: no room
+expect-no Garage
+# Living room: lights, then climate, covers, media; scenes as one row
+expect-before Ceiling light | Floor lamp
+expect-before LED strip | Thermostat
+expect-before Thermostat | Living room blinds
+expect-before Living room blinds | Apple TV
+expect-before Sonos | Movie
+# a light's diagnostic sensor and a plain sensor are left out
+expect-no Ceiling light signal
+expect-no Power · energy
+shot 170_home_default
+# Kitchen: the coffee machine but not its child lock (a config entity); the
+# vacuum is HA's in the kitchen; air quality and the counter are sensors
+click Kitchen
+wait 200
+expect Coffee machine
+expect-no child lock
+expect Vacuum
+expect-no Air quality
+expect-no Coffees today
+# Hallway: the lock, alarm, siren and camera; not the hidden old light or the sensors
+click Hallway
+wait 200
+expect Front door
+expect Siren
+expect Front porch
+expect-no Old hall light
+expect-no Motion detected
+expect-no Low · 9%
+# Garden: weather and the sun are in no area in HA
+click Garden
+wait 200
+expect Garden water
+expect-no Weather

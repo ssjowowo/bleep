@@ -32,6 +32,14 @@ void key_tick(void);
 /* One IR code, tapped: testing a code set, a learned key */
 void ir_send_once(const code_t *c);
 
+/* Typing on a TV: its Bluetooth keyboard (HID usage page 7, US layout).
+ * Characters outside printable ASCII aren't sent. */
+#define HID_KEY_ENTER     0x28
+#define HID_KEY_BACKSPACE 0x2A
+bool device_can_type(int dev);              /* paired over Bluetooth */
+int device_type(int dev, const char *text); /* returns the characters sent */
+void device_type_key(int dev, uint8_t usage);
+
 /* The keys' target is the last thing chosen: a selected device, or else the
  * running activity. Selecting a device leaves the activity running; starting
  * an activity (or selecting -1) clears the device. */
@@ -40,6 +48,18 @@ const char *control_target_name(const char **icon);   /* NULL if nothing is acti
 
 void activity_start(int idx);
 void activity_end(void);
+/* The editor's Test: send a draft's start steps as starting it would (power
+ * on what's off, the input), without saving it or making it the running one */
+void activity_test(const activity_t *draft);
+
+/* Sleep timer: ends the running activity (switching its devices off) after
+ * some minutes, even from deep sleep (the RTC timer wakes the remote with
+ * the screen off). Ending or changing the activity clears it. */
+void sleep_timer_set(int minutes);          /* 0 = off */
+int sleep_timer_left_min(void);             /* rounded up; 0 = off */
+int64_t sleep_timer_at(void);               /* hal_time() it fires, 0 = off (retained.c) */
+void sleep_timer_restore(int64_t at);
+void sleep_timer_tick(void);                /* once a second */
 bool activity_busy(void);               /* a start/end sequence is still running */
 const char *activity_progress(void);    /* "TV: HDMI 2" while starting */
 void activity_tick(void);

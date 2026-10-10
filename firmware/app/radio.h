@@ -30,6 +30,8 @@ void radio_set_view(bool home_tab, bool now_playing);
 void radio_hold_pairing(bool on);
 void radio_hold_ir_rx(bool on);
 void radio_hold_wifi(bool on);
+void radio_hold_nightstand(bool on);
+void radio_hold_bridge(bool on);       /* key events waiting for Home Assistant (bridge.c) */   /* the nightstand clock (on USB): Wi-Fi for the weather and the time */
 void radio_hold_update(bool on);    /* firmware check or install: Wi-Fi on, stay awake */
 /* A running routine: stay awake, Wi-Fi on if it has Home Assistant steps, and
  * Bluetooth to ble_dev's host (-1 = whatever the keys' target needs) */
@@ -39,9 +41,12 @@ void radio_update(void);        /* recompute after a change (activity, power, vi
 void radio_device_moved(int from, int to);   /* model_move_device(): the link follows its device */
 void radio_device_deleted(int idx);          /* model_delete_device(): its link goes, the rest shift */
 void radio_tick(void);
+bool radio_busy(void);          /* keys still queued for a Bluetooth host */
 const radio_status_t *radio_status(void);
 
 /* A BLE HID key down or up to a device's host; queued while the link comes
  * up. If the host doesn't answer, what's queued for it is dropped (never
  * sent to another TV) and EV_LINK_FAILED tells the UI. */
 void radio_ble_key(int dev, uint16_t page, uint16_t usage, bool down);
+/* One keyboard key, tapped, with modifiers (typing on the TV) */
+void radio_ble_type(int dev, uint8_t usage, uint8_t mods);

@@ -227,6 +227,31 @@ lv_obj_t *w_slider(lv_obj_t *parent, int value, int min, int max)
     return s;
 }
 
+/* ---- detents: a faint tick each time a dragged slider passes a step ---- */
+
+static int detent_at;   /* the step the knob was at; one slider is dragged at a time */
+
+static void detent_cb(lv_event_t *e)
+{
+    lv_obj_t *s = lv_event_get_target_obj(e);
+    int step = (int)(intptr_t)lv_event_get_user_data(e);
+    int at = (lv_slider_get_value(s) - lv_slider_get_min_value(s)) / step;
+    if (lv_event_get_code(e) == LV_EVENT_PRESSED) {
+        detent_at = at;
+    } else if (at != detent_at) {
+        detent_at = at;
+        app_buzz(HAPTIC_DETENT);
+    }
+}
+
+void w_slider_detents(lv_obj_t *s, int step)
+{
+    if (step <= 0) step = (lv_slider_get_max_value(s) - lv_slider_get_min_value(s)) / 20;
+    if (step < 1) step = 1;
+    lv_obj_add_event_cb(s, detent_cb, LV_EVENT_PRESSED, (void *)(intptr_t)step);
+    lv_obj_add_event_cb(s, detent_cb, LV_EVENT_VALUE_CHANGED, (void *)(intptr_t)step);
+}
+
 /* ---- stepped slider ---- */
 
 static void step_dots_draw(lv_event_t *e)
@@ -292,6 +317,7 @@ lv_obj_t *w_step_slider(lv_obj_t *parent, const char *icon, const char *title, c
     lv_obj_set_user_data(s, value);              /* slider -> value label -> steps */
     lv_obj_set_user_data(value, (void *)d);
     lv_obj_add_event_cb(s, step_changed, LV_EVENT_VALUE_CHANGED, (void *)d);
+    w_slider_detents(s, 1);
     lv_obj_add_event_cb(s, step_dots_draw, LV_EVENT_DRAW_MAIN_END, (void *)d);
 
     lv_obj_t *ends = w_row(block, 0);
@@ -711,6 +737,12 @@ lv_obj_t *w_save_bar(lv_obj_t *root, const char *text, bool enabled, lv_event_cb
 
 lv_obj_t *w_save_bar_why(lv_obj_t *root, const char *text, bool enabled, const char *why, lv_event_cb_t cb)
 {
+    return w_save_bar_test(root, text, enabled, why, cb, NULL, false);
+}
+
+lv_obj_t *w_save_bar_test(lv_obj_t *root, const char *text, bool enabled, const char *why, lv_event_cb_t cb,
+                          lv_event_cb_t test_cb, bool can_test)
+{
     if (enabled) why = NULL;
     int bar_h = SAVE_BAR_H + (why ? 22 : 0);
     int pad = 16 + bar_h;   /* room to scroll the last row clear of the bar */
@@ -733,8 +765,19 @@ lv_obj_t *w_save_bar_why(lv_obj_t *root, const char *text, bool enabled, const c
     lv_obj_set_style_border_width(bar, 1, 0);
     lv_obj_set_style_border_color(bar, T->line, 0);
     lv_obj_set_style_pad_hor(bar, PAD, 0);
-    lv_obj_t *b = w_button(bar, text, ICON_CHECK, enabled ? BTN_PRIMARY : BTN_DISABLED);
-    lv_obj_set_width(b, lv_pct(100));
+    lv_obj_t *row = bar;
+    if (test_cb) {
+        /* Test on the left, the save button taking the rest */
+        row = why ? w_row(bar, 10) : bar;
+        lv_obj_set_width(row, lv_pct(100));
+        lv_obj_set_style_pad_gap(bar, why ? 4 : 10, 0);
+        lv_obj_t *t = w_button(row, "Test", ICON_PLAY, can_test ? BTN_OUTLINE : BTN_DISABLED);
+        lv_obj_set_width(t, 112);
+        if (can_test) lv_obj_add_event_cb(t, test_cb, LV_EVENT_CLICKED, NULL);
+    }
+    lv_obj_t *b = w_button(row, text, ICON_CHECK, enabled ? BTN_PRIMARY : BTN_DISABLED);
+    if (test_cb) lv_obj_set_flex_grow(b, 1);
+    else lv_obj_set_width(b, lv_pct(100));
     lv_obj_add_event_cb(b, cb, LV_EVENT_CLICKED, NULL);
     return b;
 }
@@ -819,7 +862,12 @@ static void reorder_cb(lv_event_t *e)
             app_buzz(HAPTIC_TICK);
             break;
         }
-        if (rd.scroller) {
+        if (rd.scroller && lv_obj_get_scroll_dir(rd.scroller) == LV_DIR_HOR) {   /* a row: the Home tab's rooms */
+            lv_area_t sa;
+            lv_obj_get_coords(rd.scroller, &sa);
+            if (p.x < sa.x1 + REORDER_EDGE) lv_obj_scroll_by_bounded(rd.scroller, REORDER_SCROLL, 0, LV_ANIM_OFF);
+            else if (p.x > sa.x2 - REORDER_EDGE) lv_obj_scroll_by_bounded(rd.scroller, -REORDER_SCROLL, 0, LV_ANIM_OFF);
+        } else if (rd.scroller) {
             lv_area_t sa;
             lv_obj_get_coords(rd.scroller, &sa);
             if (p.y < sa.y1 + REORDER_EDGE) lv_obj_scroll_by_bounded(rd.scroller, 0, REORDER_SCROLL, LV_ANIM_OFF);

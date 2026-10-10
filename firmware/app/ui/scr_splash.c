@@ -22,6 +22,7 @@ static void go_activities(void) { ui_tab(TAB_ACTIVITIES); }
 /* Physical keys the UI keeps for itself:
  * - the splash: OK starts, the rest do nothing;
  * - a sheet ("Discard changes?", "Power off?"): BACK is Cancel;
+ * - a page with its own key handler (the games): all of them;
  * - pages that aren't for controlling something (editors, settings pages,
  *   the keyboard, pickers): BACK goes back, HOME to Activities;
  * - anywhere, when no device is selected and no activity runs: the same,
@@ -39,8 +40,10 @@ bool ui_key_intercept(bleep_key_t key)
         ov_sheet_cancel();
         return true;
     }
+    if (p->key) return p->key(key);   /* a game: the whole remote is the controller */
     if (key != KEY_BACK && key != KEY_HOME) return false;
-    bool control = p->tab >= 0 || p == &page_device || p == &page_activity_page || p == &page_now_playing;
+    bool control = p->tab >= 0 || p == &page_device || p == &page_activity_page || p == &page_now_playing ||
+                   p == &page_trackpad;
     if (control && key_target(key) != KEYDEV_NONE) return false;
     if (key == KEY_HOME) ui_leave(go_activities);
     else if (p->tab < 0) ui_back_guarded();

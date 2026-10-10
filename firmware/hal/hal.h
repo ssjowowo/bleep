@@ -34,8 +34,9 @@ const char *hal_key_name(bleep_key_t key);
 void hal_backlight_set(uint8_t percent);    /* 0 = off */
 void hal_lcd_sleep(bool sleep);             /* ILI9488 Sleep In / Sleep Out; GRAM is kept */
 
-/* Haptics (DRV2605L) */
-typedef enum { HAPTIC_TICK, HAPTIC_CONFIRM, HAPTIC_NO, HAPTIC_ALERT } haptic_t;
+/* Haptics (DRV2605L, ERM library). DETENT is the faintest: a slider passing
+ * a step (effect 26, Sharp Tick 3 - 40 %, ~10 ms) */
+typedef enum { HAPTIC_TICK, HAPTIC_CONFIRM, HAPTIC_NO, HAPTIC_ALERT, HAPTIC_DETENT } haptic_t;
 void hal_haptic(haptic_t pattern);
 
 /* Radios. The radio policy (app/radio.c) decides what's on; the HAL switches
@@ -71,8 +72,11 @@ hal_link_t hal_ble_link(void);
 
 /* A HID key to the connected host: down = the input report with the usage,
  * up = the empty report. Held keys repeat on the TV's side, as on any
- * keyboard. False if there's no link. */
-bool hal_ble_key(uint16_t usage_page, uint16_t usage, bool down);
+ * keyboard. mods: the keyboard report's modifier byte (HID_MOD_SHIFT for
+ * capitals and symbols when typing), 0 for consumer-control keys. False if
+ * there's no link. */
+#define HID_MOD_SHIFT 0x02
+bool hal_ble_key(uint16_t usage_page, uint16_t usage, uint8_t mods, bool down);
 
 void hal_ir_rx_power(bool on);              /* IR receiver supply (GPIO1), only while learning */
 
@@ -208,15 +212,19 @@ bool hal_key_down(bleep_key_t key);
  *          hibernate it: it only leaves that through a reset, and its reset
  *          is the power-on RC, so touch would stay dead until the battery is
  *          disconnected). Off arms no touch, but monitor mode stays;
- *   lift:  MMA8452Q motion detection on its INT pin; without lift it goes to
- *          standby;
- *   usb:   CHRG / STDBY going low (GPIO12 / GPIO3).
+ *   lift:  MMA8452Q motion detection on its INT1 pin (GPIO2);
+ *   tap:   its pulse detection, a double tap on Z, on the same pin; the
+ *          HAL tells the two apart by its interrupt source register.
+ *          Neither: the accelerometer goes to standby;
+ *   usb:   CHRG / STDBY going low (GPIO12 / GPIO3);
+ *   timer: the RTC timer, after timer_s seconds (the sleep timer); 0 = none.
  * The display sleeps (Sleep In, backlight off), the fuel gauge hibernates,
  * the haptics driver goes to standby, the radios are off. ~50-150 uA.
  * On the remote hal_deep_sleep doesn't return. */
 typedef struct {
     uint16_t keys;          /* bit per bleep_key_t */
-    bool touch, lift, usb;
+    bool touch, lift, tap, usb;
+    uint32_t timer_s;
 } hal_wake_mask_t;
 void hal_deep_sleep(const hal_wake_mask_t *wake);
 
@@ -225,7 +233,7 @@ void hal_deep_sleep(const hal_wake_mask_t *wake);
  * the source in `by` (for a key, which one; hal_key_down() says whether it's
  * still held: a quick tap can be over before the app is up). */
 typedef enum { BOOT_COLD, BOOT_RESTART, BOOT_WAKE } hal_boot_t;
-typedef enum { WOKE_KEY, WOKE_TOUCH, WOKE_LIFT, WOKE_USB } hal_woke_t;
+typedef enum { WOKE_KEY, WOKE_TOUCH, WOKE_LIFT, WOKE_USB, WOKE_TIMER, WOKE_TAP } hal_woke_t;
 typedef struct {
     hal_boot_t boot;
     hal_woke_t by;          /* BOOT_WAKE only */

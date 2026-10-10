@@ -66,6 +66,7 @@
         <button data-k="10">BACK</button><button data-k="11">HOME</button><button data-k="12">MUTE</button><button id="lift">Pick up</button>
         <button data-k="8">VOL −</button><button data-k="7">VOL +</button>
         <button data-skip="10000">Idle +10 s</button><button data-skip="120000">Idle +2 min</button>
+        <button id="dtap">Double-tap</button><button id="fdown">Face down</button>
       </div>
       <p class="hint">Hold PWR 5 s to power off; when off, hold it 2 s to turn on. PC keyboard: arrows = D-pad, Enter = OK, Esc = BACK, H = HOME, P = PWR, + / − = volume, M = MUTE, N, Y, X = NFLX, YT, PLEX, L = pick up.</p>
     </section>
@@ -161,6 +162,8 @@
     });
     document.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => call('web_skip_idle', +b.dataset.skip));
     document.getElementById('lift').onclick = () => call('web_lift');
+    document.getElementById('dtap').onclick = () => call('web_double_tap');
+    document.getElementById('fdown').onclick = () => call('web_face_down');
 
     const batt = document.getElementById('batt'), lux = document.getElementById('lux');
     batt.oninput = () => { call('web_battery', +batt.value); document.getElementById('batt-o').textContent = batt.value + ' %'; };

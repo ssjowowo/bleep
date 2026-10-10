@@ -1,0 +1,31 @@
+{
+ "version": 1,
+ "settings": {
+  "wifi_ssid": "Home-5G",
+  "ha_url": "http://homeassistant.local:8123",
+  "ha_user": "Sam"
+ },
+ "devices": [],
+ "activities": [],
+ "routines": [],
+ "home": {
+  "rooms": [
+   {"area": "kitchen", "items": ["switch.coffee", "light.porch", "sensor.air_quality", "light.gone_from_ha", "switch.coffee"]},
+   {"area": "living_room", "items": ["light.ceiling", "lock.front_door", "scene.movie"], "hide": ["media_player.kodi", "media_player.apple_tv"]},
+   {"area": "bedroom", "hidden": true},
+   {"area": "attic"},
+   {"name": "Not an area", "items": ["light.bedside"]},
+   {"area": "kitchen", "hidden": true},
+   {"area": "garage", "items": ["sensor.garage_hub_battery"]},
+   {"area": "this_area_id_is_far_too_long_to_fit_in_the_remote_s_sixty_four_bytes"},
+   "not a room"
+  ],
+  "entities": {
+   "light.ceiling": {"name": "Big light", "icon": "Sun", "size": "compact"},
+   "light.floor_lamp": {"icon": "No such icon", "size": "huge"},
+   "switch.coffee": {"name": "Espresso"},
+   "light.bedside": {},
+   "not an object": 3
+  }
+ }
+}

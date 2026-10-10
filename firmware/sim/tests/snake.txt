@@ -1,0 +1,109 @@
+# The Fun Zone, the easter egg: Firmware in Settings > About, tapped 7 times
+click Start
+wait 300
+tap 280 450
+wait 300
+expect-no Fun Zone
+click About
+wait 300
+# from the 4th tap a toast counts down
+click Firmware
+click Firmware
+click Firmware
+expect-no more tap
+click Firmware
+expect 3 more taps
+click Firmware
+expect 2 more taps
+click Firmware
+expect 1 more tap
+click Firmware
+wait 300
+expect-log fun zone: unlocked
+expect Fun Zone enabled!
+shot 171_fun_zone_enabled
+# more taps: it's on already
+click Firmware
+click Firmware
+click Firmware
+click Firmware
+expect The Fun Zone is already on
+# now in Settings, with the games
+key BACK
+wait 300
+expect Snake · Bleep Blocks
+click Fun Zone
+wait 300
+expect Snake
+expect Bleep Blocks
+expect Hide the Fun Zone
+shot 172_fun_zone
+click Snake
+wait 300
+expect Steer with the D-pad or swipe
+expect Best 0
+shot 173_snake_ready
+# OK starts; the first food is straight ahead (6 steps of 160 ms)
+mark
+key OK
+wait 1000
+expect-haptic tick 1
+# up, left, down: straight into its own body
+key UP
+wait 60
+key LEFT
+wait 60
+key DOWN
+wait 300
+expect-log snake: game over, score 1, best 1
+expect New best!
+expect-haptic no 1
+# the keys went to the game, none to the TV
+expect-log-no IR  >
+expect-log-no BLE >
+shot 174_snake_over
+# OK plays again; a swipe steers, a tap pauses
+key OK
+expect-no New best!
+drag 160 300 160 200
+wait 200
+tap 160 300
+wait 100
+expect Paused
+shot 175_snake_paused
+key OK
+expect-no Paused
+# it goes through the edge and comes back on the other side
+wait 6000
+expect-no Game over
+# BACK: back to the Fun Zone, with the best score
+key BACK
+wait 300
+expect Hide the Fun Zone
+expect Best 1
+expect-log-no IR  >
+# the Fun Zone and the best score are saved like any setting
+wait 2500
+reboot
+click Start
+wait 300
+tap 280 450
+wait 300
+click Fun Zone
+wait 300
+click Snake
+wait 300
+expect Best 1
+# HOME: to Activities
+key HOME
+wait 300
+expect Activities
+# hidden again: gone from Settings, 7 taps bring it back
+tap 280 450
+wait 300
+click Fun Zone
+wait 300
+click Hide the Fun Zone
+wait 300
+expect Fun Zone hidden
+expect-no Snake · Bleep Blocks

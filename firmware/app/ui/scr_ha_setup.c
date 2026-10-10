@@ -77,6 +77,21 @@ static void ha_sign_out_cb(lv_event_t *e)
                sign_out_yes, NULL);
 }
 
+static void bridge_switch_cb(lv_event_t *e)
+{
+    bool on = lv_obj_has_state(lv_event_get_target_obj(e), LV_STATE_CHECKED);
+    if (ARG_INT(e)) g_model.settings.ha_key_events = on;
+    else g_model.settings.ha_battery = on;
+    app_notify(EV_SETTINGS, 0);
+}
+
+static void bridge_row(lv_obj_t *col, const char *icon, const char *text, bool on, int which)
+{
+    lv_obj_t *r = w_list_row(col, icon, text, NULL, NULL);
+    lv_obj_set_clickable(r, false);
+    lv_obj_add_event_cb(w_switch(r, on), bridge_switch_cb, LV_EVENT_VALUE_CHANGED, ARG(which));
+}
+
 static void ha_build(lv_obj_t *root, int arg)
 {
     LV_UNUSED(arg);
@@ -102,6 +117,18 @@ static void ha_build(lv_obj_t *root, int arg)
         lv_obj_set_style_text_color(lv_obj_get_child(out, 0), T->warning, 0);
         lv_obj_set_style_text_color(lv_obj_get_child(out, 1), T->warning, 0);
         w_on_click(out, ha_sign_out_cb, 0);
+
+        /* the remote itself in Home Assistant (bridge.c) */
+        w_section(col, "THIS REMOTE IN HOME ASSISTANT");
+        bridge_row(col, ICON_BATTERY, "Battery level", s->ha_battery, 0);
+        bridge_row(col, ICON_AUTOMATION, "Key presses as events", s->ha_key_events, 1);
+        char note[192];
+        snprintf(note, sizeof(note),
+                 "As sensor.bleep_%s_battery, sent while it's connected anyway. Key presses fire the event "
+                 "bleep_key, for automations. Both need an admin account.", hal_device_id());
+        lv_obj_t *l = w_label(col, F_CAPTION, T->text2, note);
+        lv_obj_set_width(l, lv_pct(100));
+        lv_obj_set_style_pad_top(l, 6, 0);
     } else {
         lv_obj_t *l = w_label(col, F_LABEL, T->text2,
                               "Sign in once with your Home Assistant account. No token to copy.");

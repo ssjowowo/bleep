@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include "bridge.h"
 #include "config.h"
 #include "control.h"
 #include "ha.h"
@@ -76,7 +77,7 @@ void app_buzz(haptic_t pattern)
 {
     uint8_t s = g_model.settings.haptics;
     if (!s) return;
-    if (s == 1 && pattern == HAPTIC_TICK) return;   /* light: confirmations only */
+    if (s == 1 && pattern == HAPTIC_TICK) return;   /* light: confirmations and slider detents only */
     hal_haptic(pattern);
 }
 
@@ -107,7 +108,7 @@ void app_init(void)
     hal_wake_t w;
     hal_wake_cause(&w);
     static const char *const boots[] = {"power-on", "restart", "wake"};
-    static const char *const bys[] = {"key", "touch", "lift", "USB"};
+    static const char *const bys[] = {"key", "touch", "lift", "USB", "the sleep timer", "double tap"};
     if (w.boot == BOOT_WAKE)
         hal_log("boot: wake by %s%s%s", bys[w.by], w.by == WOKE_KEY ? " " : "", w.by == WOKE_KEY ? hal_key_name(w.key) : "");
     else
@@ -139,7 +140,7 @@ void app_init(void)
     if (resume) {
         const retained_t *r = retained();
         ui_resume(r->tab, r->page, r->page_arg);
-        static const wake_cause_t cause[] = {WAKE_KEY, WAKE_TOUCH, WAKE_LIFT, WAKE_USB};
+        static const wake_cause_t cause[] = {WAKE_KEY, WAKE_TOUCH, WAKE_LIFT, WAKE_USB, WAKE_TIMER, WAKE_TAP};
         ui_woke(cause[w.by]);
     }
     radio_update();
@@ -179,6 +180,7 @@ void app_key(bleep_key_t key, bool pressed)
     if (pressed) {
         power_input(WAKE_KEY);
         radio_update();
+        bridge_key(key);   /* a key event for Home Assistant, if wanted */
         if (key == KEY_PWR) return;   /* acts on release */
     }
     if (!early && ui_key_intercept(key)) return;
@@ -248,6 +250,38 @@ void app_lift(void)
     if (power_input(WAKE_LIFT)) radio_update();
 }
 
+void app_double_tap(void)
+{
+    if (power_input(WAKE_TAP)) radio_update();
+}
+
+/* Face down: pause, if something is known to be playing. Only Home
+ * Assistant knows that (Now playing); an IR or Bluetooth play/pause is a
+ * toggle, and sending it blind could start playback instead. */
+void app_face_down(void)
+{
+    if (!g_model.settings.face_down_pause || power_state() >= PWR_DEEP) return;
+    int act = g_model.running;
+    if (act < 0) return;
+    const activity_t *a = &g_model.activities[act];
+    const device_t *src = a->np_dev >= 0 ? &g_model.devices[a->np_dev] : NULL;
+    int e = src && src->ha_entity[0] ? ha_find(src->ha_entity) : -1;
+    ha_entity_t *m = ha_get(e);
+    if (!m || !m->on) {
+        hal_log("face down: nothing known to be playing, left alone");
+        return;
+    }
+    int dev = a->nav_dev >= 0 ? a->nav_dev : a->np_dev;
+    if (g_model.devices[dev].fn[FN_PLAY_PAUSE].transport == TR_HA) ha_action(e, "media_pause");
+    else if (!device_send_quiet(dev, FN_PLAY_PAUSE)) ha_action(e, "media_pause");
+#ifdef BLEEP_SIM
+    m->on = false;   /* emulator only: the real player reports its new state to HA */
+    app_notify(EV_HA, e);
+#endif
+    hal_log("face down: paused %s", m->title[0] ? m->title : m->id);
+    app_buzz(HAPTIC_CONFIRM);
+}
+
 static void battery_changed(void)
 {
     hal_battery_t b = batt;
@@ -292,6 +326,8 @@ void app_tick(void)
     if (now - last_second >= 1000) {
         last_second = now;
         ha_tick();
+        bridge_tick();
+        sleep_timer_tick();
         uint32_t h = config_hash();
         if (h != seen_hash) {
             seen_hash = h;   /* changed again: the wait starts over */

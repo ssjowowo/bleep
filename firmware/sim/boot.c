@@ -46,7 +46,7 @@ static uint8_t rtc[HAL_RTC_BYTES];
 uint8_t *sim_rtc(void) { return rtc; }
 
 static const char *const boot_names[] = {"cold", "restart", "wake"};
-static const char *const by_names[] = {"key", "touch", "lift", "usb"};
+static const char *const by_names[] = {"key", "touch", "lift", "usb", "timer", "tap"};
 
 static void hex_put(FILE *f, const char *key, const uint8_t *p, int n)
 {
@@ -105,7 +105,7 @@ void sim_state_load(void)
         *eq = 0;
         const char *k = line, *v = eq + 1;
         if (!strcmp(k, "boot")) for (int i = 0; i < 3; i++) { if (!strcmp(v, boot_names[i])) g_sim.wake.boot = i; }
-        else if (!strcmp(k, "by")) for (int i = 0; i < 4; i++) { if (!strcmp(v, by_names[i])) g_sim.wake.by = i; }
+        else if (!strcmp(k, "by")) for (int i = 0; i < 6; i++) { if (!strcmp(v, by_names[i])) g_sim.wake.by = i; }
         else if (!strcmp(k, "key")) g_sim.wake.key = atoi(v);
         else if (!strcmp(k, "keys")) g_sim.keys_down = strtoul(v, NULL, 0);
         else if (!strcmp(k, "battery")) g_sim.battery = atoi(v);
@@ -187,7 +187,8 @@ bool sim_wake_by(hal_woke_t by, bleep_key_t key)
     if (!g_sim.asleep) return false;
     if (g_sim.reboot_pending) return true;
     const hal_wake_mask_t *m = &g_sim.wake_mask;
-    bool armed = by == WOKE_KEY ? (m->keys >> key) & 1 : by == WOKE_TOUCH ? m->touch : by == WOKE_LIFT ? m->lift : m->usb;
+    bool armed = by == WOKE_KEY ? (m->keys >> key) & 1 : by == WOKE_TOUCH ? m->touch : by == WOKE_LIFT ? m->lift
+               : by == WOKE_USB ? m->usb : by == WOKE_TAP ? m->tap : m->timer_s != 0;
     if (!armed) {
         hal_log("asleep: %s%s%s doesn't wake it", by_names[by], by == WOKE_KEY ? " " : "",
                 by == WOKE_KEY ? hal_key_name(key) : "");
@@ -195,4 +196,11 @@ bool sim_wake_by(hal_woke_t by, bleep_key_t key)
     }
     sim_reboot(BOOT_WAKE, by, key);
     return true;
+}
+
+void sim_sleep_tick(void)
+{
+    if (g_sim.asleep && !g_sim.reboot_pending && g_sim.wake_mask.timer_s &&
+        hal_millis() - g_sim.asleep_at >= g_sim.wake_mask.timer_s * 1000u)
+        sim_wake_by(WOKE_TIMER, 0);
 }

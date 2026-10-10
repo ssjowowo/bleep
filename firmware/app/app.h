@@ -45,6 +45,10 @@ void app_tick(void);                    /* call often (every 5-30 ms) */
 void app_key(bleep_key_t key, bool pressed);
 bool app_touch(void);                   /* returns true if the touch only woke the screen */
 void app_lift(void);
+/* The accelerometer while awake: a double tap on the case (wakes the screen,
+ * like a pick-up) and the remote laid face down (pauses what's playing) */
+void app_double_tap(void);
+void app_face_down(void);
 
 /* The battery and the light sensor, read once a second (and at once when USB
  * comes or goes), so nothing else talks to the I2C bus for them */

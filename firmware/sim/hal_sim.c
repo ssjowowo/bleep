@@ -21,7 +21,11 @@ static char log_buf[SIM_LOG_LINES][96];
 static char log_all[256 * 1024];
 
 const char *sim_log_since_mark(void) { return log_all; }
-void sim_log_mark(void) { log_all[0] = 0; }
+void sim_log_mark(void)
+{
+    log_all[0] = 0;
+    memset(g_sim.haptics, 0, sizeof(g_sim.haptics));
+}
 static uint32_t log_n;
 
 const char *sim_log_line(int i)
@@ -120,8 +124,11 @@ void hal_deep_sleep(const hal_wake_mask_t *wake)
     g_sim.wifi = g_sim.ble = false;
     int keys = 0;
     for (int k = 0; k < KEY_COUNT; k++) keys += (wake->keys >> k) & 1;
-    hal_log("deep sleep: wakes on %d key(s)%s%s%s", keys, wake->touch ? ", touch" : "", wake->lift ? ", lift" : "",
-            wake->usb ? ", USB" : "");
+    char timer[24] = "";
+    if (wake->timer_s) snprintf(timer, sizeof(timer), ", timer %u s", (unsigned)wake->timer_s);
+    hal_log("deep sleep: wakes on %d key(s)%s%s%s%s%s", keys, wake->touch ? ", touch" : "", wake->lift ? ", lift" : "",
+            wake->tap ? ", tap" : "", wake->usb ? ", USB" : "", timer);
+    g_sim.asleep_at = hal_millis();
     g_sim.lcd_sleep = true;
     apply_dimmer();
     if (g_sim.disp) lv_refr_now(g_sim.disp);   /* black, before nothing runs any more */
@@ -136,9 +143,10 @@ void hal_big_free(void *p) { free(p); }
 
 void hal_haptic(haptic_t p)
 {
-    static const char *const n[] = {"tick", "confirm", "no", "alert"};
+    static const char *const n[] = {"tick", "confirm", "no", "alert", "detent"};
     g_sim.haptic = n[p];
     g_sim.haptic_at = hal_millis();
+    g_sim.haptics[p]++;
 }
 
 /* Wi-Fi: joins in ~450 ms (the fast reconnect) if the router answers and
@@ -215,8 +223,11 @@ hal_link_t hal_ble_link(void)
 
 bool hal_usb(void) { return g_sim.usb; }
 
+static uint32_t old_remote_n;   /* the emulated old remote's next key (hal_ir_receive) */
+
 void hal_ir_rx_power(bool on)
 {
+    if (on) old_remote_n = 0;
     g_sim.ir_rx = on;
     hal_log("ir: receiver %s", on ? "on" : "off");
 }
@@ -277,11 +288,20 @@ static const char *usage_name(uint16_t page, uint16_t usage)
     return "";
 }
 
-bool hal_ble_key(uint16_t page, uint16_t usage, bool down)
+bool hal_ble_key(uint16_t page, uint16_t usage, uint8_t mods, bool down)
 {
     if (hal_ble_link() != HAL_LINK_UP) return false;
     if (down) {
-        hal_log("BLE > 0x%02X:0x%03X %s", page, usage, usage_name(page, usage));
+        const char *name = usage_name(page, usage);
+        char ch[16] = "";
+        if (page == 0x07 && !name[0]) {   /* typing: show the character */
+            static const char lo[] = "abcdefghijklmnopqrstuvwxyz1234567890\n\x1b\b\t -=[]\\#;'`,./";
+            static const char hi[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()\n\x1b\b\t _+{}|~:\"~<>?";
+            if (usage == 0x2A) snprintf(ch, sizeof(ch), "Backspace");
+            else if (usage >= 0x04 && usage <= 0x38) snprintf(ch, sizeof(ch), "'%c'", (mods & HID_MOD_SHIFT ? hi : lo)[usage - 4]);
+            name = ch;
+        }
+        hal_log("BLE > 0x%02X:0x%03X %s", page, usage, name);
         ble_key_t0 = hal_millis();
     } else if (hal_millis() - ble_key_t0 >= 300) {
         hal_log("BLE   key up after %u ms (the TV repeats meanwhile)", (unsigned)(hal_millis() - ble_key_t0));
@@ -298,15 +318,27 @@ static uint32_t polled_for(uint32_t *last, uint32_t *start)
     return now - *start;
 }
 
+/* The emulated old remote is a Samsung TV's (the library's code set 2).
+ * Each time the receiver comes on, its keys arrive in the order IR
+ * learning asks for them, Power first (what brand detection asks for);
+ * keys that set doesn't have are skipped. */
 bool hal_ir_receive(uint8_t *protocol, uint32_t *address, uint32_t *command)
 {
-    static uint32_t last, start, n;
+    static uint32_t last, start;
+    static const fn_t keys[] = {FN_POWER, FN_VOL_UP, FN_VOL_DOWN, FN_MUTE, FN_UP, FN_DOWN, FN_LEFT, FN_RIGHT,
+                                FN_OK, FN_BACK, FN_HOME, FN_MENU, FN_INPUT_1, FN_INPUT_2};
     if (polled_for(&last, &start) < 1500) return false;
     last = 0;   /* next poll starts a new wait */
-    *protocol = 0;
-    *address = 0x20;
-    *command = 0x10 + (n++ % 0x40);
-    hal_log("ir: captured NEC 0x%02X 0x%02X (emulated old remote)", (unsigned)*address, (unsigned)*command);
+    static device_t old;
+    if (!old.transports) ir_library_fill(&old, &ir_brands[ir_brand_find("Samsung", DEV_TV)], 1);
+    const code_t *c = &old.fn[keys[old_remote_n++ % (sizeof(keys) / sizeof(keys[0]))]];
+    for (unsigned i = 0; !c->transport && i < sizeof(keys) / sizeof(keys[0]); i++)
+        c = &old.fn[keys[old_remote_n++ % (sizeof(keys) / sizeof(keys[0]))]];
+    *protocol = c->proto;
+    *address = c->a;
+    *command = c->b;
+    hal_log("ir: captured %s 0x%02X 0x%02X (emulated old remote)", ir_proto_name(c->proto), (unsigned)*address,
+            (unsigned)*command);
     return true;
 }
 
@@ -533,6 +565,20 @@ void sim_lift(void)
     hal_log("accelerometer: pick-up");
     if (sim_wake_by(WOKE_LIFT, 0)) return;
     app_lift();
+}
+
+void sim_double_tap(void)
+{
+    hal_log("accelerometer: double tap");
+    if (sim_wake_by(WOKE_TAP, 0)) return;
+    app_double_tap();
+}
+
+void sim_face_down(void)
+{
+    hal_log("accelerometer: face down");
+    if (g_sim.asleep) return;   /* not a wake source */
+    app_face_down();
 }
 
 bool sim_touch_filter(bool pressed)

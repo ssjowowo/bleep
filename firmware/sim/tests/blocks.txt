@@ -1,0 +1,82 @@
+# Bleep Blocks, in the Fun Zone
+click Start
+wait 300
+tap 280 450
+wait 300
+click About
+wait 300
+click Firmware
+click Firmware
+click Firmware
+click Firmware
+click Firmware
+click Firmware
+click Firmware
+wait 2500
+key BACK
+wait 300
+click Fun Zone
+wait 300
+click Bleep Blocks
+wait 300
+expect OK to start, BACK to leave
+expect Best 0
+shot 176_blocks_ready
+mark
+key OK
+wait 200
+# the pieces come in a shuffled bag; in this run: J, L, T, S, O.
+# J to the left wall, L right of it, T and S on top, the O into the last gap: a line
+key LEFT
+key LEFT
+shot 177_blocks_playing
+key OK
+wait 100
+key RIGHT
+key OK
+wait 100
+key OK
+wait 100
+key OK
+wait 100
+key RIGHT
+key RIGHT
+key RIGHT
+key OK
+wait 100
+expect-log blocks: 1 line
+expect-haptic tick 1
+# hold LEFT: it keeps going to the wall
+keydown LEFT
+wait 600
+keyup LEFT
+key OK
+wait 100
+shot 178_blocks_stack
+# Pause, then a tap carries on
+tap 268 438
+wait 100
+expect Paused
+tap 120 300
+wait 100
+expect-no Paused
+# drop them all in the middle until it's full
+key OK
+key OK
+key OK
+key OK
+key OK
+key OK
+wait 300
+expect-log blocks: game over
+expect New best!
+expect-log-no IR  >
+expect-log-no BLE >
+shot 179_blocks_over
+# OK plays again
+key OK
+expect-no New best!
+expect Best 304
+key BACK
+wait 300
+expect Hide the Fun Zone

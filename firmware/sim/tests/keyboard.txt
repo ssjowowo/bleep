@@ -1,0 +1,45 @@
+# Typing on the TV over Bluetooth, live, and the trackpad
+click Start
+wait 300
+click Devices
+wait 300
+click Shield TV
+wait 300
+expect Trackpad
+expect Type
+shot 76_device_type_buttons
+click Type
+wait 300
+expect Type on the TV
+mark
+type Hi there
+wait 1000
+expect-log BLE > 0x07:0x00B 'H'
+expect-log BLE > 0x07:0x00C 'i'
+expect-log-count 8 BLE > 0x07:
+shot 77_typing
+# deleting: one Backspace per character
+mark
+clear
+wait 300
+expect-log-count 8 Backspace
+type ok
+tap 294 455
+wait 300
+expect-log keyboard: Enter to Shield TV
+expect-log BLE > 0x07:0x028 Enter
+# the trackpad: a step per 36 px of swipe, a faint tick each; a tap is OK
+click Trackpad
+wait 300
+expect Swipe to move
+mark
+drag 60 250 200 250
+expect-log-count 3 BLE > 0x07:0x04F Right
+expect-haptic detent 3
+drag 160 330 160 170
+expect-log-count 4 BLE > 0x07:0x052 Up
+tap 160 250
+expect-log BLE > 0x07:0x028 Enter
+shot 78_trackpad
+click Back
+expect-log BLE > 0x0C:0x224 AC Back

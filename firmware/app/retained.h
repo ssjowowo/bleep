@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include "model.h"
 
-#define RETAINED_MAGIC 0xB1EE0002u      /* change whenever retained_t changes */
+#define RETAINED_MAGIC 0xB1EE0003u      /* change whenever retained_t changes */
 
 typedef struct {
     uint32_t magic;
@@ -35,6 +35,7 @@ typedef struct {
     uint16_t dev_on;            /* bit i: device i was switched on (the remote's own record) */
     uint8_t dev_input[MAX_DEVICES];
     code_t keys[KEY_COUNT];     /* what each key sent when the remote went to sleep */
+    int64_t sleep_at;           /* the sleep timer: hal_time() it ends the running activity, 0 = off */
 } retained_t;
 
 retained_t *retained(void);

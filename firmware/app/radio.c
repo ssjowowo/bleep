@@ -11,14 +11,15 @@
 
 static radio_status_t st = {.ble_dev = -1};
 static bool view_home, view_np;
-static bool hold_pair, hold_rx, hold_wifi, hold_update, hold_routine_wifi;
+static bool hold_pair, hold_rx, hold_wifi, hold_update, hold_routine_wifi, hold_night, hold_bridge;
 static int8_t hold_ble_dev = -1;
 static uint32_t wifi_t0, ble_t0, wifi_retry_at, ble_retry_at;
 
-static struct { int8_t dev; bool down; uint16_t page, usage; } queue[16];   /* keys waiting for their host */
+static struct { int8_t dev; bool down; uint8_t mods; uint16_t page, usage; } queue[32];   /* keys waiting for their host */
 static int queued;
 
 const radio_status_t *radio_status(void) { return &st; }
+bool radio_busy(void) { return queued > 0; }
 
 /* After the n-th failure in a row: wait 2, 5, 10, then 30 s */
 static uint32_t backoff_ms(uint8_t n)
@@ -48,6 +49,8 @@ void radio_hold_ir_rx(bool on)
     if (hold_rx != on) hold_rx = on, radio_update();
 }
 void radio_hold_wifi(bool on) { if (hold_wifi != on) hold_wifi = on, radio_update(); }
+void radio_hold_nightstand(bool on) { if (hold_night != on) hold_night = on, radio_update(); }
+void radio_hold_bridge(bool on) { if (hold_bridge != on) hold_bridge = on, radio_update(); }
 
 void radio_hold_routine(bool on, bool wifi, int ble_dev)
 {
@@ -167,7 +170,8 @@ void radio_update(void)
     /* Wi-Fi: Home tab, an HA device in the running activity (open item 1),
      * Now playing from an HA media_player (open item 2), or a setup flow */
     bool wifi = awake && g_model.settings.wifi_ssid[0] &&
-                (view_home || (tr & TR_HA) || (view_np && np_wifi) || hold_wifi || hold_update || hold_routine_wifi);
+                (view_home || (tr & TR_HA) || (view_np && np_wifi) || hold_wifi || hold_update || hold_routine_wifi ||
+                 hold_night || hold_bridge);
     bool asleep = p == PWR_DEEP || p == PWR_OFF;
     if (asleep || p == PWR_WARM) {
         st.wifi_off_at = 0;
@@ -272,7 +276,7 @@ static void ble_tick(uint32_t now)
                     other += queue[i].down;
                     continue;
                 }
-                hal_ble_key(queue[i].page, queue[i].usage, queue[i].down);
+                hal_ble_key(queue[i].page, queue[i].usage, queue[i].mods, queue[i].down);
                 sent += queue[i].down;
             }
             if (sent) hal_log("ble: sent %d queued key(s)", sent);
@@ -321,10 +325,10 @@ void radio_tick(void)
     if (st.ble != LINK_OFF) ble_tick(now);
 }
 
-void radio_ble_key(int dev, uint16_t page, uint16_t usage, bool down)
+static void ble_key(int dev, uint16_t page, uint16_t usage, uint8_t mods, bool down)
 {
     if (st.ble == LINK_UP && st.ble_dev == dev) {
-        hal_ble_key(page, usage, down);
+        hal_ble_key(page, usage, mods, down);
         return;
     }
     if (!down) {
@@ -345,9 +349,18 @@ void radio_ble_key(int dev, uint16_t page, uint16_t usage, bool down)
     if (queued < (int)(sizeof(queue) / sizeof(queue[0]))) {
         queue[queued].dev = dev;
         queue[queued].down = down;
+        queue[queued].mods = mods;
         queue[queued].page = page;
         queue[queued].usage = usage;
         queued++;
         if (down) hal_log("ble: queued until connected");
     }
+}
+
+void radio_ble_key(int dev, uint16_t page, uint16_t usage, bool down) { ble_key(dev, page, usage, 0, down); }
+
+void radio_ble_type(int dev, uint8_t usage, uint8_t mods)
+{
+    ble_key(dev, 0x07, usage, mods, true);
+    ble_key(dev, 0x07, usage, mods, false);
 }

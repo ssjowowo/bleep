@@ -293,7 +293,7 @@ void ui_woke(wake_cause_t cause)
     /* After deep sleep the remote has rebooted and ui_resume has put back
      * where it was. Touch, lift or USB shows the Wake screen over that; a key
      * wake goes straight there. */
-    if (cause == WAKE_KEY) return;
+    if (cause == WAKE_KEY || cause == WAKE_TIMER) return;   /* the timer: the screen stays off */
     depth = 1;
     stack[0].page = &page_wake;
     stack[0].arg = 0;

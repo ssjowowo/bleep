@@ -20,7 +20,8 @@ typedef enum {
 } run_phase_t;
 
 typedef struct {
-    int8_t idx;                 /* routine running or last run, -1 = none */
+    int8_t idx;                 /* routine running or last run, -1 = none or a test */
+    bool test;                  /* a draft from the editor */
     run_phase_t phase;
     uint8_t step, n;            /* current step (0-based) and how many */
     uint8_t failed;             /* steps that couldn't run */
@@ -32,6 +33,8 @@ typedef struct {
 } routine_status_t;
 
 void routine_run(int idx);
+void routine_test(const routine_t *draft);   /* the editor's Test: run a draft that isn't saved */
+const routine_t *routine_current(void);      /* the one running or last run (its copy) */
 void routine_stop(void);
 bool routine_busy(void);
 void routine_tick(void);

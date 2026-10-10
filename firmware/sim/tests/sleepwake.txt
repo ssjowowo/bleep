@@ -10,11 +10,11 @@ mark
 keydown VOL+
 wait 1000
 keyup VOL+
-expect-log-count 1 IR  > NEC
+expect-log-count 1 IR  > Kaseikyo
 expect-log repeat frame(s)
 # Idle: dim, screen off, deep sleep
 wait 155000
-expect-log deep sleep: wakes on 14 key(s), touch, lift, USB
+expect-log deep sleep: wakes on 14 key(s), touch, lift, tap, USB
 # VOL+ wakes it: a new run (a reboot); the press isn't sent twice
 key VOL+
 expect-log boot: wake by key VOL+

@@ -58,6 +58,7 @@ static struct {
     kb_mode_t mode;
     int max_len;
     text_done_cb cb;
+    text_live_cb live;
     void *ctx;
     lv_obj_t *kb, *ta, *dots, *count;
     bool caps_lock, one_shot;
@@ -79,8 +80,16 @@ void ui_text_entry(const char *sub, const char *title, const char *label, const 
     tx.mode = mode;
     tx.max_len = max_len < (int)sizeof(tx.text) ? max_len : (int)sizeof(tx.text) - 1;
     tx.cb = cb;
+    tx.live = NULL;
     tx.ctx = ctx;
     ui_open(&page_text, 0);
+}
+
+void ui_text_live(const char *sub, const char *title, const char *label, const char *helper, text_live_cb live,
+                  text_done_cb done, void *ctx)
+{
+    ui_text_entry(sub, title, label, "", helper, KB_TEXT, sizeof(tx.text) - 1, done, ctx);
+    tx.live = live;
 }
 
 static void finish(void)
@@ -209,6 +218,7 @@ static void ta_changed(lv_event_t *e)
     LV_UNUSED(e);
     update_pin_dots();
     update_count();
+    if (tx.live) tx.live(lv_textarea_get_text(tx.ta), tx.ctx);
 }
 
 static lv_obj_t *make_keyboard(void)

@@ -30,7 +30,7 @@ expect Waiting for Home Assistant…
 wait 1500
 expect Step 3 of 4
 expect Start Shield TV
-expect Living room TV: Power on
+expect Living room TV: Power
 shot 104_movie_3
 wait 3200
 expect Done
@@ -74,6 +74,16 @@ expect Mute
 tap 20 70
 wait 300
 expect 1. AV receiver · Mute × 4
+# Test runs the edited draft in the progress window; nothing is saved yet
+mark
+click Test
+wait 300
+expect Louder
+shot 108e_routine_test
+wait 4000
+expect-log routine: test Louder
+expect-log-count 4 IR  >
+expect Update
 click Update
 wait 300
 expect Routine updated
@@ -104,7 +114,7 @@ wait 300
 click Press a device button
 wait 300
 expect Living room TV
-expect Power on
+expect Power
 tap 20 70
 wait 300
 click Add step
@@ -133,7 +143,7 @@ wait 300
 expect 2. Start Watch TV
 expect 3. Ceiling light · Turn off
 # drag the first step's wait to 5 s
-click 1. Living room TV · Power on
+click 1. Living room TV · Power
 wait 300
 slide Wait after 10
 expect 5 s

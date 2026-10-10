@@ -83,6 +83,13 @@
 #define ICON_DOTS           "\xEE\x81\x8F"
 #define ICON_EDIT           "\xEE\x81\x90"
 #define ICON_IR             "\xEE\x81\x91"
+#define ICON_KEYBOARD       "\xEE\x81\x92"
+#define ICON_TOUCHPAD       "\xEE\x81\x93"
+#define ICON_TAP            "\xEE\x81\x94"
+#define ICON_GAMEPAD        "\xEE\x81\x95"
+#define ICON_SNAKE          "\xEE\x81\x96"
+#define ICON_BLOCKS         "\xEE\x81\x97"
+#define ICON_GEAR           "\xEE\x81\x98"
 
 #define ICON_FIRST 0xE000
-#define ICON_LAST  0xE051
+#define ICON_LAST  0xE058

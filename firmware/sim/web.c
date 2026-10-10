@@ -28,6 +28,8 @@ EMSCRIPTEN_KEEPALIVE void web_key_up(int k)
 }
 
 EMSCRIPTEN_KEEPALIVE void web_lift(void) { sim_lift(); }
+EMSCRIPTEN_KEEPALIVE void web_double_tap(void) { sim_double_tap(); }
+EMSCRIPTEN_KEEPALIVE void web_face_down(void) { sim_face_down(); }
 
 /* The tab is closing or reloading: save what changed in the last 2 s */
 EMSCRIPTEN_KEEPALIVE void web_save(void) { app_save_now(); }

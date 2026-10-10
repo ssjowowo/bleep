@@ -33,6 +33,8 @@ typedef enum {
     FN_DIGIT_0, FN_DIGIT_1, FN_DIGIT_2, FN_DIGIT_3, FN_DIGIT_4,
     FN_DIGIT_5, FN_DIGIT_6, FN_DIGIT_7, FN_DIGIT_8, FN_DIGIT_9,
     FN_SUBTITLES, FN_AUDIO, FN_INFO,
+    FN_SOURCE,                  /* steps through the inputs (most TVs and soundbars have only this) */
+    FN_CH_UP, FN_CH_DOWN,
     FN_COUNT
 } fn_t;
 
@@ -145,7 +147,50 @@ typedef struct {
     uint8_t layout_activities;  /* layout_t for activities and routines (grid) */
     uint8_t layout_devices;     /* layout_t for devices (list) */
     int64_t fw_checked;         /* hal_time() of the last successful check, 0 = never */
+    bool wake_on_tap;           /* a double tap on the case wakes it (the accelerometer's pulse detection) */
+    bool face_down_pause;       /* laid face down while something plays: pause it */
+    bool nightstand;            /* idle on USB: a big clock and the weather instead of the charging screen */
+    bool ha_battery;            /* report the battery and charging to Home Assistant (bridge.c) */
+    bool ha_key_events;         /* fire a bleep_key event in Home Assistant on every key press */
+    int8_t bright_learn[5];     /* auto brightness, learned: points added to each light band's level (power.c) */
+    bool fun_zone;              /* the easter egg found: Settings has a Fun Zone (scr_fun.c) */
+    uint16_t snake_best;        /* the games' best scores */
+    uint32_t blocks_best;
 } settings_t;
+
+/* The Home tab's layout (REQUIREMENTS.md section 8): only what the user
+ * changed. Home Assistant's areas still decide the rest, so an entity added
+ * to an area in HA shows up by itself (app/home.c). HA's things are kept by
+ * id (area_id, entity_id), as HA's lists change between connections; the
+ * rooms name entities by their index in ids[]. */
+#define HA_ID_LEN       64      /* HA allows longer ids; ones that don't fit are skipped */
+#define MAX_HOME_ROOMS  24
+#define MAX_ROOM_ITEMS  40      /* the Home tab shows up to 40 cards in a room */
+#define MAX_HOME_IDS    160
+
+typedef struct {
+    char area[HA_ID_LEN];       /* HA's area_id: the rooms are HA's areas */
+    bool hidden;
+    uint8_t n_items, n_hide;
+    uint8_t items[MAX_ROOM_ITEMS];   /* home.ents[]: the cards in the user's order; the area's others follow */
+    uint8_t hide[MAX_ROOM_ITEMS];    /* home.ents[]: the area's entities hidden in this room */
+} home_room_t;
+
+/* An entity the layout names, with how its card looks wherever it shows */
+enum { HOME_FULL, HOME_COMPACT };
+typedef struct {
+    char id[HA_ID_LEN];         /* entity_id */
+    char name[28];              /* the user's name for it; "" = HA's */
+    uint8_t icon;               /* home_icons[] index + 1; 0 = HA's */
+    uint8_t size;               /* HOME_FULL or HOME_COMPACT */
+} home_ent_t;
+
+typedef struct {
+    home_room_t rooms[MAX_HOME_ROOMS];   /* in the user's order; HA's other areas follow */
+    uint8_t n_rooms;
+    home_ent_t ents[MAX_HOME_IDS];
+    uint8_t n_ents;
+} home_layout_t;
 
 typedef struct {
     device_t devices[MAX_DEVICES];
@@ -155,6 +200,7 @@ typedef struct {
     routine_t routines[MAX_ROUTINES];
     uint8_t n_routines;
     settings_t settings;
+    home_layout_t home;
     int8_t running;             /* running activity, -1 = none (RTC memory on the remote) */
     int8_t active_dev;          /* selected device; while set, it gets the keys instead of
                                  * the running activity. -1 = none (RTC memory too) */
@@ -181,6 +227,10 @@ int model_moved_index(int i, int from, int to);         /* where index i is afte
 void model_delete_activity(int idx);
 void model_activity_rebuild(activity_t *a);
 void model_set_ble(device_t *d, const char *host);      /* bonded BLE HID host: D-pad, media, volume */
+/* An entity_id's index in g_model.home.ents, added if it's new; -1 if it
+ * doesn't fit, or there's no room even after dropping the ones nothing uses
+ * (not in a room, and the card's look not changed) */
+int model_home_id(const char *entity_id);
 void model_set_ha(device_t *d, const char *entity);     /* controlled through an HA media_player */   /* derive steps, key map and subtitle from its devices */
 
 const char *dev_kind_icon(dev_kind_t kind);
@@ -197,14 +247,35 @@ enum { AICON_TV, AICON_PLAY, AICON_MUSIC, AICON_MEDIA, AICON_SPEAKER, AICON_SOUN
 const char *activity_icon(const activity_t *a);   /* its glyph */
 const char *dev_transport_text(const device_t *d, char *buf, int len);   /* "Bluetooth · IR" */
 
-/* IR code sets for the "add from library" flow. The emulator links a stand-in
- * with made-up codes (sim/ir_library_demo.c); the remote will link the
- * curated Flipper-IRDB subset (REQUIREMENTS.md section 10). */
+/* IR code sets for the "add from library" flow: TVs, soundbars (DEV_SPEAKER)
+ * and AV receivers, generated from Flipper-IRDB by tools/make_ir_library.py
+ * (app/ir_library.c, the same in the emulator and on the remote). Each
+ * brand's sets are in a row in ir_lib_sets, the likeliest first. */
 typedef struct {
     const char *brand;
     dev_kind_t kind;
     uint8_t sets;
+    uint16_t first;             /* its first set in ir_lib_sets */
 } ir_brand_t;
+typedef struct {
+    uint8_t fn, proto;
+    uint32_t a, b;              /* as Flipper writes them (tools/make_ir_library.py) */
+} ir_lib_code_t;
+typedef struct {
+    uint16_t first, n;          /* its codes in ir_lib_codes */
+} ir_lib_set_t;
 extern const ir_brand_t ir_brands[];
 extern const int ir_brand_count;
+extern const ir_lib_set_t ir_lib_sets[];
+extern const ir_lib_code_t *const ir_lib_codes;
+/* The set's codes on the device (its other IR codes are cleared; Bluetooth
+ * and Home Assistant ones stay), and inputs, transports and ir_source */
 void ir_library_fill(device_t *d, const ir_brand_t *brand, int set);
+int ir_brand_find(const char *brand, dev_kind_t kind);   /* index in ir_brands, -1 if not there */
+
+/* One-press brand detection: a code captured from the old remote (its Power
+ * key, say), looked up in the library. Fills the brand and code set that
+ * send it, preferring a set where it's Power. Returns 2 for an exact code,
+ * 1 if only the protocol and address match (the brand's family; set is a
+ * guess), 0 for nothing. */
+int ir_library_match(uint8_t proto, uint32_t addr, uint32_t cmd, int *brand, int *set);

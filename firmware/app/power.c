@@ -1,8 +1,11 @@
 #include "power.h"
 
+#include <string.h>
 #include "app.h"
 #include "hal.h"
 #include "model.h"
+#include "control.h"
+#include "radio.h"
 #include "retained.h"
 
 #define WAKE_STRIKES 3          /* touch or lift wakes in a row that came to nothing */
@@ -50,15 +53,62 @@ uint8_t power_backlight(void) { return level; }
 uint32_t power_idle_ms(void) { return hal_millis() - last_input; }
 uint32_t power_user_idle_ms(void) { return hal_millis() - last_user; }
 
+/* ---- auto brightness that learns ---- */
+
+#define BANDS 5
+static const uint16_t band_lux[BANDS - 1] = {5, 50, 300, 1000};
+static const uint8_t band_base[BANDS] = {12, 25, 45, 70, 100};
+
+int power_light_band(void)
+{
+    uint16_t lux = app_lux();
+    int b = 0;
+    while (b < BANDS - 1 && lux >= band_lux[b]) b++;
+    return b;
+}
+
+int power_auto_level(int band)
+{
+    int v = band_base[band] + g_model.settings.bright_learn[band];
+    return v < 5 ? 5 : v > 100 ? 100 : v;
+}
+
+static void set_band(int b, int level)
+{
+    level = level < 5 ? 5 : level > 100 ? 100 : level;
+    g_model.settings.bright_learn[b] = (int8_t)(level - band_base[b]);
+}
+
+void power_teach(int percent)
+{
+    int b = power_light_band(), delta = percent - power_auto_level(b);
+    if (!delta) return;
+    set_band(b, percent);
+    /* the neighbours follow halfway: one dark evening shouldn't stay a step on its own */
+    if (b > 0) set_band(b - 1, power_auto_level(b - 1) + delta / 2);
+    if (b < BANDS - 1) set_band(b + 1, power_auto_level(b + 1) + delta / 2);
+    /* never dimmer in more light */
+    for (int i = b + 1; i < BANDS; i++)
+        if (power_auto_level(i) < power_auto_level(i - 1)) set_band(i, power_auto_level(i - 1));
+    for (int i = b - 1; i >= 0; i--)
+        if (power_auto_level(i) > power_auto_level(i + 1)) set_band(i, power_auto_level(i + 1));
+}
+
+void power_unlearn(void) { memset(g_model.settings.bright_learn, 0, sizeof(g_model.settings.bright_learn)); }
+
+bool power_learned(void)
+{
+    for (int i = 0; i < BANDS; i++)
+        if (g_model.settings.bright_learn[i]) return true;
+    return false;
+}
+
 /* Active backlight level: auto from the light sensor, capped by battery saver and USB */
 static uint8_t active_level(void)
 {
     const settings_t *s = &g_model.settings;
     int pct = s->brightness;
-    if (s->auto_brightness) {
-        uint16_t lux = app_lux();
-        pct = lux < 5 ? 12 : lux < 50 ? 25 : lux < 300 ? 45 : lux < 1000 ? 70 : 100;
-    }
+    if (s->auto_brightness) pct = power_auto_level(power_light_band());
     if (s->battery_saver && pct > 50) pct = 50;
     hal_battery_t b = *app_battery();
     if (b.usb && pct > 85) pct = 85;   /* the LDO also feeds the charger path */
@@ -83,9 +133,11 @@ static void sleep_now(bool off)
             hal_log("power: %d touch wakes in a row came to nothing; touch won't wake it until a key does",
                     WAKE_STRIKES);
         }
-        if (!used && boot_wake == WAKE_LIFT && ++r->strikes_lift >= WAKE_STRIKES && !r->lift_off) {
+        /* pick-ups and taps share the accelerometer, and its count */
+        if (!used && (boot_wake == WAKE_LIFT || boot_wake == WAKE_TAP) && ++r->strikes_lift >= WAKE_STRIKES &&
+            !r->lift_off) {
             r->lift_off = true;
-            hal_log("power: %d pick-ups in a row came to nothing; lifting won't wake it until a key does",
+            hal_log("power: %d pick-ups or taps in a row came to nothing; motion won't wake it until a key does",
                     WAKE_STRIKES);
         }
         /* a key held down (under a cushion) would wake it at once, over and over */
@@ -94,6 +146,9 @@ static void sleep_now(bool off)
             else hal_log("power: %s is held down, it won't wake the remote", hal_key_name(k));
         m.touch = !r->touch_off;
         m.lift = g_model.settings.wake_on_lift && !g_model.settings.battery_saver && !r->lift_off;
+        m.tap = g_model.settings.wake_on_tap && !r->lift_off;
+        int64_t at = sleep_timer_at();
+        if (at) m.timer_s = at > hal_time() ? (uint32_t)(at - hal_time()) : 1;
     }
     hal_deep_sleep(&m);
 }
@@ -130,7 +185,7 @@ static void set_state(pwr_state_t s)
 void power_init(const hal_wake_t *w, bool was_off)
 {
     static const int8_t cause[] = {[WOKE_KEY] = WAKE_KEY, [WOKE_TOUCH] = WAKE_TOUCH, [WOKE_LIFT] = WAKE_LIFT,
-                                   [WOKE_USB] = WAKE_USB};
+                                   [WOKE_USB] = WAKE_USB, [WOKE_TIMER] = WAKE_TIMER, [WOKE_TAP] = WAKE_TAP};
     last_input = last_user = hal_millis();
     boot_wake = w->boot == BOOT_WAKE ? cause[w->by] : -1;
     if (boot_wake == WAKE_KEY) {
@@ -147,6 +202,15 @@ void power_init(const hal_wake_t *w, bool was_off)
         hal_backlight_set(0);
         hal_lcd_sleep(true);
         if (boot_wake == WAKE_KEY && hal_key_down(KEY_PWR)) power_on_press();   /* else power_tick: charging or sleep */
+        return;
+    }
+    if (boot_wake == WAKE_TIMER) {
+        /* the sleep timer: do its job with the screen off, then sleep again */
+        state = PWR_WARM;
+        level = 0;
+        warm_since = hal_millis();
+        hal_backlight_set(0);
+        hal_lcd_sleep(true);
         return;
     }
     state = PWR_ACTIVE;
@@ -185,6 +249,7 @@ bool power_input(wake_cause_t cause)
     if (state == PWR_OFF) return true;   /* swallowed: only a PWR hold turns it on */
     if (cause == WAKE_LIFT && !g_model.settings.wake_on_lift) return false;
     if (cause == WAKE_LIFT && g_model.settings.battery_saver) return false;
+    if (cause == WAKE_TAP && !g_model.settings.wake_on_tap) return false;
     last_input = last_user = hal_millis();
     if (cause == WAKE_KEY || cause == WAKE_TOUCH) {
         if (!used) retained()->strikes_touch = retained()->strikes_lift = 0;
@@ -221,6 +286,12 @@ void power_tick(void)
         if (!b.usb && idle >= off_ms) set_state(PWR_WARM);
         break;
     case PWR_WARM:
+        /* woken by the sleep timer: back to sleep once its sends have gone out */
+        if (boot_wake == WAKE_TIMER && !used && !sleep_timer_at() && !activity_busy() && !radio_busy() &&
+            hal_millis() - warm_since >= 1000) {
+            set_state(PWR_DEEP);
+            break;
+        }
         if (b.usb) break;
         if (hal_millis() - warm_since >= s->deep_after_s * 1000u) set_state(PWR_DEEP);
         break;

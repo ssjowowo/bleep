@@ -21,6 +21,8 @@ static void key_cb(lv_event_t *e)
     else sim_key_up(k);
 }
 static void lift_cb(lv_event_t *e) { LV_UNUSED(e); sim_lift(); }
+static void tap_cb(lv_event_t *e) { LV_UNUSED(e); sim_double_tap(); }
+static void facedown_cb(lv_event_t *e) { LV_UNUSED(e); sim_face_down(); }
 
 static void skip_cb(lv_event_t *e)
 {
@@ -156,6 +158,14 @@ void panel_create(void)
     lv_obj_center(lv_label_create(s2));
     lv_label_set_text(lv_obj_get_child(s2, 0), "Idle +2 min");
     lv_obj_add_event_cb(s2, skip_cb, LV_EVENT_CLICKED, (void *)(intptr_t)120000);
+    lv_obj_t *s3 = lv_button_create(r);
+    lv_obj_center(lv_label_create(s3));
+    lv_label_set_text(lv_obj_get_child(s3, 0), "Tap x2");
+    lv_obj_add_event_cb(s3, tap_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *s4 = lv_button_create(r);
+    lv_obj_center(lv_label_create(s4));
+    lv_label_set_text(lv_obj_get_child(s4, 0), "Face down");
+    lv_obj_add_event_cb(s4, facedown_cb, LV_EVENT_CLICKED, NULL);
 
     r = row(scr);
     batt_lbl = lv_label_create(r);

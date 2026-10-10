@@ -1,0 +1,24 @@
+# One-press brand detection: Power on the old remote, the library says whose it is
+click Start
+wait 300
+click Devices
+click Add device
+click IR from the library
+click Find it from its old remote
+wait 300
+expect Press Power on the old remote
+expect-log ir: receiver on
+shot 79_ir_detect_listen
+wait 1700
+expect Looks like Samsung
+expect Its code set 2
+expect Samsung32 · address 0x07 · command 0xE6
+expect-log ir: receiver off
+shot 80_ir_detect_found
+click Test it
+wait 300
+expect Code set 2 of 2
+click Yes, it works
+tap 294 455
+wait 300
+expect Samsung TV

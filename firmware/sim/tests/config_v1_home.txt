@@ -1,0 +1,33 @@
+store fixtures/config-v1-home.json
+# A file saved by firmware with config version 1 and the Home tab's layout
+# (home: rooms and entities), frozen. Every later firmware must keep reading
+# it exactly like this: don't edit the fixture to make this pass.
+click Start
+wait 300
+click Home
+wait 800
+# rooms: the kitchen moved first; the garden hidden
+expect-before Kitchen | Living room
+expect-before Bedroom | Hallway
+expect-no Garden
+# the kitchen's order, with the porch light added at the end; the coffee
+# machine renamed and compact
+expect-before LED strip | Water heater
+expect-before Water heater | Espresso
+expect-before Doorbell chime | Porch light
+expect-no Coffee machine
+# the hallway: the siren hidden there
+click Hallway
+wait 300
+expect Front door
+expect-no Siren
+# the card's page: its icon and size as saved
+click Kitchen
+wait 300
+click Edit
+wait 300
+click Espresso
+wait 300
+expect Power
+expect One line
+shot 161_config_v1_home

@@ -1,0 +1,59 @@
+store fixtures/config-home.json
+# A Home tab the user changed: rooms reordered and hidden; cards added,
+# moved and hidden. HA's other areas follow the saved ones.
+click Start
+wait 300
+click Home
+wait 800
+# Kitchen first (named twice: the first one counts), then the living room;
+# the bedroom is hidden; the attic is gone from HA; a room that isn't an
+# area is ignored; the garage shows, as the user put something there
+expect-before Kitchen | Living room
+expect-before Living room | Garage
+expect-no Bedroom
+expect-no attic
+expect-no Not an area
+# HA's areas the file doesn't name come after the saved rooms, in HA's order
+expect-before Garage | Hallway
+expect-before Hallway | Garden
+# Kitchen: the user's order first, with a light from no area and a sensor
+# added; the entity HA doesn't have any more is skipped, the repeat dropped;
+# then the kitchen's other cards
+expect-before Espresso | Porch light
+expect-no Coffee machine
+expect-before Porch light | Air quality
+expect-before Air quality | LED strip
+expect Water heater
+shot 172_home_saved_kitchen
+# Living room: a lock and a scene added from elsewhere, after the ceiling
+# light; two media players hidden there
+click Living room
+wait 200
+# the ceiling light renamed and compact (its brightness slider gone); the
+# floor lamp's unknown icon and size are HA's and full
+expect-before Big light | Front door
+expect-before Front door | Floor lamp
+expect-no Ceiling light
+expect-no 3000 K
+shot 193_home_saved_living
+expect Sonos
+expect-no Kodi
+expect-no Apple TV
+click Garage
+wait 200
+expect Garage hub battery
+expect-no Garage hub firmware
+# Edit: the kitchen's entity HA no longer has shows, to take out
+click Kitchen
+wait 300
+click Edit
+wait 300
+expect Not in Home Assistant
+expect light.gone_from_ha
+drag 160 400 160 300
+wait 300
+shot 185_home_missing
+tap 270 228
+wait 300
+expect-no light.gone_from_ha
+expect Porch light

@@ -5,12 +5,14 @@
  *   tap X Y            touch and release
  *   click TEXT         tap the label showing TEXT (overlays first, then the page)
  *   slide TITLE STEP   drag the stepped slider titled TITLE to step STEP (0 = first)
+ *   slider N VALUE     set the Nth slider on the page (0 = first) to VALUE, as a drag ending there would
  *   hold X Y MS        long press
  *   drag X1 Y1 X2 Y2   swipe (scrolls lists)
  *   holddrag X1 Y1 X2 Y2 [MS]   hold until the long press, drag, stay MS (default 100), let go
  *   key NAME           physical key: OK UP DOWN LEFT RIGHT NFLX YT VOL+ VOL- PWR BACK HOME MUTE PLEX
  *   keydown NAME / keyup NAME   hold a key / let it go (wait in between: PWR 5 s, 2 s)
  *   lift               pick the remote up
+ *   doubletap          tap the case twice;  facedown   lay it face down
  *   wait MS            let time pass
  *   type TEXT          type into the open text box
  *   clear              empty the open text box
@@ -19,7 +21,8 @@
  *   shot NAME          save NAME.png
  *   expect TEXT        fail unless a label on screen contains TEXT
  *   expect-no TEXT     fail if a label on screen contains TEXT
- *   mark               start a fresh log for expect-log
+ *   mark               start a fresh log for expect-log (and expect-haptic)
+ *   expect-haptic NAME N   fail unless the NAME buzz (tick, confirm, no, alert, detent) ran N times since the mark
  *   expect-log TEXT    fail unless a log line since the mark contains TEXT (expect-log-no: fail if one does)
  *   expect-log-count N TEXT   fail unless exactly N log lines since the mark contain TEXT
  *   expect-before A | B   fail unless label A comes before label B (top to bottom, left to right)
@@ -67,6 +70,7 @@ static void run(uint32_t ms)
         now_ms += 5;
         if (g_sim.asleep) {
             sim_touch_filter(pressed);
+            sim_sleep_tick();
             continue;
         }
         lv_timer_handler();
@@ -120,6 +124,17 @@ static void dump(lv_obj_t *o, int depth, int max_depth)
            (int)lv_obj_get_style_pad_top(o, 0), (int)lv_obj_get_style_pad_row(o, 0), t);
     if (depth < max_depth)
         for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) dump(lv_obj_get_child(o, i), depth + 1, max_depth);
+}
+
+static lv_obj_t *nth_slider(lv_obj_t *o, int *n)
+{
+    if (lv_obj_is_hidden(o)) return NULL;
+    if (lv_obj_check_type(o, &lv_slider_class) && (*n)-- == 0) return o;
+    for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) {
+        lv_obj_t *f = nth_slider(lv_obj_get_child(o, i), n);
+        if (f) return f;
+    }
+    return NULL;
 }
 
 static bool key_by_name(const char *s, bleep_key_t *k)
@@ -241,6 +256,18 @@ int script_run(const char *path, const char *shot_dir)
             }
             pressed = false;
             run(200);
+        } else if (!strcmp(cmd, "slider") && rest && sscanf(rest, "%d %d", &a, &b) == 2) {
+            lv_obj_t *sl = nth_slider(ui_root(), &a);
+            if (!sl) {
+                printf("FAIL: slider: no such slider\n");
+                failures++;
+                continue;
+            }
+            lv_obj_send_event(sl, LV_EVENT_PRESSED, NULL);
+            lv_slider_set_value(sl, b, LV_ANIM_OFF);
+            lv_obj_send_event(sl, LV_EVENT_VALUE_CHANGED, NULL);
+            lv_obj_send_event(sl, LV_EVENT_RELEASED, NULL);
+            run(200);
         } else if (!strcmp(cmd, "hold") && rest && sscanf(rest, "%d %d %d", &a, &b, &c) == 3) {
             pt.x = a, pt.y = b, pressed = true;
             run(c);
@@ -286,11 +313,20 @@ int script_run(const char *path, const char *shot_dir)
         } else if (!strcmp(cmd, "lift")) {
             sim_lift();
             run(100);
+        } else if (!strcmp(cmd, "doubletap")) {
+            sim_double_tap();
+            run(100);
+        } else if (!strcmp(cmd, "facedown")) {
+            sim_face_down();
+            run(100);
         } else if (!strcmp(cmd, "wait") && rest) {
             run(atoi(rest));
         } else if (!strcmp(cmd, "clear")) {
             lv_obj_t *ta = kb_textarea();
-            if (ta) lv_textarea_set_text(ta, "");
+            if (ta) {
+                lv_textarea_set_text(ta, "");
+                lv_obj_send_event(ta, LV_EVENT_VALUE_CHANGED, NULL);   /* as deleting it would */
+            }
             run(50);
         } else if (!strcmp(cmd, "type") && rest) {
             lv_obj_t *ta = kb_textarea();
@@ -356,6 +392,15 @@ int script_run(const char *path, const char *shot_dir)
             text = text ? text + 1 : "";
             for (const char *p = sim_log_since_mark(); (p = strstr(p, text)); p++) got++;
             printf("%s: expect-log-count %d \"%s\" (%d)\n", got == want ? "ok  " : "FAIL", want, text, got);
+            if (got != want) failures++;
+        } else if (!strcmp(cmd, "expect-haptic") && rest) {
+            static const char *const names[] = {"tick", "confirm", "no", "alert", "detent"};
+            char name[16] = "";
+            int want = -1, got = -1;
+            sscanf(rest, "%15s %d", name, &want);
+            for (int i = 0; i < 5; i++)
+                if (!strcmp(name, names[i])) got = g_sim.haptics[i];
+            printf("%s: expect-haptic %s %d (%d)\n", got == want ? "ok  " : "FAIL", name, want, got);
             if (got != want) failures++;
         } else if (!strcmp(cmd, "mark")) {
             sim_log_mark();

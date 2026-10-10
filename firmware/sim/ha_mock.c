@@ -1,6 +1,6 @@
 /*
  * A demo house that behaves like Home Assistant: one or more entities for
- * every card in the design, grouped into rooms. Service calls change state
+ * every card in the design, grouped into areas. Service calls change state
  * the way HA would and fire EV_HA. Replaced by the WebSocket client on the
  * remote; the interface (ha.h) stays the same.
  */
@@ -16,8 +16,15 @@
 #include "ui/icons.h"
 #include "sim.h"
 
-static const char *const rooms[] = {"Living room", "Kitchen", "Bedroom", "Hallway", "Garden", "Home"};
-enum { R_LIVING, R_KITCHEN, R_BEDROOM, R_HALL, R_GARDEN, R_HOME };
+/* HA's areas. The garage holds only a hub's diagnostic entities, so it gets
+ * no room on the Home tab until the user adds something to it. */
+static const struct {
+    const char *id, *name;
+} areas[] = {
+    {"living_room", "Living room"}, {"kitchen", "Kitchen"}, {"bedroom", "Bedroom"},
+    {"hallway", "Hallway"}, {"garden", "Garden"}, {"garage", "Garage"},
+};
+enum { R_LIVING, R_KITCHEN, R_BEDROOM, R_HALL, R_GARDEN, R_GARAGE, R_NONE = -1 };
 
 #define MAX_ENTITIES 64
 static ha_entity_t ents[MAX_ENTITIES];
@@ -27,8 +34,16 @@ static ha_link_t link_state = HA_OFFLINE;
 static uint32_t link_t0;
 
 int ha_count(void) { return n_ents; }
-int ha_room_count(void) { return n_ents ? (int)(sizeof(rooms) / sizeof(rooms[0])) : 0; }
-const char *ha_room_name(int idx) { return idx >= 0 && idx < ha_room_count() ? rooms[idx] : ""; }
+int ha_area_count(void) { return n_ents ? (int)(sizeof(areas) / sizeof(areas[0])) : 0; }
+const char *ha_area_id(int idx) { return idx >= 0 && idx < ha_area_count() ? areas[idx].id : ""; }
+const char *ha_area_name(int idx) { return idx >= 0 && idx < ha_area_count() ? areas[idx].name : ""; }
+
+int ha_area_find(const char *area_id)
+{
+    for (int i = 0; i < ha_area_count(); i++)
+        if (!strcmp(areas[i].id, area_id)) return i;
+    return -1;
+}
 ha_entity_t *ha_get(int idx) { return idx >= 0 && idx < n_ents ? &ents[idx] : NULL; }
 ha_link_t ha_link(void) { return link_state; }
 
@@ -109,14 +124,14 @@ const char *ha_state_text(const ha_entity_t *e, char *buf, int len)
 
 /* ---- demo house ---- */
 
-static ha_entity_t *add(const char *id, const char *name, ha_domain_t d, int room)
+static ha_entity_t *add(const char *id, const char *name, ha_domain_t d, int area)
 {
     ha_entity_t *e = &ents[n_ents++];
     memset(e, 0, sizeof(*e));
     e->id = id;
     snprintf(e->name, sizeof(e->name), "%s", name);
     e->domain = d;
-    e->room = room;
+    e->area = area;
     e->vmin = 0;
     e->vmax = 100;
     return e;
@@ -231,48 +246,67 @@ static void load_house(void)
     e->on = true, e->value = 64;
     snprintf(e->sub, sizeof(e->sub), "Mowing · 64%%");
     e = add("vacuum.downstairs", "Vacuum", HA_VACUUM, R_GARDEN);
-    e->room = R_KITCHEN, e->value = 100;
+    e->area = R_KITCHEN, e->value = 100;
     snprintf(e->sub, sizeof(e->sub), "Docked · 100%%");
-    e = add("weather.home", "Weather", HA_WEATHER, R_GARDEN);
+    e = add("weather.home", "Weather", HA_WEATHER, R_NONE);
     e->current = 14;
     snprintf(e->sub, sizeof(e->sub), "Cloudy · Home");
     snprintf(e->extra, sizeof(e->extra), "H 17° · L 9°\nRain 20%%");
-    e = add("sun.sun", "Sun", HA_SUN, R_GARDEN);
+    e = add("sun.sun", "Sun", HA_SUN, R_NONE);
     snprintf(e->sub, sizeof(e->sub), "Sets at 18:52 · rises 07:31");
 
-    /* Home: people, helpers and info */
-    e = add("person.sam", "Sam", HA_PERSON, R_HOME);
+    /* In no area: people, helpers and info, as in most homes */
+    e = add("person.sam", "Sam", HA_PERSON, R_NONE);
     e->on = true;
     snprintf(e->sub, sizeof(e->sub), "Home · since 17:40");
-    e = add("person.alex", "Alex", HA_PERSON, R_HOME);
+    e = add("person.alex", "Alex", HA_PERSON, R_NONE);
     e->icon = ICON_ZONE;
     snprintf(e->sub, sizeof(e->sub), "Away · Work");
-    e = add("input_boolean.guest_mode", "Guest mode", HA_INPUT_BOOLEAN, R_HOME);
+    e = add("input_boolean.guest_mode", "Guest mode", HA_INPUT_BOOLEAN, R_NONE);
     snprintf(e->sub, sizeof(e->sub), "input_boolean");
-    e = add("input_number.dim_level", "Dim level", HA_INPUT_NUMBER, R_HOME);
+    e = add("input_number.dim_level", "Dim level", HA_INPUT_NUMBER, R_NONE);
     e->value = 40;
     snprintf(e->sub, sizeof(e->sub), "input_number");
-    e = add("input_select.house_mode", "House mode", HA_INPUT_SELECT, R_HOME);
+    e = add("input_select.house_mode", "House mode", HA_INPUT_SELECT, R_NONE);
     e->options = "Morning\nDay\nEvening\nNight", e->mode = 2;
     snprintf(e->sub, sizeof(e->sub), "input_select");
-    e = add("input_text.message", "Message board", HA_INPUT_TEXT, R_HOME);
+    e = add("input_text.message", "Message board", HA_INPUT_TEXT, R_NONE);
     snprintf(e->sub, sizeof(e->sub), "input_text");
     snprintf(e->title, sizeof(e->title), "Back at 8");
-    e = add("timer.pizza", "Pizza", HA_TIMER, R_HOME);
+    e = add("timer.pizza", "Pizza", HA_TIMER, R_NONE);
     e->on = true, e->pos = 272, e->dur = 900;
-    e = add("calendar.family", "Calendar", HA_CALENDAR, R_HOME);
+    e = add("calendar.family", "Calendar", HA_CALENDAR, R_NONE);
     snprintf(e->sub, sizeof(e->sub), "Next event");
     snprintf(e->title, sizeof(e->title), "Dentist");
     snprintf(e->extra, sizeof(e->extra), "Tomorrow · 09:30");
-    e = add("todo.shopping", "Shopping list", HA_TODO, R_HOME);
+    e = add("todo.shopping", "Shopping list", HA_TODO, R_NONE);
     snprintf(e->extra, sizeof(e->extra), "Milk\nBatteries (AAA)\nCoffee");
     e->todo_done = 1 << 2;
-    e = add("update.remote_firmware", "Remote firmware", HA_UPDATE, R_HOME);
+    e = add("update.remote_firmware", "Remote firmware", HA_UPDATE, R_NONE);
     e->on = true;
     snprintf(e->sub, sizeof(e->sub), "1.2.0 available");
-    e = add("notify.washing_machine", "Washing machine", HA_NOTIFY, R_HOME);
+    e = add("notify.washing_machine", "Washing machine", HA_NOTIFY, R_NONE);
     snprintf(e->sub, sizeof(e->sub), "Notification · 2 min ago");
     snprintf(e->title, sizeof(e->title), "Cycle finished. Empty within an hour.");
+
+    /* What a real HA has as well, which the Home tab leaves out unless the
+     * user adds it: device settings and diagnostics, an entity hidden in HA,
+     * and a light in no area */
+    e = add("sensor.ceiling_light_signal", "Ceiling light signal", HA_SENSOR, R_LIVING);
+    e->category = HA_CAT_DIAGNOSTIC;
+    snprintf(e->sub, sizeof(e->sub), "-62 dBm");
+    e = add("switch.coffee_child_lock", "Coffee machine child lock", HA_SWITCH, R_KITCHEN);
+    e->category = HA_CAT_CONFIG;
+    e = add("light.hall_old", "Old hall light", HA_LIGHT, R_HALL);
+    e->hidden = true, e->unavailable = true;
+    e = add("sensor.garage_hub_battery", "Garage hub battery", HA_SENSOR, R_GARAGE);
+    e->category = HA_CAT_DIAGNOSTIC, e->icon = ICON_BATTERY, e->value = 88;
+    snprintf(e->sub, sizeof(e->sub), "88%%");
+    e = add("update.garage_hub", "Garage hub firmware", HA_UPDATE, R_GARAGE);
+    e->category = HA_CAT_CONFIG;
+    snprintf(e->sub, sizeof(e->sub), "Up to date");
+    e = add("light.porch", "Porch light", HA_LIGHT, R_NONE);
+    e->features = LIGHT_DIM, e->value = 100;
 }
 
 /* ---- link ---- */
@@ -607,4 +641,21 @@ void ha_todo_toggle(int idx, int item)
     if (!online(idx)) return;
     ents[idx].todo_done ^= 1u << item;
     changed(idx);
+}
+
+/* ---- the remote's own entities and events: the real HA would store and
+ * route them; the demo house only logs them ---- */
+
+void ha_fire_event(const char *type, const char *data_json)
+{
+    if (link_state != HA_CONNECTED) return;
+    hal_log("ha: fire_event %s", type);
+    hal_log("ha:   %s", data_json);
+}
+
+void ha_set_state(const char *entity_id, const char *state, const char *attributes_json)
+{
+    (void)attributes_json;
+    if (link_state != HA_CONNECTED) return;
+    hal_log("ha: state %s = %s", entity_id, state);
 }

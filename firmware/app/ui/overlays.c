@@ -9,11 +9,14 @@
 #include "../control.h"
 #include "../ha.h"
 #include "../model.h"
+#include "../radio.h"
 #include "../routine.h"
 #include "ui.h"
 
-static lv_obj_t *ambient;           /* lock or charging, full screen */
+static lv_obj_t *ambient;           /* lock, charging or nightstand, full screen */
 static bool ambient_charging;
+static bool ambient_night;          /* the nightstand clock (on USB, idle) */
+static lv_obj_t *night_box, *night_weather, *night_batt;
 static lv_obj_t *clock_lbl, *date_lbl, *mini_bar, *mini_play;
 static lv_obj_t *volume, *toast, *sheet;
 static lv_timer_t *volume_timer, *toast_timer;
@@ -40,6 +43,9 @@ static void hide_ambient(void)
     if (ambient) lv_obj_delete(ambient);
     ambient = NULL;
     clock_lbl = date_lbl = mini_bar = mini_play = NULL;
+    night_box = night_weather = night_batt = NULL;
+    if (ambient_night) radio_hold_nightstand(false);
+    ambient_night = false;
 }
 
 static void ambient_click(lv_event_t *e)
@@ -183,6 +189,70 @@ static void show_charging(void)
     lv_obj_align(hint, LV_ALIGN_BOTTOM_MID, 0, -20);
 }
 
+/* ---- nightstand: idle on USB, a big clock, the date, the weather ---- */
+
+static ha_entity_t *weather(void)
+{
+    for (int i = 0; i < ha_count(); i++)
+        if (ha_get(i)->domain == HA_WEATHER) return ha_get(i);
+    return NULL;
+}
+
+static void night_update(void)
+{
+    if (!ambient_night) return;
+    update_clock();
+    /* a few px somewhere else each minute, so nothing sits on the same pixels all night */
+    static const int8_t dx[] = {0, 6, -4, 3, -6, 4, -2}, dy[] = {0, -6, 4, 8, -2, 5, -8};
+    int k = (int)(hal_time() / 60 % 7);
+    lv_obj_align(night_box, LV_ALIGN_CENTER, dx[k], -20 + dy[k]);
+    ha_entity_t *w = weather();
+    char buf[96] = "";
+    if (w) {
+        /* "14° · Cloudy · H 17° · L 9°" from the last state HA sent */
+        char cond[32];
+        snprintf(cond, sizeof(cond), "%.31s", w->sub);
+        char *dot = strstr(cond, " · ");
+        if (dot) *dot = 0;
+        char hl[32];
+        snprintf(hl, sizeof(hl), "%.31s", w->extra);
+        char *nl = strchr(hl, '\n');
+        if (nl) *nl = 0;
+        snprintf(buf, sizeof(buf), "%d° · %s%s%s", w->current, cond, hl[0] ? " · " : "", hl);
+    }
+    lv_label_set_text(lv_obj_get_child(night_weather, 1), buf);
+    lv_obj_set_hidden(night_weather, !w);
+    hal_battery_t b = *app_battery();
+    lv_label_set_text_fmt(night_batt, b.charging ? "Charging · %d%%" : "Charged · %d%%", b.percent);
+}
+
+static void show_nightstand(void)
+{
+    hide_ambient();
+    ambient_charging = false;
+    ambient_night = true;
+    ambient = full(T->bg);
+    lv_obj_add_event_cb(ambient, ambient_click, LV_EVENT_CLICKED, NULL);
+    night_box = w_col(ambient, 6);
+    lv_obj_set_width(night_box, LV_SIZE_CONTENT);
+    lv_obj_set_flex_align(night_box, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_clickable(night_box, false);
+    clock_lbl = w_label(night_box, F_CLOCK, T->text, "");
+    date_lbl = w_label(night_box, F_BODY, T->text2, "");
+    night_weather = w_row(night_box, 6);
+    lv_obj_set_width(night_weather, LV_SIZE_CONTENT);
+    lv_obj_set_style_margin_top(night_weather, 14, 0);
+    w_icon(night_weather, ICON_WEATHER, 18, T->accent);
+    w_label(night_weather, F_BODY, T->text, "");
+    lv_obj_t *br = w_row(night_box, 6);
+    lv_obj_set_width(br, LV_SIZE_CONTENT);
+    lv_obj_set_style_margin_top(br, 22, 0);
+    w_icon(br, ICON_BOLT, 14, T->text2);
+    night_batt = w_label(br, F_LABEL, T->text2, "");
+    night_update();
+    radio_hold_nightstand(true);   /* the weather (and the clock) stay current */
+}
+
 static void close_sheet(void);
 static void rp_close(void);
 
@@ -200,7 +270,8 @@ void ov_power(pwr_state_t s)
     if (s == PWR_DIM && ui_current() == &page_splash) return;   /* the splash just dims */
     if (s == PWR_DIM && b.usb && ui_current() == &page_update) return;   /* so does a page waiting on USB */
     if (s == PWR_DIM) {
-        if (b.usb) show_charging();
+        if (b.usb && g_model.settings.nightstand) show_nightstand();
+        else if (b.usb) show_charging();
         else show_lock();
     } else if (s == PWR_ACTIVE) {
         hide_ambient();
@@ -320,8 +391,9 @@ void ov_battery(bool usb_changed)
         if (ui_current() != &page_update) show_charging();
         return;
     }
-    if (usb_changed && !b.usb && ambient && ambient_charging) hide_ambient();
+    if (usb_changed && !b.usb && ambient && (ambient_charging || ambient_night)) hide_ambient();
     if (ambient && ambient_charging) show_charging();   /* refresh numbers */
+    if (ambient_night) night_update();
     if (!b.usb && b.percent <= 8 && !low_shown) {
         low_shown = true;
         show_low_battery(b.percent);
@@ -408,7 +480,7 @@ static lv_obj_t *rp_line(lv_obj_t *parent, const lv_font_t *font, lv_color_t col
 static void rp_build(void)
 {
     const routine_status_t *r = routine_status();
-    const routine_t *rt = &g_model.routines[r->idx];
+    const routine_t *rt = routine_current();
     rp_close();
     rp.back = full(lv_color_black());
     lv_obj_set_style_bg_opa(rp.back, LV_OPA_60, 0);
@@ -552,6 +624,8 @@ static void toast_hide(lv_timer_t *t)
     if (toast) lv_obj_set_hidden(toast, true);
 }
 
+void ov_toast_clear(void) { toast_hide(NULL); }
+
 void ov_toast(const char *msg)
 {
     if (toast) lv_obj_delete(toast);
@@ -579,7 +653,11 @@ void ov_toast(const char *msg)
 
 void ov_event(app_event_t ev, int arg)
 {
-    if (ev == EV_CLOCK) update_clock();
+    if (ev == EV_CLOCK) {
+        update_clock();
+        night_update();
+    }
+    if (ev == EV_HA && ambient_night) night_update();
     if (ev == EV_HA && ambient && !ambient_charging) {
         int idx = -1;
         running_media(&idx);
@@ -601,7 +679,7 @@ void ov_event(app_event_t ev, int arg)
 void ov_init(void)
 {
     /* rebuilt after a theme change: drop what's there */
-    bool had_ambient = ambient != NULL, was_charging = ambient_charging;
+    bool had_ambient = ambient != NULL, was_charging = ambient_charging, was_night = ambient_night;
     hide_ambient();
     close_sheet();
     if (volume) lv_obj_delete(volume);
@@ -610,7 +688,8 @@ void ov_init(void)
     rp_close();
     if (routine_busy()) rp_update();   /* new colours, same routine */
     if (had_ambient) {
-        if (was_charging) show_charging();
+        if (was_night) show_nightstand();
+        else if (was_charging) show_charging();
         else show_lock();
     }
 }

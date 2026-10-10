@@ -122,14 +122,20 @@ static void row_cb(lv_event_t *e)
     case 9: ui_choice("Settings · Layout", "Devices", layout_names, 2, s->layout_devices, layout_devs_done, NULL); break;
     case 10: ov_power_off_ask(); break;
     case 11: ov_factory_reset_ask(); break;
+    case 12: ui_open(&page_fun_zone, 0); break;
     }
 }
 
 static void switch_cb(lv_event_t *e)
 {
     bool on = lv_obj_has_state(lv_event_get_target_obj(e), LV_STATE_CHECKED);
-    if (ARG_INT(e) == 0) g_model.settings.wake_on_lift = on;
-    else g_model.settings.battery_saver = on;
+    switch (ARG_INT(e)) {
+    case 0: g_model.settings.wake_on_lift = on; break;
+    case 2: g_model.settings.wake_on_tap = on; break;
+    case 3: g_model.settings.face_down_pause = on; break;
+    case 4: g_model.settings.nightstand = on; break;
+    default: g_model.settings.battery_saver = on; break;
+    }
     settings_changed(false);
 }
 
@@ -223,6 +229,11 @@ static void settings_build(lv_obj_t *root, int arg)
     w_on_click(upd, row_cb, 7);
     w_on_click(w_list_row(col, ICON_INFO, "About", NULL, NULL), row_cb, 5);
 
+    if (s->fun_zone) {   /* the easter egg, once found */
+        w_section(col, "FUN ZONE");
+        w_on_click(w_list_row(col, ICON_GAMEPAD, "Fun Zone", "Snake · Bleep Blocks", NULL), row_cb, 12);
+    }
+
     w_section(col, "POWER & RESET");
     w_on_click(w_list_row(col, ICON_POWER, "Power off", NULL, NULL), row_cb, 10);
     lv_obj_t *fr = w_list_row(col, ICON_TRASH, "Reset to factory settings", NULL, NULL);
@@ -244,6 +255,7 @@ static void display_build(lv_obj_t *root, int arg)
     else snprintf(buf, sizeof(buf), "%d%%", s->brightness);
     w_on_click(w_list_row(col, ICON_SUN, "Brightness", buf, NULL), row_cb, 0);
     w_on_click(w_list_row(col, ICON_MOON, "Theme", theme_names[s->theme], NULL), row_cb, 4);   /* the sun is Brightness's */
+    switch_row(col, ICON_TIMER, "Nightstand clock", s->nightstand, 4);
     w_section(col, "LAYOUT");
     w_on_click(w_list_row(col, ICON_GRID, "Activities & routines", layout_names[s->layout_activities], NULL), row_cb, 8);
     w_on_click(w_list_row(col, ICON_REMOTE, "Devices", layout_names[s->layout_devices], NULL), row_cb, 9);
@@ -279,6 +291,13 @@ static void power_build(lv_obj_t *root, int arg)
                                               : "Idle dims to the lock screen. Sleep turns the screen off.");
     lv_obj_set_width(note, lv_pct(100));
     switch_row(col, ICON_REMOTE, "Wake on pick-up", s->wake_on_lift, 0);
+    switch_row(col, ICON_TAP, "Wake on double-tap", s->wake_on_tap, 2);
+    switch_row(col, ICON_PAUSE, "Face down to pause", s->face_down_pause, 3);
+    lv_obj_t *g = w_label(col, F_CAPTION, T->text2,
+                          "Double-tap the case to wake it. Lay it face down to pause what's playing (when Home "
+                          "Assistant says it's playing).");
+    lv_obj_set_width(g, lv_pct(100));
+    lv_obj_set_style_pad_ver(g, 6, 0);
     switch_row(col, ICON_BATTERY, "Battery saver", s->battery_saver, 1);
     lv_obj_t *n = w_label(col, F_CAPTION, T->text2,
                           "Battery saver caps the brightness at 50 % and shortens the timeouts.");
@@ -306,10 +325,39 @@ static void bright_auto_cb(lv_event_t *e)
     ui_refresh();
 }
 
+static lv_obj_t *bright_now;
+
+static void bright_now_text(void)
+{
+    char buf[96];
+    snprintf(buf, sizeof(buf), "Light sensor: %u lux · backlight now %d%%", app_lux(), power_backlight());
+    lv_label_set_text(bright_now, buf);
+}
+
+/* Auto on: the slider teaches the level for light like this; off: it's the level */
 static void bright_cb(lv_event_t *e)
 {
-    g_model.settings.brightness = lv_slider_get_value(lv_event_get_target_obj(e));
+    int v = lv_slider_get_value(lv_event_get_target_obj(e));
+    if (g_model.settings.auto_brightness) power_teach(v);
+    else g_model.settings.brightness = v;
     power_apply_backlight();
+    bright_now_text();
+}
+
+static void bright_forget_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+    power_unlearn();
+    power_apply_backlight();
+    ui_toast("Back to the standard levels");
+    ui_refresh();
+}
+
+/* the Forget button appears once something is learned */
+static void bright_released_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+    if (g_model.settings.auto_brightness) ui_refresh();
 }
 
 static void bright_build(lv_obj_t *root, int arg)
@@ -323,17 +371,24 @@ static void bright_build(lv_obj_t *root, int arg)
     lv_obj_set_clickable(r, false);
     lv_obj_t *sw = w_switch(r, s->auto_brightness);
     lv_obj_add_event_cb(sw, bright_auto_cb, LV_EVENT_VALUE_CHANGED, NULL);
-    lv_obj_t *sl = w_slider(col, s->brightness, 5, 100);
+    lv_obj_t *sl = w_slider(col, s->auto_brightness ? power_auto_level(power_light_band()) : s->brightness, 5, 100);
+    w_slider_detents(sl, 5);
     lv_obj_set_style_margin_ver(sl, 10, 0);
-    if (s->auto_brightness) lv_obj_add_state(sl, LV_STATE_DISABLED);
-    lv_obj_set_style_bg_color(sl, T->text2, LV_PART_INDICATOR | LV_STATE_DISABLED);
     lv_obj_add_event_cb(sl, bright_cb, LV_EVENT_VALUE_CHANGED, NULL);
-    char buf[96];
-    snprintf(buf, sizeof(buf), "Light sensor: %u lux · backlight now %d%%", app_lux(), power_backlight());
-    w_label(col, F_LABEL, T->text2, buf);
+    lv_obj_add_event_cb(sl, bright_released_cb, LV_EVENT_RELEASED, NULL);
+    bright_now = w_label(col, F_LABEL, T->text2, "");
+    bright_now_text();
     lv_obj_t *n = w_label(col, F_CAPTION, T->text2,
-                          "Auto follows the light sensor. Battery saver caps it at 50 %, and on USB it stops at 85 %.");
+                          s->auto_brightness
+                              ? "Auto follows the light sensor and learns from you: move the slider and it remembers "
+                                "that level for light like this. Battery saver caps it at 50 %, USB at 85 %."
+                              : "Battery saver caps it at 50 %, and on USB it stops at 85 %.");
     lv_obj_set_width(n, lv_pct(100));
+    if (s->auto_brightness && power_learned()) {
+        lv_obj_t *f = w_button(col, "Forget what it learned", NULL, BTN_OUTLINE);
+        lv_obj_set_width(f, lv_pct(100));
+        lv_obj_add_event_cb(f, bright_forget_cb, LV_EVENT_CLICKED, NULL);
+    }
 }
 
 const page_t page_brightness = {"Brightness", -1, bright_build, NULL, NULL};
@@ -794,6 +849,28 @@ const page_t page_update = {"Software update", -1, upd_build, upd_event, NULL};
 
 /* ================= About ================= */
 
+/* Firmware, tapped 7 times: the Fun Zone in Settings. From the 4th tap a toast counts down. */
+#define EGG_TAPS   7
+#define EGG_GAP_MS 1500         /* a longer pause starts the count again */
+
+static void egg_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+    static int taps;
+    static uint32_t last;
+    uint32_t now = hal_millis();
+    taps = taps && now - last < EGG_GAP_MS ? taps + 1 : 1;
+    last = now;
+    if (g_model.settings.fun_zone) {
+        if (taps >= 4) ui_toast("The Fun Zone is already on, in Settings");
+    } else if (taps >= EGG_TAPS) {
+        taps = 0;
+        ui_fun_zone_unlock();
+    } else if (taps >= 4) {
+        ui_toast("%d more tap%s", EGG_TAPS - taps, EGG_TAPS - taps == 1 ? "" : "s");
+    }
+}
+
 static void about_build(lv_obj_t *root, int arg)
 {
     LV_UNUSED(arg);
@@ -803,7 +880,8 @@ static void about_build(lv_obj_t *root, int arg)
     hal_battery_t b = *app_battery();
     const radio_status_t *r = radio_status();
     char buf[48];
-    w_list_row(col, NULL, "Firmware", hal_fw_version(), NULL);
+    lv_obj_t *fw = w_list_row(col, NULL, "Firmware", hal_fw_version(), NULL);
+    lv_obj_add_event_cb(fw, egg_cb, LV_EVENT_CLICKED, NULL);
     w_list_row(col, NULL, "Remote ID", hal_device_id(), NULL);   /* matches its entry in HA's refresh tokens */
     snprintf(buf, sizeof(buf), "%u mV · %d%%", b.millivolts, b.percent);
     w_list_row(col, NULL, "Battery", buf, NULL);

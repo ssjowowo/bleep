@@ -22,6 +22,10 @@ typedef enum {
     HA_DOMAIN_COUNT
 } ha_domain_t;
 
+/* entity_category in HA's entity registry: config and diagnostic entities
+ * belong to a device's settings page, not a dashboard */
+enum { HA_CAT_NONE, HA_CAT_CONFIG, HA_CAT_DIAGNOSTIC };
+
 /* light features */
 enum { LIGHT_DIM = 1, LIGHT_CT = 2, LIGHT_RGB = 4 };
 
@@ -29,7 +33,9 @@ typedef struct {
     const char *id;             /* entity_id */
     char name[28];
     ha_domain_t domain;
-    uint8_t room;
+    int16_t area;               /* index for ha_area_*(), -1 = in no area */
+    uint8_t category;           /* HA_CAT_*: HA's entity_category */
+    bool hidden;                /* hidden in HA (hidden_by): its dashboards leave it out */
     const char *icon;           /* NULL = domain icon */
     uint32_t features;
     bool on;                    /* on / open / locked / playing / home / active */
@@ -53,9 +59,14 @@ typedef struct {
 
 typedef enum { HA_OFFLINE, HA_CONNECTING, HA_CONNECTED, HA_SIGNED_OUT } ha_link_t;
 
-/* Rooms are HA's areas: none until the remote has signed in once */
-int ha_room_count(void);
-const char *ha_room_name(int idx);
+/* HA's areas (config/area_registry/list), with the entities' areas and
+ * flags from config/entity_registry/list_for_display (an entity without an
+ * area of its own takes its device's). None until the remote has signed in
+ * once. The Home tab's rooms are built from them (app/home.c). */
+int ha_area_count(void);
+const char *ha_area_id(int idx);        /* area_id: stays when the area is renamed */
+const char *ha_area_name(int idx);      /* "" for -1 */
+int ha_area_find(const char *area_id);  /* -1 if HA has no such area */
 
 void ha_init(void);
 void ha_tick(void);                     /* call every second */
@@ -133,6 +144,18 @@ void ha_login_cancel(void);
 /* Forget the refresh token (and revoke it on the server if it's reachable) */
 void ha_sign_out(void);
 void ha_signed_in(void);        /* after OK and the settings are updated: connect */
+
+/* ---- The remote itself in Home Assistant (app/bridge.c decides when) ----
+ * Both need the signed-in user to be an HA administrator. */
+
+/* WebSocket fire_event: automations trigger on it (event type "bleep_key") */
+void ha_fire_event(const char *type, const char *data_json);
+
+/* One of the remote's own entities, POST /api/states/<entity_id> (REST, the
+ * same access token). Such entities aren't in HA's entity registry (no unique
+ * id, so they can't be renamed in the UI) and HA forgets them on a restart
+ * until the next report. A custom integration can do better later. */
+void ha_set_state(const char *entity_id, const char *state, const char *attributes_json);
 
 /* Service calls. Each one updates the entity and fires EV_HA. */
 void ha_toggle(int idx);

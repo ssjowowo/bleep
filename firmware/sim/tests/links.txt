@@ -32,11 +32,11 @@ wait 1500
 reach wifi off
 click Home
 wait 4000
-expect can't join Wi-Fi, retrying
+expect No Wi-Fi, retrying
 shot 73_wifi_retry
 reach wifi on
 wait 6000
-expect-no can't join Wi-Fi
+expect-no No Wi-Fi
 expect-log wifi: connected
 # Lost while connected: it reconnects at once
 mark

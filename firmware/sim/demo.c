@@ -43,11 +43,11 @@ void demo_fill(const char **wifi_pass)
 
     /* 0: TV over IR */
     device_t *tv = model_add_device("Living room TV", DEV_TV);
-    ir_library_fill(tv, &ir_brands[0], 0);
+    ir_library_fill(tv, &ir_brands[ir_brand_find("LG", DEV_TV)], 0);
 
     /* 1: AV receiver over IR */
     device_t *avr = model_add_device("AV receiver", DEV_AVR);
-    ir_library_fill(avr, &ir_brands[7], 0);
+    ir_library_fill(avr, &ir_brands[ir_brand_find("Denon", DEV_AVR)], 0);
 
     /* 2: Shield over BLE; HA's Android TV integration feeds Now playing */
     device_t *shield = model_add_device("Shield TV", DEV_STREAMER);
@@ -59,7 +59,7 @@ void demo_fill(const char **wifi_pass)
     model_set_ble(gtv, "F4:F5:D8:02:7C:30");
     {
         device_t tmp = {0};
-        ir_library_fill(&tmp, &ir_brands[1], 0);
+        ir_library_fill(&tmp, &ir_brands[ir_brand_find("Samsung", DEV_TV)], 0);
         static const fn_t over_ir[] = {FN_POWER, FN_POWER_ON, FN_POWER_OFF, FN_VOL_UP, FN_VOL_DOWN, FN_MUTE};
         for (unsigned i = 0; i < sizeof(over_ir) / sizeof(over_ir[0]); i++) gtv->fn[over_ir[i]] = tmp.fn[over_ir[i]];
         gtv->transports |= TR_IR;
@@ -104,5 +104,34 @@ void demo_fill(const char **wifi_pass)
     snprintf(r->name, sizeof(r->name), "Louder");
     r->icon = AICON_SOUND;
     r->steps[r->n_steps++] = (rstep_t){.kind = RS_DEVICE, .target = 1, .fn = FN_VOL_UP, .repeat = 5};
+
+    /* The Home tab: each area's cards in the design's order, with what a room
+     * leaves out by itself added at the end (sensors, people, helpers, info),
+     * so every card in the design shows somewhere */
+    static const struct {
+        const char *area;
+        const char *ids[16];
+    } rooms[] = {
+        {"living_room", {"light.ceiling", "light.floor_lamp", "climate.living", "scene.movie", "scene.bright",
+                         "scene.living_off", "light.led_strip", "media_player.shield", "remote.shield",
+                         "cover.living_blinds", "media_player.apple_tv", "media_player.kodi", "media_player.sonos",
+                         "sensor.living_temp", "sensor.tv_outlet"}},
+        {"kitchen", {"switch.coffee", "light.kitchen_strip", "button.doorbell_chime", "water_heater.boiler",
+                     "vacuum.downstairs", "sensor.air_quality", "counter.coffees", "timer.pizza", "todo.shopping"}},
+        {"bedroom", {"fan.ceiling", "humidifier.bedroom", "light.bedside", "automation.morning_lights",
+                     "script.goodnight", "calendar.family"}},
+        {"hallway", {"lock.front_door", "alarm_control_panel.home", "siren.hall", "binary_sensor.front_door",
+                     "binary_sensor.hall_motion", "sensor.door_battery", "camera.front_porch", "event.doorbell",
+                     "person.sam", "person.alex", "input_boolean.guest_mode", "input_number.dim_level",
+                     "input_select.house_mode", "input_text.message", "update.remote_firmware",
+                     "notify.washing_machine"}},
+        {"garden", {"valve.garden", "lawn_mower.garden", "weather.home", "sun.sun"}},
+    };
+    home_layout_t *h = &g_model.home;
+    for (unsigned i = 0; i < sizeof(rooms) / sizeof(rooms[0]); i++) {
+        home_room_t *hr = &h->rooms[h->n_rooms++];
+        snprintf(hr->area, sizeof(hr->area), "%s", rooms[i].area);
+        for (int k = 0; k < 16 && rooms[i].ids[k]; k++) hr->items[hr->n_items++] = model_home_id(rooms[i].ids[k]);
+    }
 
 }

@@ -1,0 +1,33 @@
+# Nightstand: idle on USB, a big clock, the date and Home Assistant's weather
+click Start
+wait 300
+usb on
+wait 300
+expect Charging · USB-C
+# idle: the dim screen is the nightstand clock; Wi-Fi stays on for the weather
+wait 9000
+expect 21:4
+expect Thursday 8 October
+expect 14° · Cloudy · H 17° · L 9°
+expect Charging · 82%
+expect-log wifi: connected
+shot 83_nightstand
+# it stays up all night: no screen off while on USB
+wait 120000
+expect Thursday 8 October
+# a tap wakes the remote; unplugged, it's the normal lock screen when idle
+tap 160 240
+wait 300
+expect-no Thursday 8 October
+usb off
+wait 9500
+expect Pick up or press any key
+expect-no 14° · Cloudy
+# the setting
+key OK
+wait 300
+tap 280 450
+wait 300
+click Display & haptics
+wait 300
+expect Nightstand clock

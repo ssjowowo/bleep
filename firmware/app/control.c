@@ -110,6 +110,53 @@ static void code_up(int dev, fn_t fn, int owner)
     }
 }
 
+/* ---- typing ---- */
+
+bool device_can_type(int dev)
+{
+    return dev >= 0 && dev < g_model.n_devices && (g_model.devices[dev].transports & TR_BLE) &&
+           g_model.devices[dev].ble_host[0];
+}
+
+/* A printable ASCII character as a US-layout keyboard usage, shifted or not */
+static bool ascii_usage(char c, uint8_t *usage, bool *shift)
+{
+    static const char plain[] = "-=[]\\;'`,./", shifted[] = "_+{}|:\"~<>?";
+    static const uint8_t sym[] = {0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38};
+    *shift = false;
+    if (c >= 'a' && c <= 'z') return *usage = 0x04 + (c - 'a'), true;
+    if (c >= 'A' && c <= 'Z') return *usage = 0x04 + (c - 'A'), *shift = true, true;
+    if (c >= '1' && c <= '9') return *usage = 0x1E + (c - '1'), true;
+    if (c == '0') return *usage = 0x27, true;
+    if (c == ' ') return *usage = 0x2C, true;
+    const char *p = strchr("!@#$%^&*()", c);
+    if (p && c) return *usage = p - "!@#$%^&*()" == 9 ? 0x27 : 0x1E + (p - "!@#$%^&*()"), *shift = true, true;
+    for (int i = 0; i < (int)sizeof(sym); i++) {
+        if (c == plain[i]) return *usage = sym[i], true;
+        if (c == shifted[i]) return *usage = sym[i], *shift = true, true;
+    }
+    return false;
+}
+
+int device_type(int dev, const char *text)
+{
+    if (!device_can_type(dev)) return 0;
+    int n = 0;
+    for (const char *p = text; *p; p++) {
+        uint8_t usage;
+        bool shift;
+        if ((*p & 0x80) || !ascii_usage(*p, &usage, &shift)) continue;
+        radio_ble_type(dev, usage, shift ? HID_MOD_SHIFT : 0);
+        n++;
+    }
+    return n;
+}
+
+void device_type_key(int dev, uint8_t usage)
+{
+    if (device_can_type(dev)) radio_ble_type(dev, usage, 0);
+}
+
 void ir_send_once(const code_t *c)
 {
     hal_ir_start(c->proto, c->a, c->b);
@@ -255,11 +302,66 @@ static void add_power_off(int dev)
     else if (d->fn[FN_POWER].transport && d->on) add_step(dev, FN_POWER, 200);
 }
 
+/* Devices that are already on aren't switched again (a Power toggle would turn them off) */
+static void add_start_steps(const activity_t *a)
+{
+    for (int i = 0; i < a->n_start; i++) {
+        const step_t *s = &a->start[i];
+        bool is_power = s->fn == FN_POWER || s->fn == FN_POWER_ON;
+        if (is_power && g_model.devices[s->dev].on) continue;
+        add_step(s->dev, s->fn, s->delay_ms);
+    }
+}
+
+/* ---- sleep timer ---- */
+
+static int64_t sleep_at;
+
+int64_t sleep_timer_at(void) { return sleep_at; }
+void sleep_timer_restore(int64_t at) { sleep_at = at; }
+
+void sleep_timer_set(int minutes)
+{
+    sleep_at = minutes > 0 && g_model.running >= 0 ? hal_time() + minutes * 60 : 0;
+    if (sleep_at) hal_log("sleep timer: %s ends in %d min", g_model.activities[g_model.running].name, minutes);
+    else hal_log("sleep timer: off");
+    app_notify(EV_ACTIVITY, g_model.running);
+}
+
+int sleep_timer_left_min(void)
+{
+    if (!sleep_at) return 0;
+    int64_t s = sleep_at - hal_time();
+    return s <= 0 ? 1 : (int)((s + 59) / 60);
+}
+
+void sleep_timer_tick(void)
+{
+    if (!sleep_at || hal_time() < sleep_at) return;
+    sleep_at = 0;
+    if (g_model.running < 0) return;
+    hal_log("sleep timer: ending %s", g_model.activities[g_model.running].name);
+    activity_end();
+}
+
+void activity_test(const activity_t *draft)
+{
+    static activity_t a;
+    a = *draft;
+    model_activity_rebuild(&a);   /* the steps from its devices as they are now */
+    seq_n = seq_i = 0;
+    add_start_steps(&a);
+    hal_log("activity: test %s, %d step(s)", a.name, seq_n);
+    seq_next = hal_millis();
+    app_notify(EV_ACTIVITY, g_model.running);
+}
+
 void activity_start(int idx)
 {
     if (idx < 0 || idx >= g_model.n_activities) return;
     activity_t *a = &g_model.activities[idx];
     seq_n = seq_i = 0;
+    if (idx != g_model.running) sleep_at = 0;   /* the timer was for the one that's ending */
     g_model.active_dev = -1;   /* the activity takes the keys */
 
     if (a->all_off) {
@@ -275,12 +377,7 @@ void activity_start(int idx)
             for (int i = 0; i < old->n_devices; i++)
                 if (!in_activity(a, old->devices[i])) add_power_off(old->devices[i]);
         }
-        for (int i = 0; i < a->n_start; i++) {
-            const step_t *s = &a->start[i];
-            bool is_power = s->fn == FN_POWER || s->fn == FN_POWER_ON;
-            if (is_power && g_model.devices[s->dev].on) continue;
-            add_step(s->dev, s->fn, s->delay_ms);
-        }
+        add_start_steps(a);
         g_model.running = idx;
         g_model.last_activity = idx;
     }
@@ -294,6 +391,7 @@ void activity_end(void)
     if (g_model.running < 0) return;
     const activity_t *a = &g_model.activities[g_model.running];
     hal_log("activity: end %s", a->name);
+    sleep_at = 0;
     seq_n = seq_i = 0;
     for (int i = 0; i < a->n_devices; i++) add_power_off(a->devices[i]);
     seq_next = hal_millis();

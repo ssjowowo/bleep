@@ -4,7 +4,7 @@
 #include <string.h>
 #include "ui/icons.h"
 
-HAL_PSRAM model_t g_model;   /* ~30 KB: PSRAM on the remote */
+HAL_PSRAM model_t g_model;   /* ~45 KB: PSRAM on the remote */
 
 static const char *const fn_names[FN_COUNT] = {
     [FN_NONE] = "none",
@@ -18,6 +18,7 @@ static const char *const fn_names[FN_COUNT] = {
     [FN_DIGIT_0] = "0", [FN_DIGIT_1] = "1", [FN_DIGIT_2] = "2", [FN_DIGIT_3] = "3", [FN_DIGIT_4] = "4",
     [FN_DIGIT_5] = "5", [FN_DIGIT_6] = "6", [FN_DIGIT_7] = "7", [FN_DIGIT_8] = "8", [FN_DIGIT_9] = "9",
     [FN_SUBTITLES] = "Subtitles", [FN_AUDIO] = "Audio", [FN_INFO] = "Info",
+    [FN_SOURCE] = "Source", [FN_CH_UP] = "Channel +", [FN_CH_DOWN] = "Channel −",
 };
 
 const char *fn_name(fn_t fn)
@@ -120,6 +121,47 @@ void model_set_ha(device_t *d, const char *entity)
         d->fn[fns[i]] = (code_t){TR_HA, 0, 0, fns[i]};
     d->transports |= TR_HA;
     snprintf(d->ha_entity, sizeof(d->ha_entity), "%s", entity);
+}
+
+/* ---- the Home tab's layout ---- */
+
+/* Drop the entities no room names and whose card the user hasn't changed,
+ * and renumber the rooms' references */
+static void home_compact(void)
+{
+    home_layout_t *h = &g_model.home;
+    uint8_t used[MAX_HOME_IDS] = {0}, to[MAX_HOME_IDS];
+    for (int r = 0; r < h->n_rooms; r++) {
+        for (int i = 0; i < h->rooms[r].n_items; i++) used[h->rooms[r].items[i]] = 1;
+        for (int i = 0; i < h->rooms[r].n_hide; i++) used[h->rooms[r].hide[i]] = 1;
+    }
+    int n = 0;
+    for (int i = 0; i < h->n_ents; i++) {
+        const home_ent_t *e = &h->ents[i];
+        if (!used[i] && !e->name[0] && !e->icon && !e->size) continue;
+        to[i] = n;
+        if (n != i) h->ents[n] = h->ents[i];
+        n++;
+    }
+    h->n_ents = n;
+    for (int r = 0; r < h->n_rooms; r++) {
+        for (int i = 0; i < h->rooms[r].n_items; i++) h->rooms[r].items[i] = to[h->rooms[r].items[i]];
+        for (int i = 0; i < h->rooms[r].n_hide; i++) h->rooms[r].hide[i] = to[h->rooms[r].hide[i]];
+    }
+}
+
+int model_home_id(const char *entity_id)
+{
+    home_layout_t *h = &g_model.home;
+    if (!entity_id[0] || strlen(entity_id) >= HA_ID_LEN) return -1;
+    for (int i = 0; i < h->n_ents; i++)
+        if (!strcmp(h->ents[i].id, entity_id)) return i;
+    if (h->n_ents >= MAX_HOME_IDS) home_compact();
+    if (h->n_ents >= MAX_HOME_IDS) return -1;
+    home_ent_t *e = &h->ents[h->n_ents];
+    memset(e, 0, sizeof(*e));
+    snprintf(e->id, HA_ID_LEN, "%s", entity_id);
+    return h->n_ents++;
 }
 
 
@@ -349,6 +391,10 @@ void model_init_defaults(void)
     s->auto_brightness = true;
     s->brightness = 70;
     s->wake_on_lift = true;
+    s->wake_on_tap = true;
+    s->face_down_pause = true;
+    s->nightstand = true;
+    s->ha_battery = true;
     s->haptics = 2;
     s->dim_after_s = 8;
     s->sleep_after_s = 30;
@@ -356,4 +402,45 @@ void model_init_defaults(void)
     s->fw_auto_check = true;
     s->layout_activities = LAYOUT_GRID;
     s->layout_devices = LAYOUT_LIST;
+}
+
+void ir_library_fill(device_t *d, const ir_brand_t *brand, int set)
+{
+    for (int f = 0; f < FN_COUNT; f++)
+        if (d->fn[f].transport == TR_IR) d->fn[f] = (code_t){0};
+    const ir_lib_set_t *s = &ir_lib_sets[brand->first + (set < brand->sets ? set : 0)];
+    for (int i = 0; i < s->n; i++) {
+        const ir_lib_code_t *c = &ir_lib_codes[s->first + i];
+        d->fn[c->fn] = (code_t){TR_IR, c->proto, c->a, c->b};
+    }
+    d->inputs = 0;   /* HDMI 1 to n, in a row */
+    while (d->inputs < 4 && d->fn[FN_INPUT_1 + d->inputs].transport) d->inputs++;
+    d->transports |= TR_IR;
+    snprintf(d->ir_source, sizeof(d->ir_source), "%s · code set %d", brand->brand, set + 1);
+}
+
+int ir_brand_find(const char *brand, dev_kind_t kind)
+{
+    for (int i = 0; i < ir_brand_count; i++)
+        if (ir_brands[i].kind == kind && !strcmp(ir_brands[i].brand, brand)) return i;
+    return -1;
+}
+
+int ir_library_match(uint8_t proto, uint32_t addr, uint32_t cmd, int *brand, int *set)
+{
+    static device_t d;   /* ~600 bytes: not on the stack */
+    int best = 0;
+    for (int b = 0; b < ir_brand_count; b++)
+        for (int s = 0; s < ir_brands[b].sets; s++) {
+            memset(&d, 0, sizeof(d));
+            ir_library_fill(&d, &ir_brands[b], s);
+            for (int f = 0; f < FN_COUNT; f++) {
+                const code_t *c = &d.fn[f];
+                if (c->transport != TR_IR || c->proto != proto || c->a != addr) continue;
+                /* exact on Power beats exact elsewhere beats the same address */
+                int score = c->b != cmd ? 1 : (f == FN_POWER || f == FN_POWER_ON || f == FN_POWER_OFF) ? 4 : 3;
+                if (score > best) best = score, *brand = b, *set = s;
+            }
+        }
+    return best >= 3 ? 2 : best;
 }

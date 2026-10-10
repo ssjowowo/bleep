@@ -1,0 +1,80 @@
+{
+ "version": 1,
+ "settings": {
+  "theme": "dark",
+  "auto_brightness": true,
+  "brightness": 70,
+  "wake_on_lift": true,
+  "wake_on_tap": true,
+  "face_down_pause": true,
+  "nightstand": true,
+  "ha_battery": true,
+  "ha_key_events": false,
+  "bright_learn": [
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "fun_zone": false,
+  "snake_best": 0,
+  "blocks_best": 0,
+  "haptics": 2,
+  "dim_after_s": 8,
+  "sleep_after_s": 30,
+  "deep_after_s": 120,
+  "battery_saver": false,
+  "wifi_ssid": "Home-5G",
+  "ha_url": "http://homeassistant.local:8123",
+  "ha_user": "Sam",
+  "fw_auto_check": true,
+  "fw_checked": 1791495602,
+  "layout_activities": "grid",
+  "layout_devices": "list"
+ },
+ "devices": [],
+ "activities": [],
+ "routines": [],
+ "home": {
+  "rooms": [
+   {
+    "area": "kitchen",
+    "items": [
+     "light.kitchen_strip",
+     "water_heater.boiler",
+     "switch.coffee",
+     "vacuum.downstairs",
+     "button.doorbell_chime",
+     "light.porch"
+    ]
+   },
+   {
+    "area": "living_room"
+   },
+   {
+    "area": "bedroom"
+   },
+   {
+    "area": "hallway",
+    "hide": [
+     "siren.hall"
+    ]
+   },
+   {
+    "area": "garden",
+    "hidden": true
+   },
+   {
+    "area": "garage"
+   }
+  ],
+  "entities": {
+   "switch.coffee": {
+    "name": "Espresso",
+    "icon": "Power",
+    "size": "compact"
+   }
+  }
+ }
+}
