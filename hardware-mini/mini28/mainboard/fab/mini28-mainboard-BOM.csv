@@ -1,0 +1,51 @@
+References,Value,Footprint,Source (JLC/LCSC C-number or AliExpress item),Qty per board,Side,Who / how,Link
+C1,22uF,C_0805_2012Metric,C45783,1,top,"top, JLC",https://www.lcsc.com/product-detail/C45783.html
+C2 C9 C13 C20 C21,100nF X7R 50V,C_0603_1608Metric,C14663,5,top,"top, JLC",https://www.lcsc.com/product-detail/C14663.html
+C3 C4 C7 C8 C17 C18 C19,1uF X5R 50V,C_0603_1608Metric,C15849,7,top,"top, JLC",https://www.lcsc.com/product-detail/C15849.html
+C5 C11 C12 C14 C16,10uF X5R 25V,C_0805_2012Metric,C15850,5,top,"top, JLC",https://www.lcsc.com/product-detail/C15850.html
+C6,10uF,C_0603_1608Metric,C19702,1,top,"top, JLC",https://www.lcsc.com/product-detail/C19702.html
+C25 C26,8.2pF C0G,C_0603_1608Metric,C1685,2,top,"top, JLC",https://www.lcsc.com/product-detail/C1685.html
+D1 D2,VSMB2948SL,VSMB2948SL_SideView,C6604342,2,top,"top, JLC (lens to the top edge)",https://www.lcsc.com/product-detail/C6604342.html
+D3,B5819W,D_SOD-123,C64885,1,top,"top, JLC (cathode bar = silk line)",https://www.lcsc.com/product-detail/C64885.html
+D4,SMF5.0A,D_SOD-123F,C19077497,1,top,"top, JLC (cathode bar = silk line, to VBUS)",https://www.lcsc.com/product-detail/C19077497.html
+J1,FH34SRJ-50S-0.5SH(50),Hirose_FH34SRJ-50S-0.5SH,C3169104,1,top,"top, JLC",https://www.lcsc.com/product-detail/C3169104.html
+J2,FH34SRJ-6S-0.5SH(50),Hirose_FH34SRJ-6S-0.5SH,C224194,1,top,"top, JLC",https://www.lcsc.com/product-detail/C224194.html
+J3,TYPE-C 16PIN 2MD(073),USB_C_Receptacle_HRO_TYPE-C-31-M-12,C2765186,1,top,"top, JLC; shell legs (plated slots): JLC hand-solders them per the order remark, or iron them yourself",https://www.lcsc.com/product-detail/C2765186.html
+J4,PicoBlade 53261-0271,Molex_PicoBlade_53261-0271_1x02-1MP_P1.25mm_Horizontal,C177225,1,bottom,"underside, iron",https://www.lcsc.com/product-detail/C177225.html
+M1,8 mm coin motor (wired),LRA_8mm_WirePads,AliExpress: 1005007600971536 (8x2.7mm),1,bottom,"underside: stick on, solder its wires",https://www.aliexpress.com/item/1005007600971536.html
+Q1 Q2,AO3400A,SOT-23,C20917,2,top,"top, JLC",https://www.lcsc.com/product-detail/C20917.html
+Q3,AO3401A,SOT-23,C15127,1,top,"top, JLC",https://www.lcsc.com/product-detail/C15127.html
+Q4,AO3401A,SOT-23,C15127,1,bottom,"underside, iron (next to J4)",https://www.lcsc.com/product-detail/C15127.html
+R1 R10 R18,10k,R_0603_1608Metric,C25804,3,top,"top, JLC",https://www.lcsc.com/product-detail/C25804.html
+R2 R3,22R 1206,R_1206_3216Metric,C17958,2,top,"top, JLC (IR bursts: 0.18 W avg, 0.54 W peak)",https://www.lcsc.com/product-detail/C17958.html
+R4 R8 R15,100R,R_0603_1608Metric,C22775,3,top,"top, JLC",https://www.lcsc.com/product-detail/C22775.html
+R5 R9 R11 R14 R26,100k,R_0603_1608Metric,C25803,5,top,"top, JLC",https://www.lcsc.com/product-detail/C25803.html
+R6 R7,5.1k,R_0603_1608Metric,C23186,2,top,"top, JLC",https://www.lcsc.com/product-detail/C23186.html
+R12 R13,4.7k,R_0603_1608Metric,C23162,2,top,"top, JLC",https://www.lcsc.com/product-detail/C23162.html
+R16,2.4k (PROG 500 mA),R_0603_1608Metric,C22940,1,top,"top, JLC",https://www.lcsc.com/product-detail/C22940.html
+R17,10M DNP,R_0603_1608Metric,C114606,1,top,"top, DO NOT FIT (footprint only)",https://www.lcsc.com/product-detail/C114606.html
+R19,220R,R_0603_1608Metric,C22962,1,top,"top, JLC",https://www.lcsc.com/product-detail/C22962.html
+R20 R21 R22 R23,56R,R_0603_1608Metric,C25196,4,top,"top, JLC",https://www.lcsc.com/product-detail/C25196.html
+R24,10k,R_0603_1608Metric,C98220,1,bottom,"underside, iron (next to J4)",https://www.lcsc.com/product-detail/C98220.html
+SW1 SW2 SW3 SW4 SW5 SW6 SW7 SW8 SW9 SW10 SW11 SW12 SW13 SW14,TS-1187A-B-A-B,SW_Push_1P1T_XKB_TS-1187A,C318884,14,top,"top, JLC",https://www.lcsc.com/product-detail/C318884.html
+U1,ESP32-S3-WROOM-1-N8R2,ESP32-S3-WROOM-1,C2913204,1,bottom,"underside, iron + EPAD through the 4 holes",https://www.lcsc.com/product-detail/C2913204.html
+U2,ME6211C33M5G-N,SOT-23-5,C82942,1,top,"top, JLC",https://www.lcsc.com/product-detail/C82942.html
+U3,DRV2605LDGST,MSOP-10_3x3mm_P0.5mm,C425927,1,top,"top, JLC",https://www.lcsc.com/product-detail/C425927.html
+U4,MMA8452QR1,MMA8452Q_QFN-16_3x3mm_P0.5mm,C11360,1,top,"top, JLC (QFN)",https://www.lcsc.com/product-detail/C11360.html
+U5,TP4056-42-ESOP8,SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.41x3.3mm,C16581,1,top,"top, JLC (EP needs paste)",https://www.lcsc.com/product-detail/C16581.html
+U6,IRM-H638T/TR2,IRM-H638T,C91447,1,top,"top, JLC",https://www.lcsc.com/product-detail/C91447.html
+U7,LTR-303ALS-01,LTR-303ALS-01,C364577,1,top,"top, JLC (DFN)",https://www.lcsc.com/product-detail/C364577.html
+U8,MAX17048G+T10,MAX17048_TDFN-8_2x2mm,C2682616,1,top,"top, JLC (DFN + EP)",https://www.lcsc.com/product-detail/C2682616.html
+U9,MSM261DHT006,MSM261DHT006_LGA-8_3x4mm,C51928215,1,top,"top, JLC (no washing, don't cover the port)",https://www.lcsc.com/product-detail/C51928215.html
+U10,USBLC6-2SC6,SOT-23-6,C7519,1,top,"top, JLC (pin-1 dot)",https://www.lcsc.com/product-detail/C7519.html
+Y1,FC-135 32.768kHz 6pF,Crystal_SMD_3215-2Pin_3.2x1.5mm,C20340322,1,top,"top, JLC",https://www.lcsc.com/product-detail/C20340322.html
+(display),"ER-TFT028A2-4 IPS 2.8"" (ILI9341) + ER-TPC028-4.1 CTP (FT6206)",-,buydisplay.com: ER-TFT028A2-4 with the ER-TPC028-4.1 CTP option (AliExpress 1005005309636436 only as a fallback: its photos show the ER-TFTM028-4 module; confirm with the seller),1,-,"plugs into J1 + J2; buy first, fold mock-up before ordering boards",https://www.aliexpress.com/item/1005005309636436.html
+(battery),"Ampul AM7240 Li-Pol 484251 4.8x42x51 mm 1500 mAh, protected",-,ampul.eu: 4060-li-pol-battery-1500mah-37v-484251,1,-,bare leads: crimp the plug below,https://ampul.eu/en/battery/4060-li-pol-battery-1500mah-37v-484251
+(battery plug),Molex PicoBlade 51021-0200 housing,-,C293613,1,-,,https://www.lcsc.com/product-detail/C293613.html
+(battery plug),Molex PicoBlade crimp 50079-8100 (26-28 AWG) or 50058-8000 (28-32 AWG),-,C587850 / C293573,2,-,pick by the measured lead gauge,https://www.lcsc.com/product-detail/C587850.html https://www.lcsc.com/product-detail/C293573.html
+(mic gasket),foam ring OD 2.2 / ID 1.4 punched from 1 mm double-sided foam tape,-,"AliExpress: 1005007483857645 (10 mm, as v1)",1,-,also the panel's foam pads,https://www.aliexpress.com/item/1005007483857645.html
+(screws),M2 x 4 pan head (board + deck -> posts),-,C357393,3,-,with a washer under each head,https://www.lcsc.com/product-detail/C357393.html
+(washers),"M2 flat washer DIN 125 A / ISO 7089, Ø5 x 0.3, A2",-,"AliExpress: 32812536491 (pick M2, 304 stainless, 100 pcs); EU alternative: 3DJake https://www.3djake.com/cnc-kitchen/standard-washer-din-125-stainless-steel-a2?sai=30454",3,-,"under the 3 board-screw heads, on the deck (its holes are 2.4 mm)",https://www.aliexpress.com/item/32812536491.html https://www.3djake.com/cnc-kitchen/standard-washer-din-125-stainless-steel-a2?sai=30454
+(screws),M2 x 8 pan head (back plate),-,"AliExpress: 1005005581270091 (M2, 8 mm)",2,-,,https://www.aliexpress.com/item/1005005581270091.html
+(inserts),"M2 x 3 x 3.2 knurled brass heat-set insert (M2 thread, L 3.0, OD 3.2)",-,"C51938879 (LCSC: XHHD SZTB1063 double-knurled heat-set insert; AliExpress backup 1005008666672949, pick M2x3x3.2)",5,-,holes in the shell are 3.0 x 4.0 deep for OD 3.2,https://www.lcsc.com/product-detail/C51938879.html https://www.aliexpress.com/item/1005008666672949.html
+(tape),"Kapton tape 10-20 mm (cell pull tab, screw heads next to the cell)",-,C92418 (10 mm x 33 m roll; 20 mm: C92419),1,-,,https://www.lcsc.com/product-detail/C92418.html https://www.lcsc.com/product-detail/C92419.html

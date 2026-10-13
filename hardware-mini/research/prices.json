@@ -1,0 +1,8256 @@
+{
+ "fetched": "2026-10-11",
+ "generator": "tools/prices.py (see its docstring for sources and how to refresh)",
+ "fx": {
+  "USD_EUR": 0.892379,
+  "EUR_USD": 1.1206,
+  "source": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
+  "date": "2026-10-09"
+ },
+ "lcsc": {
+  "C1679": {
+   "mpn": "0603CG6R8C500NT",
+   "brand": "FH",
+   "description": "6.8pF 50V Ceramic Capacitor C0G 0603",
+   "package": "0603",
+   "category": "Ceramic Capacitors",
+   "stock": 110288,
+   "moq": 1,
+   "multiple": 1,
+   "price_breaks": [
+    [
+     1,
+     0.003
+    ],
+    [
+     10,
+     0.0026
+    ],
+    [
+     30,
+     0.0024
+    ],
+    [
+     100,
+     0.0022
+    ],
+    [
+     500,
+     0.0021
+    ],
+    [
+     1000,
+     0.002
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.035,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C1679.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C1679",
+   "used_in": {
+    "mini24": {
+     "refs": [
+      "C19",
+      "C20"
+     ],
+     "qty_per_board": 0,
+     "on_board": true,
+     "role": "alternative (note column)",
+     "value": "8.2pF C0G"
+    }
+   }
+  },
+  "C1685": {
+   "mpn": "0603CG8R2C500NT",
+   "brand": "FH",
+   "description": "8.2pF 50V Ceramic Capacitor C0G 0603",
+   "package": "0603",
+   "category": "Ceramic Capacitors",
+   "stock": 62700,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0058
+    ],
+    [
+     1000,
+     0.0046
+    ],
+    [
+     4000,
+     0.0038
+    ],
+    [
+     8000,
+     0.0034
+    ],
+    [
+     48000,
+     0.0031
+    ],
+    [
+     100000,
+     0.0029
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.037,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C1685.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C1685",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "C25",
+      "C26"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "8.2pF C0G",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "C19",
+      "C20"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "8.2pF C0G",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C7519": {
+   "mpn": "USBLC6-2SC6",
+   "brand": "ST",
+   "description": "17VC Clamp 5A Ipp ESD DIODE SOT-23-6L",
+   "package": "SOT-23-6L",
+   "category": "TVS Diodes",
+   "stock": 31535,
+   "moq": 5,
+   "multiple": 5,
+   "price_breaks": [
+    [
+     5,
+     0.1786
+    ],
+    [
+     50,
+     0.1375
+    ],
+    [
+     150,
+     0.1174
+    ],
+    [
+     500,
+     0.0995
+    ],
+    [
+     3000,
+     0.0946
+    ],
+    [
+     6000,
+     0.0916
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.061,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C7519.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C7519",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "U10"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "USBLC6-2SC6",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C8598": {
+   "mpn": "B5819W SL",
+   "brand": "JSCJ",
+   "description": "Diode 40V 1A Surface Mount SOD-123",
+   "package": "SOD-123",
+   "category": "Single Diodes",
+   "stock": 3000,
+   "moq": 20,
+   "multiple": 20,
+   "price_breaks": [
+    [
+     20,
+     0.0283
+    ],
+    [
+     200,
+     0.0221
+    ],
+    [
+     600,
+     0.0194
+    ],
+    [
+     3000,
+     0.0173
+    ],
+    [
+     9000,
+     0.0165
+    ],
+    [
+     21000,
+     0.016
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.039,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C8598.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C8598",
+   "used_in": {
+    "mini24": {
+     "refs": [
+      "D3"
+     ],
+     "qty_per_board": 0,
+     "on_board": true,
+     "role": "alternative (note column)",
+     "value": "B5819W"
+    }
+   }
+  },
+  "C11360": {
+   "mpn": "MMA8452QR1",
+   "brand": "NXP",
+   "description": "I2C QFN-16(3x3) Accelerometers RoHS",
+   "package": "QFN-16(3x3)",
+   "category": "Accelerometers",
+   "stock": 2329,
+   "moq": 1,
+   "multiple": 1,
+   "price_breaks": [
+    [
+     1,
+     3.1449
+    ],
+    [
+     10,
+     2.6861
+    ],
+    [
+     30,
+     2.3976
+    ],
+    [
+     100,
+     2.1043
+    ],
+    [
+     500,
+     1.6962
+    ],
+    [
+     1000,
+     1.6389
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.125,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C11360.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C11360",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "U4"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "MMA8452QR1",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "U4"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "MMA8452QR1",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C14663": {
+   "mpn": "CC0603KRX7R9BB104",
+   "brand": "YAGEO",
+   "description": "100nF ±10% 50V Ceramic Capacitor X7R 0603",
+   "package": "0603",
+   "category": "Ceramic Capacitors",
+   "stock": 4000,
+   "moq": 50,
+   "multiple": 50,
+   "price_breaks": [
+    [
+     50,
+     0.0141
+    ],
+    [
+     500,
+     0.0107
+    ],
+    [
+     1500,
+     0.0091
+    ],
+    [
+     4000,
+     0.0076
+    ],
+    [
+     24000,
+     0.0072
+    ],
+    [
+     48000,
+     0.0069
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.036,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C14663.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C14663",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "C2",
+      "C9",
+      "C13",
+      "C20",
+      "C21"
+     ],
+     "qty_per_board": 5,
+     "on_board": true,
+     "role": "bom",
+     "value": "100nF X7R 50V",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "C2",
+      "C9",
+      "C13",
+      "C22"
+     ],
+     "qty_per_board": 4,
+     "on_board": true,
+     "role": "bom",
+     "value": "100nF",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C15127": {
+   "mpn": "AO3401A",
+   "brand": "AOS",
+   "description": "30V 4A Surface Mount SOT-23",
+   "package": "SOT-23",
+   "category": "Single FETs, MOSFETs",
+   "stock": 147565,
+   "moq": 5,
+   "multiple": 5,
+   "price_breaks": [
+    [
+     5,
+     0.1026
+    ],
+    [
+     50,
+     0.0829
+    ],
+    [
+     150,
+     0.0728
+    ],
+    [
+     500,
+     0.0644
+    ],
+    [
+     3000,
+     0.0615
+    ],
+    [
+     6000,
+     0.0596
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.06,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C15127.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C15127",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "Q3",
+      "Q4"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "AO3401A",
+     "sides": [
+      "top",
+      "bottom"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "Q3",
+      "Q4"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "AO3401A",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C15849": {
+   "mpn": "CL10A105KB8NNNC",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "1uF ±10% 50V Ceramic Capacitor X5R 0603",
+   "package": "0603",
+   "category": "Ceramic Capacitors",
+   "stock": 2290650,
+   "moq": 50,
+   "multiple": 50,
+   "price_breaks": [
+    [
+     50,
+     0.0166
+    ],
+    [
+     500,
+     0.0129
+    ],
+    [
+     1500,
+     0.0113
+    ],
+    [
+     4000,
+     0.0101
+    ],
+    [
+     24000,
+     0.0096
+    ],
+    [
+     48000,
+     0.0093
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.043,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C15849.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C15849",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "C3",
+      "C4",
+      "C7",
+      "C8",
+      "C17",
+      "C18",
+      "C19"
+     ],
+     "qty_per_board": 7,
+     "on_board": true,
+     "role": "bom",
+     "value": "1uF X5R 50V",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "C3",
+      "C4",
+      "C7",
+      "C8",
+      "C17",
+      "C18",
+      "C21"
+     ],
+     "qty_per_board": 7,
+     "on_board": true,
+     "role": "bom",
+     "value": "1uF",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C15850": {
+   "mpn": "CL21A106KAYNNNE",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "10uF ±10% 25V Ceramic Capacitor X5R 0805",
+   "package": "0805",
+   "category": "Ceramic Capacitors",
+   "stock": 0,
+   "moq": 20,
+   "multiple": 20,
+   "price_breaks": [
+    [
+     20,
+     0.0695
+    ],
+    [
+     200,
+     0.0512
+    ],
+    [
+     600,
+     0.0419
+    ],
+    [
+     2000,
+     0.0342
+    ],
+    [
+     10000,
+     0.0315
+    ],
+    [
+     20000,
+     0.0296
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.048,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C15850.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C15850",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "C5",
+      "C11",
+      "C12",
+      "C14",
+      "C16"
+     ],
+     "qty_per_board": 5,
+     "on_board": true,
+     "role": "bom",
+     "value": "10uF X5R 25V",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "C5",
+      "C11",
+      "C12",
+      "C14",
+      "C23"
+     ],
+     "qty_per_board": 5,
+     "on_board": true,
+     "role": "bom",
+     "value": "10uF",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C16581": {
+   "mpn": "TP4056-42-ESOP8",
+   "brand": "TOP POWER ASIC",
+   "description": "Lithium Battery 1A ESOP-8 Battery Management RoHS",
+   "package": "ESOP-8",
+   "category": "Battery Management",
+   "stock": 47530,
+   "moq": 5,
+   "multiple": 5,
+   "price_breaks": [
+    [
+     5,
+     0.1862
+    ],
+    [
+     50,
+     0.1474
+    ],
+    [
+     150,
+     0.1285
+    ],
+    [
+     500,
+     0.1116
+    ],
+    [
+     2500,
+     0.0917
+    ],
+    [
+     4000,
+     0.0889
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.103,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C16581.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C16581",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "U5"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "TP4056-42-ESOP8",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "U5"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "TP4056",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C17958": {
+   "mpn": "1206W4F220JT5E",
+   "brand": "UNI-ROYAL",
+   "description": "22Ω ±1% 250mW 1206 Thick Film Resistor",
+   "package": "1206",
+   "category": "Chip Resistor - Surface Mount",
+   "stock": 440800,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0067
+    ],
+    [
+     1000,
+     0.0053
+    ],
+    [
+     5000,
+     0.0041
+    ],
+    [
+     10000,
+     0.0036
+    ],
+    [
+     50000,
+     0.0032
+    ],
+    [
+     100000,
+     0.003
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.03,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C17958.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C17958",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "R2",
+      "R3"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "22R 1206",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "R2",
+      "R3"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "22R",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C19702": {
+   "mpn": "CL10A106KP8NNNC",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "10uF ±10% 10V Ceramic Capacitor X5R 0603",
+   "package": "0603",
+   "category": "Ceramic Capacitors",
+   "stock": 1099320,
+   "moq": 20,
+   "multiple": 20,
+   "price_breaks": [
+    [
+     20,
+     0.0308
+    ],
+    [
+     200,
+     0.0228
+    ],
+    [
+     600,
+     0.0193
+    ],
+    [
+     4000,
+     0.0166
+    ],
+    [
+     8000,
+     0.0156
+    ],
+    [
+     20000,
+     0.0148
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.032,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C19702.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C19702",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "C6"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "10uF",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "C6",
+      "C16"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "10uF",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C20917": {
+   "mpn": "AO3400A",
+   "brand": "AOS",
+   "description": "N-Channel 30V Surface Mount SOT-23-3L",
+   "package": "SOT-23",
+   "category": "Single FETs, MOSFETs",
+   "stock": 207625,
+   "moq": 5,
+   "multiple": 5,
+   "price_breaks": [
+    [
+     5,
+     0.0898
+    ],
+    [
+     50,
+     0.0724
+    ],
+    [
+     150,
+     0.0634
+    ],
+    [
+     500,
+     0.056
+    ],
+    [
+     3000,
+     0.0534
+    ],
+    [
+     6000,
+     0.0517
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.068,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C20917.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C20917",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "Q1",
+      "Q2"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "AO3400A",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "Q1",
+      "Q2"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "AO3400A",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C22775": {
+   "mpn": "0603WAF1000T5E",
+   "brand": "UNI-ROYAL",
+   "description": "100Ω ±1% 100mW 0603 Thick Film Resistor",
+   "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "stock": 2089800,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0032
+    ],
+    [
+     1000,
+     0.0025
+    ],
+    [
+     5000,
+     0.0022
+    ],
+    [
+     10000,
+     0.0018
+    ],
+    [
+     50000,
+     0.0016
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.027,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C22775.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C22775",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "R4",
+      "R8",
+      "R15"
+     ],
+     "qty_per_board": 3,
+     "on_board": true,
+     "role": "bom",
+     "value": "100R",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "R4",
+      "R8",
+      "R27"
+     ],
+     "qty_per_board": 3,
+     "on_board": true,
+     "role": "bom",
+     "value": "100R",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C22940": {
+   "mpn": "0603WAF2401T5E",
+   "brand": "UNI-ROYAL",
+   "description": "2.4kΩ ±1% 100mW 0603 Thick Film Resistor",
+   "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "stock": 1015300,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0026
+    ],
+    [
+     1000,
+     0.002
+    ],
+    [
+     5000,
+     0.0017
+    ],
+    [
+     10000,
+     0.0016
+    ],
+    [
+     50000,
+     0.0014
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.023,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C22940.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C22940",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "R16"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "2.4k (PROG 500 mA)",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "R16"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "2.4k",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C22962": {
+   "mpn": "0603WAF2200T5E",
+   "brand": "UNI-ROYAL",
+   "description": "220Ω ±1% 100mW 0603 Thick Film Resistor",
+   "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "stock": 130000,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0035
+    ],
+    [
+     1000,
+     0.0028
+    ],
+    [
+     5000,
+     0.0024
+    ],
+    [
+     10000,
+     0.0021
+    ],
+    [
+     50000,
+     0.0018
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.022,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C22962.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C22962",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "R19"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "220R",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "R20"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "220R",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C23162": {
+   "mpn": "0603WAF4701T5E",
+   "brand": "UNI-ROYAL",
+   "description": "4.7kΩ ±1% 100mW 0603 Thick Film Resistor",
+   "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "stock": 8632600,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0028
+    ],
+    [
+     1000,
+     0.0023
+    ],
+    [
+     5000,
+     0.002
+    ],
+    [
+     10000,
+     0.0016
+    ],
+    [
+     50000,
+     0.0015
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.027,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C23162.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C23162",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "R12",
+      "R13"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "4.7k",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "R12",
+      "R13"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "4.7k",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C23186": {
+   "mpn": "0603WAF5101T5E",
+   "brand": "UNI-ROYAL",
+   "description": "5.1kΩ ±1% 100mW 0603 Thick Film Resistor",
+   "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "stock": 19488800,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0015
+    ],
+    [
+     1000,
+     0.0012
+    ],
+    [
+     5000,
+     0.001
+    ],
+    [
+     10000,
+     0.0008
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.025,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C23186.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C23186",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "R6",
+      "R7"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "5.1k",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "R17",
+      "R18"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "5.1k",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C25196": {
+   "mpn": "0603WAF560JT5E",
+   "brand": "UNI-ROYAL",
+   "description": "56Ω ±1% 100mW 0603 Thick Film Resistor",
+   "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "stock": 767900,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0027
+    ],
+    [
+     1000,
+     0.0021
+    ],
+    [
+     5000,
+     0.0017
+    ],
+    [
+     10000,
+     0.0016
+    ],
+    [
+     50000,
+     0.0014
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.023,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C25196.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C25196",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "R20",
+      "R21",
+      "R22",
+      "R23"
+     ],
+     "qty_per_board": 4,
+     "on_board": true,
+     "role": "bom",
+     "value": "56R",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C25803": {
+   "mpn": "0603WAF1003T5E",
+   "brand": "UNI-ROYAL",
+   "description": "100kΩ ±1% 100mW 0603 Thick Film Resistor",
+   "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "stock": 11985500,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0031
+    ],
+    [
+     1000,
+     0.0024
+    ],
+    [
+     5000,
+     0.0021
+    ],
+    [
+     10000,
+     0.0017
+    ],
+    [
+     50000,
+     0.0016
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.022,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C25803.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C25803",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "R5",
+      "R9",
+      "R11",
+      "R14",
+      "R26"
+     ],
+     "qty_per_board": 5,
+     "on_board": true,
+     "role": "bom",
+     "value": "100k",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "R5",
+      "R9",
+      "R11",
+      "R26",
+      "R30"
+     ],
+     "qty_per_board": 5,
+     "on_board": true,
+     "role": "bom",
+     "value": "100k",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C25804": {
+   "mpn": "0603WAF1002T5E",
+   "brand": "UNI-ROYAL",
+   "description": "10kΩ ±1% 100mW 0603 Thick Film Resistor",
+   "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "stock": 0,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0022
+    ],
+    [
+     1000,
+     0.0018
+    ],
+    [
+     5000,
+     0.0016
+    ],
+    [
+     10000,
+     0.0015
+    ],
+    [
+     50000,
+     0.0014
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.035,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C25804.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C25804",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "R1",
+      "R10",
+      "R18"
+     ],
+     "qty_per_board": 3,
+     "on_board": true,
+     "role": "bom",
+     "value": "10k",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "R1",
+      "R10",
+      "R19",
+      "R28"
+     ],
+     "qty_per_board": 4,
+     "on_board": true,
+     "role": "bom",
+     "value": "10k",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C27592": {
+   "mpn": "0603WAF680JT5E",
+   "brand": "UNI-ROYAL",
+   "description": "68Ω ±1% 100mW 0603 Thick Film Resistor",
+   "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "stock": 1675400,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0013
+    ],
+    [
+     1000,
+     0.001
+    ],
+    [
+     5000,
+     0.0008
+    ],
+    [
+     50000,
+     0.0007
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.023,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C27592.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C27592",
+   "used_in": {
+    "mini24": {
+     "refs": [
+      "R22",
+      "R23",
+      "R24",
+      "R25"
+     ],
+     "qty_per_board": 4,
+     "on_board": true,
+     "role": "bom",
+     "value": "68R",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C45783": {
+   "mpn": "CL21A226MAQNNNE",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "22uF ±20% 25V Ceramic Capacitor X5R 0805",
+   "package": "0805",
+   "category": "Ceramic Capacitors",
+   "stock": 185240,
+   "moq": 20,
+   "multiple": 20,
+   "price_breaks": [
+    [
+     20,
+     0.2227
+    ],
+    [
+     200,
+     0.1657
+    ],
+    [
+     600,
+     0.1378
+    ],
+    [
+     2000,
+     0.1129
+    ],
+    [
+     10000,
+     0.1061
+    ],
+    [
+     20000,
+     0.102
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.044,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C45783.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C45783",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "C1"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "22uF",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "C1"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "22uF",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C64885": {
+   "mpn": "B5819W",
+   "brand": "MDD(Microdiode Semiconductor)",
+   "description": "Diode Independent 40V 1A Surface Mount SOD-123",
+   "package": "SOD-123",
+   "category": "Single Diodes",
+   "stock": 895800,
+   "moq": 50,
+   "multiple": 50,
+   "price_breaks": [
+    [
+     50,
+     0.0196
+    ],
+    [
+     500,
+     0.0164
+    ],
+    [
+     3000,
+     0.0109
+    ],
+    [
+     6000,
+     0.0098
+    ],
+    [
+     24000,
+     0.0094
+    ],
+    [
+     51000,
+     0.0091
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.04,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C64885.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C64885",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "D3"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "B5819W",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "D3"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "B5819W",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C82942": {
+   "mpn": "ME6211C33M5G-N",
+   "brand": "MICRONE",
+   "description": "3.3V Positive Fixed SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators RoHS",
+   "package": "SOT-23-5",
+   "category": "Voltage Regulators - Linear, Low Drop Out (LDO) Regulators",
+   "stock": 169540,
+   "moq": 10,
+   "multiple": 10,
+   "price_breaks": [
+    [
+     10,
+     0.0619
+    ],
+    [
+     100,
+     0.0502
+    ],
+    [
+     300,
+     0.0442
+    ],
+    [
+     3000,
+     0.0392
+    ],
+    [
+     6000,
+     0.0375
+    ],
+    [
+     9000,
+     0.0364
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.045,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C82942.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C82942",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "U2"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "ME6211C33M5G-N",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "U2"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "ME6211C33M5G-N",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C91447": {
+   "mpn": "IRM-H638T/TR2",
+   "brand": "EVERLIGHT",
+   "description": "38kHz 45° 1.2mA 2.7V~5.5V SMD-4P,5x4mm Photo Detectors - Remote Receiver RoHS",
+   "package": "SMD-4P,5x4mm",
+   "category": "Photo Detectors - Remote Receiver",
+   "stock": 133150,
+   "moq": 5,
+   "multiple": 5,
+   "price_breaks": [
+    [
+     5,
+     0.2611
+    ],
+    [
+     50,
+     0.1998
+    ],
+    [
+     150,
+     0.1698
+    ],
+    [
+     1500,
+     0.144
+    ],
+    [
+     3000,
+     0.1367
+    ],
+    [
+     4500,
+     0.1323
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.343,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C91447.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C91447",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "U6"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "IRM-H638T/TR2",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "U6"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "IRM-H638T/TR2",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C92418": {
+   "mpn": "GWJZ-10",
+   "brand": "BEST",
+   "description": "Industrial Tape ",
+   "package": "-",
+   "category": "Industrial Tape",
+   "stock": 48,
+   "moq": 1,
+   "multiple": 1,
+   "price_breaks": [
+    [
+     1,
+     0.8131
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 25.5,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C92418.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C92418",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "(tape)"
+     ],
+     "qty_per_board": 1,
+     "on_board": false,
+     "role": "bom",
+     "value": "Kapton tape 10-20 mm (cell side of the board, screw heads)"
+    },
+    "mini24": {
+     "refs": [
+      "—"
+     ],
+     "qty_per_board": 1,
+     "on_board": false,
+     "role": "bom",
+     "value": "Kapton tape 10-20 mm"
+    }
+   }
+  },
+  "C92419": {
+   "mpn": "GWJZ-20",
+   "brand": "BEST",
+   "description": "Industrial Tape ",
+   "package": "-",
+   "category": "Industrial Tape",
+   "stock": 126,
+   "moq": 1,
+   "multiple": 1,
+   "price_breaks": [
+    [
+     1,
+     1.8577
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 56.0,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C92419.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C92419",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "(tape)"
+     ],
+     "qty_per_board": 0,
+     "on_board": false,
+     "role": "alternative (source column)",
+     "value": "Kapton tape 10-20 mm (cell side of the board, screw heads)"
+    },
+    "mini24": {
+     "refs": [
+      "—"
+     ],
+     "qty_per_board": 0,
+     "on_board": false,
+     "role": "alternative (source column)",
+     "value": "Kapton tape 10-20 mm"
+    }
+   }
+  },
+  "C98220": {
+   "mpn": "RC0603FR-0710KL",
+   "brand": "YAGEO",
+   "description": "100mW 10kΩ 75V Thick Film Resistor ±100ppm/℃ ±1% 0603 Chip Resistor - Surface Mount RoHS",
+   "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "stock": 5075800,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0034
+    ],
+    [
+     1000,
+     0.0026
+    ],
+    [
+     5000,
+     0.0022
+    ],
+    [
+     10000,
+     0.0019
+    ],
+    [
+     50000,
+     0.0017
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.023,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C98220.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C98220",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "R24"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "10k",
+     "sides": [
+      "bottom"
+     ]
+    }
+   }
+  },
+  "C114606": {
+   "mpn": "RC0603FR-0710ML",
+   "brand": "YAGEO",
+   "description": "100mW 10MΩ 75V Thick Film Resistor ±100ppm/℃ ±1% 0603 Chip Resistor - Surface Mount RoHS",
+   "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "stock": 828100,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.005
+    ],
+    [
+     1000,
+     0.0044
+    ],
+    [
+     5000,
+     0.0041
+    ],
+    [
+     10000,
+     0.0039
+    ],
+    [
+     50000,
+     0.0037
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.023,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C114606.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C114606",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "R17"
+     ],
+     "qty_per_board": 0,
+     "on_board": true,
+     "role": "bom",
+     "value": "10M DNP",
+     "dnp": true,
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "R21"
+     ],
+     "qty_per_board": 0,
+     "on_board": true,
+     "role": "bom",
+     "value": "10M (DO NOT FIT)",
+     "dnp": true,
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C177225": {
+   "mpn": "532610271",
+   "brand": "MOLEX",
+   "description": "Connector Header 2 position 1.25mm Pitch 1A Surface Mount, Right Angle -40℃~+105℃",
+   "package": "SMD,P=1.25mm,Surface Mount,Right Angle",
+   "category": "Headers, Male Pins",
+   "stock": 47780,
+   "moq": 5,
+   "multiple": 5,
+   "price_breaks": [
+    [
+     5,
+     0.142
+    ],
+    [
+     50,
+     0.1182
+    ],
+    [
+     150,
+     0.1063
+    ],
+    [
+     500,
+     0.0974
+    ],
+    [
+     3200,
+     0.0903
+    ],
+    [
+     4800,
+     0.0867
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.435,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C177225.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C177225",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "J4"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "PicoBlade 53261-0271",
+     "sides": [
+      "bottom"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "J2"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "53261-0271",
+     "sides": [
+      "bottom"
+     ]
+    }
+   }
+  },
+  "C224194": {
+   "mpn": "FH34SRJ-6S-0.5SH(50)",
+   "brand": "HRS",
+   "description": "FFC/FPC Connector 6 Position 0.5mm Pitch Double-Sided Contacts, Top and Bottom Entry Surface Mount, Right Angle -55℃~+105℃",
+   "package": "SMD,P=0.5mm,Surface Mount,Right Angle",
+   "category": "FFC, FPC (Flat Flexible) Connector Assemblies",
+   "stock": 88320,
+   "moq": 5,
+   "multiple": 5,
+   "price_breaks": [
+    [
+     5,
+     0.0918
+    ],
+    [
+     50,
+     0.0719
+    ],
+    [
+     150,
+     0.0619
+    ],
+    [
+     500,
+     0.0544
+    ],
+    [
+     2500,
+     0.0484
+    ],
+    [
+     5000,
+     0.0455
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.176,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C224194.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C224194",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "J2"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "FH34SRJ-6S-0.5SH(50)",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C293573": {
+   "mpn": "500588000",
+   "brand": "MOLEX",
+   "description": "28~32 Tin Phosphor bronze Rectangular Connector Contacts RoHS",
+   "package": "-",
+   "category": "Rectangular Connector Contacts",
+   "stock": 152800,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0059
+    ],
+    [
+     1000,
+     0.0047
+    ],
+    [
+     3000,
+     0.0041
+    ],
+    [
+     25000,
+     0.0036
+    ],
+    [
+     50000,
+     0.0033
+    ],
+    [
+     100000,
+     0.0031
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.072,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C293573.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C293573",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "(battery",
+      "plug)"
+     ],
+     "qty_per_board": 0,
+     "on_board": false,
+     "role": "alternative (source column)",
+     "value": "Molex PicoBlade crimp 50079-8100 (26-28 AWG) or 50058-8000 (28-32 AWG)"
+    },
+    "mini24": {
+     "refs": [
+      "—"
+     ],
+     "qty_per_board": 0,
+     "on_board": false,
+     "role": "alternative (source column)",
+     "value": "PicoBlade crimp 50079-8100 (26-28 AWG) or 50058-8000 (28-32 AWG)"
+    }
+   }
+  },
+  "C293613": {
+   "mpn": "510210200",
+   "brand": "MOLEX",
+   "description": "Connector Housing 2 Position 1.25mm Pitch Single Row PicoBlade(MX 1.25) Series PBT -40℃~+105℃",
+   "package": "P=1.25mm",
+   "category": "Rectangular Connector Housings",
+   "stock": 276650,
+   "moq": 50,
+   "multiple": 50,
+   "price_breaks": [
+    [
+     50,
+     0.0167
+    ],
+    [
+     500,
+     0.0139
+    ],
+    [
+     2000,
+     0.0118
+    ],
+    [
+     4000,
+     0.0108
+    ],
+    [
+     24000,
+     0.01
+    ],
+    [
+     50000,
+     0.0096
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.028,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C293613.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C293613",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "(battery",
+      "plug)"
+     ],
+     "qty_per_board": 1,
+     "on_board": false,
+     "role": "bom",
+     "value": "Molex PicoBlade 51021-0200 housing"
+    },
+    "mini24": {
+     "refs": [
+      "—"
+     ],
+     "qty_per_board": 1,
+     "on_board": false,
+     "role": "bom",
+     "value": "PicoBlade housing 51021-0200"
+    }
+   }
+  },
+  "C318884": {
+   "mpn": "TS-1187A-B-A-B",
+   "brand": "XKB Connection",
+   "description": "Tactile Switch SPST 160gf 1.5mm 5.1mm x 5.1mm Surface Mount",
+   "package": "SMD-4P,5.1x5.1mm",
+   "category": "Tactile Switches",
+   "stock": 101780,
+   "moq": 20,
+   "multiple": 20,
+   "price_breaks": [
+    [
+     20,
+     0.0207
+    ],
+    [
+     200,
+     0.016
+    ],
+    [
+     600,
+     0.014
+    ],
+    [
+     4000,
+     0.0122
+    ],
+    [
+     8000,
+     0.0115
+    ],
+    [
+     20000,
+     0.0111
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.028,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C318884.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C318884",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "SW1",
+      "SW2",
+      "SW3",
+      "SW4",
+      "SW5",
+      "SW6",
+      "SW7",
+      "SW8",
+      "SW9",
+      "SW10",
+      "SW11",
+      "SW12",
+      "SW13",
+      "SW14"
+     ],
+     "qty_per_board": 14,
+     "on_board": true,
+     "role": "bom",
+     "value": "TS-1187A-B-A-B",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "SW1",
+      "SW2",
+      "SW3",
+      "SW4",
+      "SW5",
+      "SW6",
+      "SW7",
+      "SW8",
+      "SW9",
+      "SW10",
+      "SW11",
+      "SW12",
+      "SW13",
+      "SW14"
+     ],
+     "qty_per_board": 14,
+     "on_board": true,
+     "role": "bom",
+     "value": "TS-1187A-B-A-B",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C357393": {
+   "mpn": "PM2X4nie",
+   "brand": "Shuntian",
+   "description": "Screws, Bolts ",
+   "package": "-",
+   "category": "Screws, Bolts",
+   "stock": 11700,
+   "moq": 100,
+   "multiple": 100,
+   "price_breaks": [
+    [
+     100,
+     0.0019
+    ],
+    [
+     1000,
+     0.0017
+    ],
+    [
+     20000,
+     0.0014
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.124,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C357393.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C357393",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "(screws)"
+     ],
+     "qty_per_board": 4,
+     "on_board": false,
+     "role": "bom",
+     "value": "M2 x 4 pan head (board -> posts)"
+    },
+    "mini24": {
+     "refs": [
+      "—"
+     ],
+     "qty_per_board": 3,
+     "on_board": false,
+     "role": "bom",
+     "value": "M2 x 4 pan head (board -> posts)"
+    }
+   }
+  },
+  "C364577": {
+   "mpn": "LTR-303ALS-01",
+   "brand": "LITEON",
+   "description": "I2C 2.4V~3.6V DFN-6(2x2) Ambient Light, IR, UV Sensors ",
+   "package": "DFN-6(2x2)",
+   "category": "Ambient Light, IR, UV Sensors",
+   "stock": 15778,
+   "moq": 1,
+   "multiple": 1,
+   "price_breaks": [
+    [
+     1,
+     0.5486
+    ],
+    [
+     10,
+     0.4369
+    ],
+    [
+     30,
+     0.3893
+    ],
+    [
+     100,
+     0.3285
+    ],
+    [
+     500,
+     0.2957
+    ],
+    [
+     1000,
+     0.2793
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.03,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C364577.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C364577",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "U7"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "LTR-303ALS-01",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "U7"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "LTR-303ALS-01",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C383210": {
+   "mpn": "LESD3Z5.0T1G",
+   "brand": "LRC",
+   "description": "10.5VC Clamp 24A@8/20us Ipp ESD DIODE SOD-323",
+   "package": "SOD-323",
+   "category": "TVS Diodes",
+   "stock": 15740,
+   "moq": 20,
+   "multiple": 20,
+   "price_breaks": [
+    [
+     20,
+     0.0315
+    ],
+    [
+     200,
+     0.0257
+    ],
+    [
+     600,
+     0.0225
+    ],
+    [
+     3000,
+     0.0192
+    ],
+    [
+     9000,
+     0.0175
+    ],
+    [
+     21000,
+     0.0166
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.027,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C383210.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C383210",
+   "used_in": {
+    "mini24": {
+     "refs": [
+      "D4"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "LESD3Z5.0T1G",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C425927": {
+   "mpn": "DRV2605LDGST",
+   "brand": "TI",
+   "description": "2V~5.2V VSSOP-10-0.5mm Motor Drivers, Controllers RoHS",
+   "package": "VSSOP-10-0.5mm",
+   "category": "Motor Drivers, Controllers",
+   "stock": 769,
+   "moq": 1,
+   "multiple": 1,
+   "price_breaks": [
+    [
+     1,
+     1.1602
+    ],
+    [
+     10,
+     1.0403
+    ],
+    [
+     30,
+     0.9745
+    ],
+    [
+     100,
+     0.8989
+    ],
+    [
+     500,
+     0.8661
+    ],
+    [
+     1000,
+     0.8513
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.094,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C425927.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C425927",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "U3"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "DRV2605LDGST",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "U3"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "DRV2605LDGST",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C587850": {
+   "mpn": "500798100",
+   "brand": "MOLEX",
+   "description": "26~28 Tin Phosphor bronze Rectangular Connector Contacts RoHS",
+   "package": "-",
+   "category": "Rectangular Connector Contacts",
+   "stock": 15810,
+   "moq": 5,
+   "multiple": 5,
+   "price_breaks": [
+    [
+     5,
+     0.2147
+    ],
+    [
+     50,
+     0.1664
+    ],
+    [
+     150,
+     0.1457
+    ],
+    [
+     500,
+     0.1199
+    ],
+    [
+     2500,
+     0.1084
+    ],
+    [
+     5000,
+     0.1015
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 1.0,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C587850.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C587850",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "(battery",
+      "plug)"
+     ],
+     "qty_per_board": 2,
+     "on_board": false,
+     "role": "bom",
+     "value": "Molex PicoBlade crimp 50079-8100 (26-28 AWG) or 50058-8000 (28-32 AWG)"
+    },
+    "mini24": {
+     "refs": [
+      "—"
+     ],
+     "qty_per_board": 2,
+     "on_board": false,
+     "role": "bom",
+     "value": "PicoBlade crimp 50079-8100 (26-28 AWG) or 50058-8000 (28-32 AWG)"
+    }
+   }
+  },
+  "C2682616": {
+   "mpn": "MAX17048G+T10",
+   "brand": "MAXIM",
+   "description": "I2C Lithium Battery DFN-8-EP(2x2) Battery Management RoHS",
+   "package": "DFN-8-EP(2x2)",
+   "category": "Battery Management",
+   "stock": 24170,
+   "moq": 1,
+   "multiple": 1,
+   "price_breaks": [
+    [
+     1,
+     2.1654
+    ],
+    [
+     10,
+     1.9106
+    ],
+    [
+     30,
+     1.7297
+    ],
+    [
+     100,
+     1.5653
+    ],
+    [
+     500,
+     1.3713
+    ],
+    [
+     1000,
+     1.3401
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.026,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C2682616.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C2682616",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "U8"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "MAX17048G+T10",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "U8"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "MAX17048G+T10",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C2765186": {
+   "mpn": "TYPE-C 16PIN 2MD(073)",
+   "brand": "SHOU HAN",
+   "description": "USB-C (USB TYPE-C) Receptacle Connector 16 Position Surface Mount, Right Angle",
+   "package": "SMD",
+   "category": "USB, DVI, HDMI Connector Assemblies",
+   "stock": 772300,
+   "moq": 20,
+   "multiple": 20,
+   "price_breaks": [
+    [
+     20,
+     0.0751
+    ],
+    [
+     200,
+     0.0604
+    ],
+    [
+     1000,
+     0.0511
+    ],
+    [
+     2000,
+     0.0449
+    ],
+    [
+     10000,
+     0.0428
+    ],
+    [
+     20000,
+     0.0413
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.817,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C2765186.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C2765186",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "J3"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "TYPE-C 16PIN 2MD(073)",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "J3"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "TYPE-C 16PIN 2MD(073)",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C2913204": {
+   "mpn": "ESP32-S3-WROOM-1-N8R2",
+   "brand": "ESPRESSIF",
+   "description": "2.4GHz ESP32-S3 Chip On-board PCB Antenna -98.2dBm SMD,25.5x18mm RF Transceiver Modules and Modems RoHS",
+   "package": "SMD,25.5x18mm",
+   "category": "RF Transceiver Modules and Modems",
+   "stock": 1803,
+   "moq": 1,
+   "multiple": 1,
+   "price_breaks": [
+    [
+     1,
+     4.6784
+    ],
+    [
+     10,
+     4.1415
+    ],
+    [
+     30,
+     3.6784
+    ],
+    [
+     100,
+     3.414
+    ],
+    [
+     650,
+     3.235
+    ],
+    [
+     1300,
+     3.1545
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.416,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C2913204.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C2913204",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "U1"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "ESP32-S3-WROOM-1-N8R2",
+     "sides": [
+      "bottom"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "U1"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "ESP32-S3-WROOM-1-N8R2",
+     "sides": [
+      "bottom"
+     ]
+    }
+   }
+  },
+  "C3169104": {
+   "mpn": "FH34SRJ-50S-0.5SH(50)",
+   "brand": "HRS",
+   "description": "FFC/FPC Connector 50 Position 0.5mm Pitch Double-Sided Contacts, Top and Bottom Entry Surface Mount, Right Angle -55℃~+105℃",
+   "package": "SMD,P=0.5mm,Surface Mount,Right Angle",
+   "category": "FFC, FPC (Flat Flexible) Connector Assemblies",
+   "stock": 6629,
+   "moq": 1,
+   "multiple": 1,
+   "price_breaks": [
+    [
+     1,
+     0.6363
+    ],
+    [
+     10,
+     0.5262
+    ],
+    [
+     30,
+     0.4703
+    ],
+    [
+     100,
+     0.416
+    ],
+    [
+     500,
+     0.3552
+    ],
+    [
+     1000,
+     0.3387
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.25,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C3169104.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C3169104",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "J1"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "FH34SRJ-50S-0.5SH(50)",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "J1"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "FH34SRJ-50S-0.5SH(50)",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C6604342": {
+   "mpn": "VSMB2948SL",
+   "brand": "VISHAY",
+   "description": "5V 100mA 940nm 1.35V 160mW SMD LED Emitters - Infrared, UV, Visible RoHS",
+   "package": "SMD",
+   "category": "LED Emitters - Infrared, UV, Visible",
+   "stock": 186,
+   "moq": 1,
+   "multiple": 1,
+   "price_breaks": [
+    [
+     1,
+     0.4507
+    ],
+    [
+     10,
+     0.4393
+    ],
+    [
+     30,
+     0.4327
+    ],
+    [
+     100,
+     0.4245
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 1.0,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C6604342.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C6604342",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "D1",
+      "D2"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "VSMB2948SL",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "D1",
+      "D2"
+     ],
+     "qty_per_board": 2,
+     "on_board": true,
+     "role": "bom",
+     "value": "VSMB2948SL",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C19077497": {
+   "mpn": "SMF5.0A",
+   "brand": "R+O",
+   "description": "9.2VC Clamp 21.7A@10/1000us Ipp TVS DIODE SOD-123FL",
+   "package": "SOD-123FL",
+   "category": "TVS Diodes",
+   "stock": 798160,
+   "moq": 20,
+   "multiple": 20,
+   "price_breaks": [
+    [
+     20,
+     0.0284
+    ],
+    [
+     200,
+     0.0234
+    ],
+    [
+     600,
+     0.0211
+    ],
+    [
+     3000,
+     0.0161
+    ],
+    [
+     9000,
+     0.0155
+    ],
+    [
+     21000,
+     0.015
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.04,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C19077497.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C19077497",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "D4"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "SMF5.0A",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C20340322": {
+   "mpn": "FC-135 32.7680KA-E",
+   "brand": "EPSON",
+   "description": "6pF ±20ppm SMD3215-2P Crystals RoHS",
+   "package": "SMD3215-2P",
+   "category": "Crystals",
+   "stock": 3970,
+   "moq": 5,
+   "multiple": 5,
+   "price_breaks": [
+    [
+     5,
+     0.1953
+    ],
+    [
+     50,
+     0.1548
+    ],
+    [
+     150,
+     0.1374
+    ],
+    [
+     500,
+     0.1158
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.043,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C20340322.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C20340322",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "Y1"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "FC-135 32.768kHz 6pF",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "Y1"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "32.768kHz 6pF",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C42433896": {
+   "mpn": "BK858S",
+   "brand": "Bakon",
+   "description": "Hot Air Rework Station ",
+   "package": "-",
+   "category": "Hot Air Rework Station",
+   "stock": 2,
+   "moq": 1,
+   "multiple": 1,
+   "price_breaks": [
+    [
+     1,
+     26.1725
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 436.0,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C42433896.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C42433896",
+   "used_in": {
+    "tools": {
+     "refs": [],
+     "qty_per_board": 0,
+     "on_board": false,
+     "role": "tool",
+     "value": "hot-air station Bakon BK858S (TOOLS table)"
+    }
+   }
+  },
+  "C51928215": {
+   "mpn": "MSM261DHT006",
+   "brand": "MEMS",
+   "description": "Omnidirectional -26dB 60dB LGA-8(3x4) Microphones ",
+   "package": "LGA-8(3x4)",
+   "category": "Microphones",
+   "stock": 2814,
+   "moq": 1,
+   "multiple": 1,
+   "price_breaks": [
+    [
+     1,
+     0.575
+    ],
+    [
+     10,
+     0.4551
+    ],
+    [
+     30,
+     0.4042
+    ],
+    [
+     100,
+     0.3401
+    ],
+    [
+     500,
+     0.3105
+    ],
+    [
+     1000,
+     0.2941
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.105,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C51928215.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C51928215",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "U9"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "MSM261DHT006",
+     "sides": [
+      "top"
+     ]
+    },
+    "mini24": {
+     "refs": [
+      "U9"
+     ],
+     "qty_per_board": 1,
+     "on_board": true,
+     "role": "bom",
+     "value": "MSM261DHT006",
+     "sides": [
+      "top"
+     ]
+    }
+   }
+  },
+  "C51938879": {
+   "mpn": "SZTB1063",
+   "brand": "XHHD",
+   "description": "Nuts ",
+   "package": "-",
+   "category": "Nuts",
+   "stock": 9300,
+   "moq": 50,
+   "multiple": 50,
+   "price_breaks": [
+    [
+     50,
+     0.0101
+    ],
+    [
+     500,
+     0.0094
+    ],
+    [
+     10000,
+     0.0078
+    ],
+    [
+     50000,
+     0.0075
+    ]
+   ],
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "weight_g": 0.094,
+   "on_sale": true,
+   "url": "https://www.lcsc.com/product-detail/C51938879.html",
+   "api": "https://wmsc.lcsc.com/ftps/wm/product/detail?productCode=C51938879",
+   "used_in": {
+    "mini28": {
+     "refs": [
+      "(inserts)"
+     ],
+     "qty_per_board": 6,
+     "on_board": false,
+     "role": "bom",
+     "value": "M2 x 3 x 3.2 knurled brass heat-set insert (M2 thread, L 3.0, OD 3.2)"
+    },
+    "mini24": {
+     "refs": [
+      "—"
+     ],
+     "qty_per_board": 5,
+     "on_board": false,
+     "role": "bom",
+     "value": "M2 x 3 x 3.2 heat-set insert"
+    }
+   }
+  }
+ },
+ "jlc": {
+  "C1679": {
+   "url": "https://jlcpcb.com/partdetail/C1679",
+   "library_type": "preferred-extended",
+   "jlc_stock": 174266,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.003
+    ],
+    [
+     10,
+     0.0026
+    ],
+    [
+     30,
+     0.0023
+    ],
+    [
+     100,
+     0.0022
+    ],
+    [
+     500,
+     0.0021
+    ],
+    [
+     1000,
+     0.002
+    ]
+   ],
+   "mpn": "0603CG6R8C500NT",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C1685": {
+   "url": "https://jlcpcb.com/partdetail/C1685",
+   "library_type": "preferred-extended",
+   "jlc_stock": 116503,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0057
+    ],
+    [
+     1000,
+     0.0046
+    ],
+    [
+     4000,
+     0.0038
+    ],
+    [
+     8000,
+     0.0034
+    ],
+    [
+     48000,
+     0.0031
+    ],
+    [
+     100000,
+     0.0029
+    ]
+   ],
+   "mpn": "0603CG8R2C500NT",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C7519": {
+   "url": "https://jlcpcb.com/partdetail/C7519",
+   "library_type": "extended",
+   "jlc_stock": 36178,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.177
+    ],
+    [
+     50,
+     0.1362
+    ],
+    [
+     150,
+     0.1163
+    ],
+    [
+     500,
+     0.0986
+    ],
+    [
+     3000,
+     0.0937
+    ],
+    [
+     6000,
+     0.0908
+    ]
+   ],
+   "mpn": "USBLC6-2SC6",
+   "package": "SOT-23-6L",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C8598": {
+   "url": "https://jlcpcb.com/partdetail/C8598",
+   "library_type": "basic",
+   "jlc_stock": 399435,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0281
+    ],
+    [
+     200,
+     0.0219
+    ],
+    [
+     600,
+     0.0193
+    ],
+    [
+     3000,
+     0.0172
+    ],
+    [
+     9000,
+     0.0163
+    ],
+    [
+     21000,
+     0.0158
+    ]
+   ],
+   "mpn": "B5819W SL",
+   "package": "SOD-123",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Basic"
+  },
+  "C11360": {
+   "url": "https://jlcpcb.com/partdetail/C11360",
+   "library_type": "extended",
+   "jlc_stock": 2329,
+   "jlc_price_breaks": [
+    [
+     1,
+     3.1255
+    ],
+    [
+     10,
+     2.6695
+    ],
+    [
+     30,
+     2.3828
+    ],
+    [
+     100,
+     2.0913
+    ],
+    [
+     500,
+     1.6857
+    ],
+    [
+     1000,
+     1.6287
+    ]
+   ],
+   "mpn": "MMA8452QR1",
+   "package": "QFN-16(3x3)",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C14663": {
+   "url": "https://jlcpcb.com/partdetail/C14663",
+   "library_type": "basic",
+   "jlc_stock": 56432828,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.014
+    ],
+    [
+     500,
+     0.0106
+    ],
+    [
+     1500,
+     0.009
+    ],
+    [
+     4000,
+     0.0076
+    ],
+    [
+     24000,
+     0.0071
+    ],
+    [
+     48000,
+     0.0068
+    ]
+   ],
+   "mpn": "CC0603KRX7R9BB104",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Basic"
+  },
+  "C15127": {
+   "url": "https://jlcpcb.com/partdetail/C15127",
+   "library_type": "basic",
+   "jlc_stock": 682487,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.1018
+    ],
+    [
+     50,
+     0.0823
+    ],
+    [
+     150,
+     0.0722
+    ],
+    [
+     500,
+     0.0639
+    ],
+    [
+     3000,
+     0.061
+    ],
+    [
+     6000,
+     0.059
+    ]
+   ],
+   "mpn": "AO3401A",
+   "package": "SOT-23",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Basic"
+  },
+  "C15849": {
+   "url": "https://jlcpcb.com/partdetail/C15849",
+   "library_type": "basic",
+   "jlc_stock": 8619278,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0163
+    ],
+    [
+     500,
+     0.0128
+    ],
+    [
+     1500,
+     0.0112
+    ],
+    [
+     4000,
+     0.01
+    ],
+    [
+     24000,
+     0.0095
+    ],
+    [
+     48000,
+     0.0092
+    ]
+   ],
+   "mpn": "CL10A105KB8NNNC",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Basic"
+  },
+  "C15850": {
+   "url": "https://jlcpcb.com/partdetail/C15850",
+   "library_type": "basic",
+   "jlc_stock": 4312277,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0688
+    ],
+    [
+     200,
+     0.0507
+    ],
+    [
+     600,
+     0.0416
+    ],
+    [
+     2000,
+     0.0339
+    ],
+    [
+     10000,
+     0.0312
+    ],
+    [
+     20000,
+     0.0294
+    ]
+   ],
+   "mpn": "CL21A106KAYNNNE",
+   "package": "0805",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Basic"
+  },
+  "C16581": {
+   "url": "https://jlcpcb.com/partdetail/C16581",
+   "library_type": "preferred-extended",
+   "jlc_stock": 73412,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.1847
+    ],
+    [
+     50,
+     0.1463
+    ],
+    [
+     150,
+     0.1276
+    ],
+    [
+     500,
+     0.1108
+    ],
+    [
+     2500,
+     0.0909
+    ],
+    [
+     4000,
+     0.0882
+    ]
+   ],
+   "mpn": "TP4056-42-ESOP8",
+   "package": "ESOP-8",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 3",
+   "library_label_on_page": "Extended"
+  },
+  "C17958": {
+   "url": "https://jlcpcb.com/partdetail/C17958",
+   "library_type": "basic",
+   "jlc_stock": 811494,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0067
+    ],
+    [
+     1000,
+     0.0053
+    ],
+    [
+     5000,
+     0.0041
+    ],
+    [
+     10000,
+     0.0036
+    ],
+    [
+     50000,
+     0.0032
+    ],
+    [
+     100000,
+     0.003
+    ]
+   ],
+   "mpn": "1206W4F220JT5E",
+   "package": "1206",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null,
+   "library_label_on_page": "Basic"
+  },
+  "C19702": {
+   "url": "https://jlcpcb.com/partdetail/C19702",
+   "library_type": "basic",
+   "jlc_stock": 10392348,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0305
+    ],
+    [
+     200,
+     0.0227
+    ],
+    [
+     600,
+     0.0191
+    ],
+    [
+     4000,
+     0.0165
+    ],
+    [
+     8000,
+     0.0154
+    ],
+    [
+     20000,
+     0.0147
+    ]
+   ],
+   "mpn": "CL10A106KP8NNNC",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Basic"
+  },
+  "C20917": {
+   "url": "https://jlcpcb.com/partdetail/C20917",
+   "library_type": "basic",
+   "jlc_stock": 811835,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.089
+    ],
+    [
+     50,
+     0.0717
+    ],
+    [
+     150,
+     0.0629
+    ],
+    [
+     500,
+     0.0556
+    ],
+    [
+     3000,
+     0.053
+    ],
+    [
+     6000,
+     0.0512
+    ]
+   ],
+   "mpn": "AO3400A",
+   "package": "SOT-23",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Basic"
+  },
+  "C22775": {
+   "url": "https://jlcpcb.com/partdetail/C22775",
+   "library_type": "basic",
+   "jlc_stock": 10448437,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0031
+    ],
+    [
+     1000,
+     0.0025
+    ],
+    [
+     5000,
+     0.0022
+    ],
+    [
+     10000,
+     0.0018
+    ],
+    [
+     50000,
+     0.0016
+    ],
+    [
+     50200,
+     0.0016
+    ]
+   ],
+   "mpn": "0603WAF1000T5E",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null,
+   "library_label_on_page": "Basic"
+  },
+  "C22940": {
+   "url": "https://jlcpcb.com/partdetail/C22940",
+   "library_type": "basic",
+   "jlc_stock": 1341275,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0026
+    ],
+    [
+     1000,
+     0.002
+    ],
+    [
+     5000,
+     0.0017
+    ],
+    [
+     10000,
+     0.0015
+    ],
+    [
+     50000,
+     0.0014
+    ],
+    [
+     50200,
+     0.0014
+    ]
+   ],
+   "mpn": "0603WAF2401T5E",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null,
+   "library_label_on_page": "Basic"
+  },
+  "C22962": {
+   "url": "https://jlcpcb.com/partdetail/C22962",
+   "library_type": "basic",
+   "jlc_stock": 1726309,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0035
+    ],
+    [
+     1000,
+     0.0027
+    ],
+    [
+     5000,
+     0.0023
+    ],
+    [
+     10000,
+     0.0021
+    ],
+    [
+     50000,
+     0.0018
+    ],
+    [
+     50200,
+     0.0018
+    ]
+   ],
+   "mpn": "0603WAF2200T5E",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null,
+   "library_label_on_page": "Basic"
+  },
+  "C23162": {
+   "url": "https://jlcpcb.com/partdetail/C23162",
+   "library_type": "basic",
+   "jlc_stock": 20946824,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0028
+    ],
+    [
+     1000,
+     0.0022
+    ],
+    [
+     5000,
+     0.002
+    ],
+    [
+     10000,
+     0.0016
+    ],
+    [
+     50000,
+     0.0015
+    ],
+    [
+     50200,
+     0.0015
+    ]
+   ],
+   "mpn": "0603WAF4701T5E",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null,
+   "library_label_on_page": "Basic"
+  },
+  "C23186": {
+   "url": "https://jlcpcb.com/partdetail/C23186",
+   "library_type": "basic",
+   "jlc_stock": 24585491,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0015
+    ],
+    [
+     1000,
+     0.0012
+    ],
+    [
+     5000,
+     0.001
+    ],
+    [
+     10000,
+     0.0008
+    ],
+    [
+     50000,
+     0.0008
+    ],
+    [
+     50200,
+     0.0008
+    ]
+   ],
+   "mpn": "0603WAF5101T5E",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null,
+   "library_label_on_page": "Basic"
+  },
+  "C25196": {
+   "url": "https://jlcpcb.com/partdetail/C25196",
+   "library_type": "preferred-extended",
+   "jlc_stock": 873455,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0026
+    ],
+    [
+     1000,
+     0.002
+    ],
+    [
+     5000,
+     0.0017
+    ],
+    [
+     10000,
+     0.0016
+    ],
+    [
+     50000,
+     0.0014
+    ],
+    [
+     50200,
+     0.0014
+    ]
+   ],
+   "mpn": "0603WAF560JT5E",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null,
+   "library_label_on_page": "Extended"
+  },
+  "C25803": {
+   "url": "https://jlcpcb.com/partdetail/C25803",
+   "library_type": "basic",
+   "jlc_stock": 20980240,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0031
+    ],
+    [
+     1000,
+     0.0024
+    ],
+    [
+     5000,
+     0.0021
+    ],
+    [
+     10000,
+     0.0017
+    ],
+    [
+     50000,
+     0.0016
+    ],
+    [
+     50200,
+     0.0016
+    ]
+   ],
+   "mpn": "0603WAF1003T5E",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null,
+   "library_label_on_page": "Basic"
+  },
+  "C25804": {
+   "url": "https://jlcpcb.com/partdetail/C25804",
+   "library_type": "basic",
+   "jlc_stock": 26044673,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0022
+    ],
+    [
+     1000,
+     0.0018
+    ],
+    [
+     5000,
+     0.0016
+    ],
+    [
+     10000,
+     0.0015
+    ],
+    [
+     50000,
+     0.0014
+    ],
+    [
+     50200,
+     0.0014
+    ]
+   ],
+   "mpn": "0603WAF1002T5E",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null,
+   "library_label_on_page": "Basic"
+  },
+  "C27592": {
+   "url": "https://jlcpcb.com/partdetail/C27592",
+   "library_type": "preferred-extended",
+   "jlc_stock": 1937419,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0013
+    ],
+    [
+     1000,
+     0.001
+    ],
+    [
+     5000,
+     0.0008
+    ],
+    [
+     10000,
+     0.0008
+    ],
+    [
+     50000,
+     0.0007
+    ],
+    [
+     50200,
+     0.0007
+    ]
+   ],
+   "mpn": "0603WAF680JT5E",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null,
+   "library_label_on_page": "Extended"
+  },
+  "C45783": {
+   "url": "https://jlcpcb.com/partdetail/C45783",
+   "library_type": "basic",
+   "jlc_stock": 3692446,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.2206
+    ],
+    [
+     200,
+     0.1641
+    ],
+    [
+     600,
+     0.1365
+    ],
+    [
+     2000,
+     0.1119
+    ],
+    [
+     10000,
+     0.1051
+    ],
+    [
+     20000,
+     0.101
+    ]
+   ],
+   "mpn": "CL21A226MAQNNNE",
+   "package": "0805",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Basic"
+  },
+  "C64885": {
+   "url": "https://jlcpcb.com/partdetail/C64885",
+   "library_type": "preferred-extended",
+   "jlc_stock": 904917,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0194
+    ],
+    [
+     500,
+     0.0163
+    ],
+    [
+     3000,
+     0.0108
+    ],
+    [
+     6000,
+     0.0097
+    ],
+    [
+     24000,
+     0.0093
+    ],
+    [
+     51000,
+     0.009
+    ]
+   ],
+   "mpn": "B5819W",
+   "package": "SOD-123",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C82942": {
+   "url": "https://jlcpcb.com/partdetail/C82942",
+   "library_type": "extended",
+   "jlc_stock": 179143,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0613
+    ],
+    [
+     100,
+     0.0497
+    ],
+    [
+     300,
+     0.0439
+    ],
+    [
+     3000,
+     0.0388
+    ],
+    [
+     6000,
+     0.0372
+    ],
+    [
+     9000,
+     0.036
+    ]
+   ],
+   "mpn": "ME6211C33M5G-N",
+   "package": "SOT-23-5",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C91447": {
+   "url": "https://jlcpcb.com/partdetail/C91447",
+   "library_type": "extended",
+   "jlc_stock": 173713,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.2585
+    ],
+    [
+     50,
+     0.1978
+    ],
+    [
+     150,
+     0.1682
+    ],
+    [
+     1500,
+     0.1427
+    ],
+    [
+     3000,
+     0.1354
+    ],
+    [
+     4500,
+     0.131
+    ]
+   ],
+   "mpn": "IRM-H638T/TR2",
+   "package": "SMD-4P,5x4mm",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C98220": {
+   "url": "https://jlcpcb.com/partdetail/C98220",
+   "library_type": "extended",
+   "jlc_stock": 9783588,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0034
+    ],
+    [
+     1000,
+     0.0025
+    ],
+    [
+     5000,
+     0.0022
+    ],
+    [
+     10000,
+     0.0018
+    ],
+    [
+     50000,
+     0.0017
+    ],
+    [
+     50200,
+     0.0017
+    ]
+   ],
+   "mpn": "RC0603FR-0710KL",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C114606": {
+   "url": "https://jlcpcb.com/partdetail/C114606",
+   "library_type": "extended",
+   "jlc_stock": 856970,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.005
+    ],
+    [
+     1000,
+     0.0044
+    ],
+    [
+     5000,
+     0.0041
+    ],
+    [
+     10000,
+     0.0039
+    ],
+    [
+     50000,
+     0.0037
+    ],
+    [
+     50200,
+     0.0037
+    ]
+   ],
+   "mpn": "RC0603FR-0710ML",
+   "package": "0603",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C177225": {
+   "url": "https://jlcpcb.com/partdetail/C177225",
+   "library_type": "extended",
+   "jlc_stock": 48840,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.1411
+    ],
+    [
+     50,
+     0.1175
+    ],
+    [
+     150,
+     0.1058
+    ],
+    [
+     500,
+     0.0968
+    ],
+    [
+     3200,
+     0.0898
+    ],
+    [
+     4800,
+     0.0862
+    ]
+   ],
+   "mpn": "532610271",
+   "package": "SMD,P=1.25mm,Surface Mount，Right Angle",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C224194": {
+   "url": "https://jlcpcb.com/partdetail/C224194",
+   "library_type": "extended",
+   "jlc_stock": 103535,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0909
+    ],
+    [
+     50,
+     0.0712
+    ],
+    [
+     150,
+     0.0613
+    ],
+    [
+     500,
+     0.054
+    ],
+    [
+     2500,
+     0.0479
+    ],
+    [
+     5000,
+     0.045
+    ]
+   ],
+   "mpn": "FH34SRJ-6S-0.5SH(50)",
+   "package": "SMD,P=0.5mm,Surface Mount，Right Angle",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C318884": {
+   "url": "https://jlcpcb.com/partdetail/C318884",
+   "library_type": "basic",
+   "jlc_stock": 382006,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0206
+    ],
+    [
+     200,
+     0.0159
+    ],
+    [
+     600,
+     0.0138
+    ],
+    [
+     4000,
+     0.012
+    ],
+    [
+     8000,
+     0.0114
+    ],
+    [
+     20000,
+     0.011
+    ]
+   ],
+   "mpn": "TS-1187A-B-A-B",
+   "package": "SMD-4P,5.1x5.1mm",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null,
+   "library_label_on_page": "Basic"
+  },
+  "C364577": {
+   "url": "https://jlcpcb.com/partdetail/C364577",
+   "library_type": "extended",
+   "jlc_stock": 15778,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.544
+    ],
+    [
+     10,
+     0.4333
+    ],
+    [
+     30,
+     0.386
+    ],
+    [
+     100,
+     0.3258
+    ],
+    [
+     500,
+     0.2932
+    ],
+    [
+     1000,
+     0.2769
+    ]
+   ],
+   "mpn": "LTR-303ALS-01",
+   "package": "DFN-6(2x2)",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 3",
+   "library_label_on_page": "Extended"
+  },
+  "C383210": {
+   "url": "https://jlcpcb.com/partdetail/C383210",
+   "library_type": "extended",
+   "jlc_stock": 15752,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0313
+    ],
+    [
+     200,
+     0.0256
+    ],
+    [
+     600,
+     0.0224
+    ],
+    [
+     3000,
+     0.0191
+    ],
+    [
+     9000,
+     0.0173
+    ],
+    [
+     21000,
+     0.0165
+    ]
+   ],
+   "mpn": "LESD3Z5.0T1G",
+   "package": "SOD-323",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 3",
+   "library_label_on_page": "Extended"
+  },
+  "C425927": {
+   "url": "https://jlcpcb.com/partdetail/C425927",
+   "library_type": "extended",
+   "jlc_stock": 769,
+   "jlc_price_breaks": [
+    [
+     1,
+     1.1499
+    ],
+    [
+     10,
+     1.031
+    ],
+    [
+     30,
+     0.9659
+    ],
+    [
+     100,
+     0.8909
+    ],
+    [
+     500,
+     0.8584
+    ],
+    [
+     1000,
+     0.8437
+    ]
+   ],
+   "mpn": "DRV2605LDGST",
+   "package": "VSSOP-10-0.5mm",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null,
+   "library_label_on_page": "Extended"
+  },
+  "C2682616": {
+   "url": "https://jlcpcb.com/partdetail/C2682616",
+   "library_type": "extended",
+   "jlc_stock": 25582,
+   "jlc_price_breaks": [
+    [
+     1,
+     2.145
+    ],
+    [
+     10,
+     1.8926
+    ],
+    [
+     30,
+     1.7134
+    ],
+    [
+     100,
+     1.5506
+    ],
+    [
+     500,
+     1.3584
+    ],
+    [
+     1000,
+     1.3274
+    ]
+   ],
+   "mpn": "MAX17048G+T10",
+   "package": "DFN-8-EP(2x2)",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C2765186": {
+   "url": "https://jlcpcb.com/partdetail/C2765186",
+   "library_type": "extended",
+   "jlc_stock": 809597,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0745
+    ],
+    [
+     200,
+     0.06
+    ],
+    [
+     1000,
+     0.0507
+    ],
+    [
+     2000,
+     0.0445
+    ],
+    [
+     10000,
+     0.0424
+    ],
+    [
+     20000,
+     0.0409
+    ]
+   ],
+   "mpn": "TYPE-C 16PIN 2MD(073)",
+   "package": "SMD",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null,
+   "library_label_on_page": "Extended"
+  },
+  "C2913204": {
+   "url": "https://jlcpcb.com/partdetail/C2913204",
+   "library_type": "extended",
+   "jlc_stock": 1803,
+   "jlc_price_breaks": [
+    [
+     1,
+     4.6402
+    ],
+    [
+     10,
+     4.1076
+    ],
+    [
+     30,
+     3.6483
+    ],
+    [
+     100,
+     3.3861
+    ],
+    [
+     650,
+     3.2086
+    ],
+    [
+     1300,
+     3.1288
+    ]
+   ],
+   "mpn": "ESP32-S3-WROOM-1-N8R2",
+   "package": "SMD,25.5x18mm",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Standard only",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 3",
+   "library_label_on_page": "Extended"
+  },
+  "C3169104": {
+   "url": "https://jlcpcb.com/partdetail/C3169104",
+   "library_type": "extended",
+   "jlc_stock": 6629,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.6304
+    ],
+    [
+     10,
+     0.5212
+    ],
+    [
+     30,
+     0.4659
+    ],
+    [
+     100,
+     0.4121
+    ],
+    [
+     500,
+     0.3518
+    ],
+    [
+     1000,
+     0.3356
+    ]
+   ],
+   "mpn": "FH34SRJ-50S-0.5SH(50)",
+   "package": "SMD,P=0.5mm,Surface Mount，Right Angle",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C6604342": {
+   "url": "https://jlcpcb.com/partdetail/C6604342",
+   "library_type": "extended",
+   "jlc_stock": 186,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.4479
+    ],
+    [
+     10,
+     0.4365
+    ],
+    [
+     30,
+     0.43
+    ],
+    [
+     100,
+     0.4219
+    ],
+    [
+     102,
+     0.4219
+    ],
+    [
+     104,
+     0.4219
+    ]
+   ],
+   "mpn": "VSMB2948SL",
+   "package": "SMD",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 2a",
+   "library_label_on_page": "Extended"
+  },
+  "C19077497": {
+   "url": "https://jlcpcb.com/partdetail/C19077497",
+   "library_type": "preferred-extended",
+   "jlc_stock": 981670,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.0282
+    ],
+    [
+     200,
+     0.0232
+    ],
+    [
+     600,
+     0.0209
+    ],
+    [
+     3000,
+     0.016
+    ],
+    [
+     9000,
+     0.0153
+    ],
+    [
+     21000,
+     0.0149
+    ]
+   ],
+   "mpn": "SMF5.0A",
+   "package": "SOD-123FL",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 3",
+   "library_label_on_page": "Extended"
+  },
+  "C20340322": {
+   "url": "https://jlcpcb.com/partdetail/C20340322",
+   "library_type": "extended",
+   "jlc_stock": 3970,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.1939
+    ],
+    [
+     50,
+     0.1536
+    ],
+    [
+     150,
+     0.1365
+    ],
+    [
+     500,
+     0.115
+    ],
+    [
+     3000,
+     0.115
+    ],
+    [
+     6000,
+     0.115
+    ]
+   ],
+   "mpn": "FC-135 32.7680KA-E",
+   "package": "SMD3215-2P",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": "MSL 1",
+   "library_label_on_page": "Extended"
+  },
+  "C51928215": {
+   "url": "https://jlcpcb.com/partdetail/C51928215",
+   "library_type": "extended",
+   "jlc_stock": 2814,
+   "jlc_price_breaks": [
+    [
+     1,
+     0.5701
+    ],
+    [
+     10,
+     0.4512
+    ],
+    [
+     30,
+     0.4007
+    ],
+    [
+     100,
+     0.3372
+    ],
+    [
+     500,
+     0.3079
+    ],
+    [
+     1000,
+     0.2916
+    ]
+   ],
+   "mpn": "MSM261DHT006",
+   "package": "LGA-8(3x4)",
+   "min_purchase": 1,
+   "currency": "USD",
+   "pcba_type": "Economic+Standard",
+   "assembly_type": "SMT Assembly",
+   "msl": null
+  }
+ },
+ "manual": {
+  "rules": {
+   "aliexpress_import_charge_per_line_eur": 3.0,
+   "aliexpress_import_charge_note": "project rule: each AliExpress line costs ≈ €3 extra in import charges to Cyprus",
+   "cy_vat_rate": 0.19
+  },
+  "items": [
+   {
+    "id": "ae_motor",
+    "item": "8 mm coin vibration motor 0827 (5 pcs per pack)",
+    "used_in": [
+     "mini28",
+     "mini24"
+    ],
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005007600971536.html",
+    "price": 1.44,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable (captcha); budget +€3 import charge per AliExpress line",
+    "variant": "8x2.7mm (0827), 5 pcs",
+    "alt_price": "€2.24 for the 8x2.7mm 5-pc variant (v1 order, parts.md)",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §5 (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium"
+   },
+   {
+    "id": "ae_m2x8",
+    "item": "M2 x 8 pan-head screws, black, 100 pcs",
+    "used_in": [
+     "mini28",
+     "mini24"
+    ],
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005005581270091.html",
+    "price": 2.23,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge per line",
+    "variant": "M2 100pcs + 8mm",
+    "alt_price": "€2.99 for that variant (v1 order, parts.md)",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §5 (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium"
+   },
+   {
+    "id": "ae_foam_1mm_v1",
+    "item": "double-sided black foam tape 1 mm x 10 mm x 10 m (mini28 mic gasket + panel pads)",
+    "used_in": [
+     "mini28"
+    ],
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005007483857645.html",
+    "price": 3.2,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge per line",
+    "variant": "10 mm wide",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §4/§5 (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium"
+   },
+   {
+    "id": "ae_foam_soft",
+    "item": "soft double-sided foam tape 0.5-2 mm (1.0 + 1.5 mm, 10 mm wide)",
+    "used_in": [
+     "mini24"
+    ],
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005003980172009.html",
+    "price": 3.16,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge per line",
+    "variant": "1.0 mm and 1.5 mm x 10 mm (1.5 mm not verified)",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §4 (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "low"
+   },
+   {
+    "id": "ae_foam_fallback",
+    "item": "black sponge double-sided tape 0.5/1/2 mm (fallback: stack 1.0 + 0.5)",
+    "used_in": [
+     "mini24"
+    ],
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/4000803370856.html",
+    "price": 5.46,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge per line",
+    "variant": "1 mm x 10 mm and 0.5 mm x 10 mm",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §4 (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium"
+   },
+   {
+    "id": "ae_washers",
+    "item": "M2 flat washers DIN 125 A, 304 stainless, 100 pcs",
+    "used_in": [
+     "mini24"
+    ],
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/32812536491.html",
+    "price": 2.33,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge per line",
+    "variant": "M2, 304 stainless, 100 pcs",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §2 (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium"
+   },
+   {
+    "id": "ae_inserts_backup",
+    "item": "M2 x 3 x 3.2 brass heat-set inserts, 100 pcs (backup to LCSC C51938879)",
+    "used_in": [
+     "mini28"
+    ],
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005008666672949.html",
+    "price": 2.75,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge per line",
+    "variant": "M2x3x3.2, 100 pcs",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §1 (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium"
+   },
+   {
+    "id": "3djake_washers",
+    "item": "CNC Kitchen standard washer DIN 125, A2, M2, 200 pcs (CNC-TC-W-M2)",
+    "used_in": [
+     "mini24"
+    ],
+    "shop": "3DJake",
+    "url": "https://www.3djake.com/cnc-kitchen/standard-washer-din-125-stainless-steel-a2?sai=30454",
+    "price": 5.94,
+    "currency": "EUR",
+    "vat": "incl. 19 % VAT",
+    "shipping": "€14.90 standard delivery to Cyprus, free from €99 (https://www.3djake.com/shipping-costs, read 2026-10-11)",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §2 (page opened)",
+    "confidence": "high"
+   },
+   {
+    "id": "bd_er_tft028a2_4",
+    "item": "BuyDisplay ER-TFT028A2-4 2.8\" IPS 240x320 (ILI9341), bare panel",
+    "used_in": [
+     "mini28"
+    ],
+    "shop": "BuyDisplay",
+    "url": "https://www.buydisplay.com/2-8-inch-240x320-ips-tft-lcd-display-panel-optional-touch-panel-wide-view",
+    "price": 7.08,
+    "currency": "USD",
+    "vat": "excl. VAT (BuyDisplay: prices exclude taxes, import fees and duties)",
+    "price_breaks": [
+     [
+      1,
+      7.08
+     ],
+     [
+      10,
+      6.91
+     ],
+     [
+      30,
+      6.73
+     ],
+     [
+      50,
+      6.54
+     ],
+     [
+      100,
+      6.35
+     ]
+    ],
+    "options": {
+     "2.8\" capacitive touch panel with connector (ER-TPC028-4.1, FT6206)": 5.36,
+     "2.8\" resistive touch panel": 1.06,
+     "50-pin 0.5 mm ZIF connector": 0.29
+    },
+    "shipping": "shown only at checkout (DHL / FedEx / TNT / EMS / Singapore Post); not obtained. Budget ≈ US$20-35 by courier to Cyprus (estimate, low confidence), plus 19 % import VAT",
+    "date": "2026-01-14",
+    "source": "Wayback Machine copy of the product page (http://web.archive.org/web/20260114221304/https://www.buydisplay.com/2-8-inch-240x320-ips-tft-lcd-display-panel-optional-touch-panel-wide-view); buydisplay.com itself answers 403 (Cloudflare)",
+    "confidence": "medium"
+   },
+   {
+    "id": "ae_display28_fallback",
+    "item": "AliExpress 2.8\" listing (fallback; its photos show the ER-TFTM028-4 module)",
+    "used_in": [
+     "mini28"
+    ],
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005005309636436.html",
+    "price": 10.99,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge",
+    "variant": "'Smart Home' photo variant; confirm with the seller",
+    "date": "2026-10-10",
+    "source": "research/display_mini28.md (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "low"
+   },
+   {
+    "id": "bd_er_tft024ips_3",
+    "item": "BuyDisplay ER-TFT024IPS-3 2.4\" IPS 240x320 (ST7789V), bare panel",
+    "used_in": [
+     "mini24"
+    ],
+    "shop": "BuyDisplay",
+    "url": "https://www.buydisplay.com/2-4-inch-ips-240x320-tft-lcd-display-capacitive-touch-screen",
+    "price": 6.37,
+    "currency": "USD",
+    "vat": "excl. VAT (BuyDisplay: prices exclude taxes, import fees and duties)",
+    "price_breaks": [
+     [
+      1,
+      6.37
+     ],
+     [
+      10,
+      6.22
+     ],
+     [
+      30,
+      6.05
+     ],
+     [
+      50,
+      5.88
+     ],
+     [
+      100,
+      5.71
+     ]
+    ],
+    "options": {
+     "2.4\" capacitive touch panel (ER-TPC024-1, FT6336U)": 4.43,
+     "2.4\" resistive touch panel": 0.84,
+     "50-pin 0.5 mm ZIF connector": 0.29
+    },
+    "shipping": "shown only at checkout; not obtained. Budget ≈ US$20-35 by courier to Cyprus (estimate, low confidence), plus 19 % import VAT",
+    "date": "2026-02-08",
+    "source": "Wayback Machine copy of the product page (http://web.archive.org/web/20260208114723/https://www.buydisplay.com/2-4-inch-ips-240x320-tft-lcd-display-capacitive-touch-screen)",
+    "confidence": "medium"
+   },
+   {
+    "id": "ae_display24",
+    "item": "ER-TFT024IPS-3 + ER-TPC024-1 from BuyDisplay's AliExpress store",
+    "used_in": [
+     "mini24"
+    ],
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005008088847517.html",
+    "price": 7.59,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "shipped to CY per search data; budget +€3 import charge",
+    "variant": "capacitive-touch (CTP) variant: price not readable; the €7.59 'from' price is almost certainly no-touch; expected ≈ €12-14 with CTP (estimate)",
+    "date": "2026-10-10",
+    "source": "research/display_mini24.md (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "low"
+   },
+   {
+    "id": "ampul_am7240",
+    "item": "Ampul AM7240 Li-Pol 484251, 4.8 x 42 x 51 mm, 1500 mAh, protected, bare leads",
+    "used_in": [
+     "mini28"
+    ],
+    "shop": "Ampul (ampul.eu, CZ)",
+    "url": "https://ampul.eu/en/battery/4060-li-pol-battery-1500mah-37v-484251",
+    "price": 7.2,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT and ecotax",
+    "shipping": "see ampul_dhl_cy",
+    "date": "2026-10-13",
+    "source": "the user's pick (2026-10-13: the mini28's cell moved under the keys; it replaced the AM3690 444666)",
+    "confidence": "high"
+   },
+   {
+    "id": "ampul_am4289",
+    "item": "Ampul AM4289 Li-Pol 504050, 5.0 x 40 x 50 mm, 1500 mAh, protected, bare leads",
+    "used_in": [
+     "mini24"
+    ],
+    "shop": "Ampul (ampul.eu, CZ)",
+    "url": "https://ampul.eu/en/battery/4395-li-pol-battery-1500mah-37v-504050",
+    "price": 8.13,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT and ecotax",
+    "shipping": "see ampul_dhl_cy",
+    "stock": "in stock at supplier",
+    "date": "2026-10-10",
+    "source": "research/batteries.md (shop page read)",
+    "confidence": "high"
+   },
+   {
+    "id": "ampul_dhl_cy",
+    "item": "Ampul shipping to Cyprus: DHL Express (only carrier offered), flat for 1-7 cells",
+    "used_in": [
+     "mini28",
+     "mini24"
+    ],
+    "shop": "Ampul",
+    "url": "https://ampul.eu/en/content/1-delivery-and-payment",
+    "price": 13.2,
+    "currency": "EUR",
+    "vat": "incl. 19 % VAT (€11.09 excl.)",
+    "shipping": "whether Ampul actually dispatches UN3480 Li-Po cells to CY by DHL is unverified: email info@ampul.eu",
+    "date": "2026-10-10",
+    "source": "research/batteries.md §6 (guest checkout priced, no order placed)",
+    "confidence": "medium"
+   },
+   {
+    "id": "tool_crimper",
+    "item": "IWISS IWS-3220 crimper (names PicoBlade)",
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/4001103850122.html",
+    "price": 48.49,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge",
+    "alt_price": "EU: Engineer PA-09, TME ≈ US$52.83 net (cached search result), Amazon.de B002AVVO7K (price not read)",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §7a (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium",
+    "used_in": [
+     "tools"
+    ]
+   },
+   {
+    "id": "tool_stripper",
+    "item": "Pro'sKit 8PK-3001D wire stripper AWG 30-20",
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005007370026286.html",
+    "price": 21.75,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §7h (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium",
+    "used_in": [
+     "tools"
+    ]
+   },
+   {
+    "id": "tool_insert_tips",
+    "item": "heat-set insert tip kit M2-M8 for TS100 / Pinecil",
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005010487312671.html",
+    "price": 6.18,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §7b (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium",
+    "used_in": [
+     "tools"
+    ]
+   },
+   {
+    "id": "tool_punches",
+    "item": "hollow punch set 0.5-5 mm, 10 pcs",
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005006156906582.html",
+    "price": 3.69,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge",
+    "variant": "10 pcs set (from-price may be the 1-pc variant)",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §7c (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "low",
+    "used_in": [
+     "tools"
+    ]
+   },
+   {
+    "id": "tool_paste",
+    "item": "SAC305 solder paste type 4, syringe",
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005011611127977.html",
+    "price": 9.18,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge",
+    "alt_price": "Chip Quik SMD291SNL10T5 (T5, 35 g): ≈ £34.57 excl. VAT at RS UK (https://uk.rs-online.com/web/p/solder-pastes/1466194)",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §7d (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium",
+    "used_in": [
+     "tools"
+    ]
+   },
+   {
+    "id": "tool_flux",
+    "item": "MECHANIC UV223 no-clean flux 10 cc",
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/4000119205431.html",
+    "price": 3.13,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §7e (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium",
+    "used_in": [
+     "tools"
+    ]
+   },
+   {
+    "id": "tool_hotplate_200",
+    "item": "UYUE 946C hotplate 200 x 200 mm, 220 V",
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005013096574256.html",
+    "price": 76.95,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable (heavy: check at checkout); +€3 import charge",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §7f (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium",
+    "used_in": [
+     "tools"
+    ]
+   },
+   {
+    "id": "tool_oven",
+    "item": "T-962A reflow oven, 220 V",
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005012830981064.html",
+    "price": 313.85,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT (if IOSS applies; over €150 import VAT may be charged on delivery)",
+    "shipping": "not readable (≈ 20 kg)",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §7f (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium",
+    "used_in": [
+     "tools"
+    ]
+   },
+   {
+    "id": "tool_hotplate_100",
+    "item": "HP-B100 hotplate (two-zone method)",
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005009758000233.html",
+    "price": 52.15,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge",
+    "variant": "HP-B100 (plate size per variant not visible)",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §7f (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "low",
+    "used_in": [
+     "tools"
+    ]
+   },
+   {
+    "id": "tool_hotair_ae",
+    "item": "JCD 858D hot-air station 700 W, 220 V EU plug (alternative to LCSC C42433896)",
+    "shop": "AliExpress",
+    "url": "https://www.aliexpress.com/item/1005007009985561.html",
+    "price": 59.7,
+    "currency": "EUR",
+    "vat": "incl. 19 % CY VAT",
+    "shipping": "not readable; +€3 import charge",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §7g (AliExpress search result (item page captcha-walled): lowest-variant 'from' price for region CY)",
+    "confidence": "medium",
+    "used_in": [
+     "tools"
+    ]
+   },
+   {
+    "id": "fil_petg_transl_blue",
+    "item": "Creality CR-PETG Translucent Blue 1 kg (3301030036)",
+    "shop": "skroutz.cy",
+    "url": "https://www.skroutz.cy/s/54549405/Creality3D-PETG-3D-Printer-Filament-1-75mm-Translucent-Blue-1kg-3301030036.html",
+    "price": 7.8,
+    "currency": "EUR",
+    "vat": "incl. VAT",
+    "shipping": "per shop; not read",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §8: 'from' price on skroutz.gr (web search; skroutz.cy is behind Cloudflare)",
+    "confidence": "low",
+    "used_in": [
+     "tools"
+    ]
+   },
+   {
+    "id": "fil_petg_body",
+    "item": "Creality CR-PETG 1 kg, body colour (example: blue 3301030032)",
+    "shop": "skroutz.cy",
+    "url": "https://www.skroutz.cy/s/45169057/Creality3D-PETG-3D-Printer-Filament-1-75mm-Mple-1kg-3301030032.html",
+    "price": 8.66,
+    "currency": "EUR",
+    "vat": "incl. VAT",
+    "shipping": "per shop; not read",
+    "date": "2026-10-11",
+    "source": "research/buy_links.md §8: 'from' price, 7 shops (web search result for the .cy page)",
+    "confidence": "low",
+    "used_in": [
+     "tools"
+    ]
+   }
+  ]
+ },
+ "jlcpcb": {
+  "pcb": {
+   "source": "JLCPCB quote API (POST https://cart.jlcpcb.com/api/overseas-core-platform/shoppingCart/calculationGoodsCostsNew, the call https://cart.jlcpcb.com/quote makes; anonymous)",
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "spec": "5 pcs, 2 layers FR-4 TG135-140, 0.8 mm, 1 oz, ENIG 1 µin, no panel, default options",
+   "mini28": {
+    "size_mm": [
+     49.6,
+     165.1
+    ],
+    "note": "49.6 x 165.1 mm",
+    "enig_black": {
+     "total_usd": 25.5,
+     "breakdown": {
+      "projectMoney": 4.0,
+      "adornPutMoney": 17.5,
+      "stencilMoney": 4.0
+     },
+     "weight_g": 199.5,
+     "pcb_weight_kg_each": 0.08,
+     "build_times": [
+      {
+       "name": "3 days",
+       "extra_usd": 0.0
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 0.0,
+       "only_with_pcba": true
+      }
+     ]
+    },
+    "enig_green": {
+     "total_usd": 25.5,
+     "breakdown": {
+      "projectMoney": 4.0,
+      "adornPutMoney": 17.5,
+      "stencilMoney": 4.0
+     },
+     "weight_g": 199.5,
+     "pcb_weight_kg_each": 0.08,
+     "build_times": [
+      {
+       "name": "3 days",
+       "extra_usd": 0.0
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 7.6
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 0.0,
+       "only_with_pcba": true
+      }
+     ]
+    },
+    "hasl_green": {
+     "total_usd": 8.0,
+     "breakdown": {
+      "projectMoney": 4.0,
+      "stencilMoney": 4.0
+     },
+     "weight_g": 199.5,
+     "pcb_weight_kg_each": 0.08,
+     "build_times": [
+      {
+       "name": "2 days",
+       "extra_usd": 0.0
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 7.6
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 0.0,
+       "only_with_pcba": true
+      }
+     ]
+    },
+    "hasl_lf_green": {
+     "total_usd": 9.3,
+     "breakdown": {
+      "projectMoney": 4.0,
+      "adornPutMoney": 1.3,
+      "stencilMoney": 4.0
+     },
+     "weight_g": 199.5,
+     "pcb_weight_kg_each": 0.08,
+     "build_times": [
+      {
+       "name": "2 days",
+       "extra_usd": 0.0
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 7.6
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 0.0,
+       "only_with_pcba": true
+      }
+     ]
+    },
+    "pick": "black"
+   },
+   "mini24": {
+    "size_mm": [
+     40.12,
+     154.8
+    ],
+    "note": "40.12 x 154.8 mm incl. the USB tab; the internal cut-out is part of the outline (the quote form has no cut-out option: JLCPCB routes it at no extra charge)",
+    "enig_black": {
+     "total_usd": 24.3,
+     "breakdown": {
+      "projectMoney": 4.0,
+      "adornPutMoney": 17.3,
+      "stencilMoney": 3.0
+     },
+     "weight_g": 178.5,
+     "pcb_weight_kg_each": 0.06,
+     "build_times": [
+      {
+       "name": "3 days",
+       "extra_usd": 0.0
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 0.0,
+       "only_with_pcba": true
+      }
+     ]
+    },
+    "enig_green": {
+     "total_usd": 24.3,
+     "breakdown": {
+      "projectMoney": 4.0,
+      "adornPutMoney": 17.3,
+      "stencilMoney": 3.0
+     },
+     "weight_g": 178.5,
+     "pcb_weight_kg_each": 0.06,
+     "build_times": [
+      {
+       "name": "3 days",
+       "extra_usd": 0.0
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 7.6
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 0.0,
+       "only_with_pcba": true
+      }
+     ]
+    },
+    "hasl_green": {
+     "total_usd": 7.0,
+     "breakdown": {
+      "projectMoney": 4.0,
+      "stencilMoney": 3.0
+     },
+     "weight_g": 178.5,
+     "pcb_weight_kg_each": 0.06,
+     "build_times": [
+      {
+       "name": "2 days",
+       "extra_usd": 0.0
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 7.6
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 0.0,
+       "only_with_pcba": true
+      }
+     ]
+    },
+    "hasl_lf_green": {
+     "total_usd": 8.2,
+     "breakdown": {
+      "projectMoney": 4.0,
+      "adornPutMoney": 1.2,
+      "stencilMoney": 3.0
+     },
+     "weight_g": 178.5,
+     "pcb_weight_kg_each": 0.06,
+     "build_times": [
+      {
+       "name": "2 days",
+       "extra_usd": 0.0
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 7.6
+      },
+      {
+       "name": "24 hours",
+       "extra_usd": 0.0,
+       "only_with_pcba": true
+      }
+     ]
+    },
+    "pick": "black"
+   },
+   "breakdown_keys": {
+    "projectMoney": "engineering",
+    "stencilMoney": "board (JLC calls the board 'stencil')",
+    "adornPutMoney": "surface finish (ENIG)",
+    "adornColorMoney": "mask colour"
+   }
+  },
+  "stencil": {
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "wanted": "frameless, top paste only, custom 100 x 230 mm, 0.12 mm",
+   "frameless_options": [
+    {
+     "size_cm": [
+      38.0,
+      28.0
+     ],
+     "valid_area_cm": [
+      36.0,
+      20.0
+     ],
+     "price_usd": 7.22,
+     "weight_kg": 0.8,
+     "thickness_surcharge_usd": {
+      "0.08": 1.66,
+      "0.05": 4.97,
+      "0.06": 4.97,
+      "0.25": 4.97,
+      "0.3": 4.97,
+      "0.03": 8.28,
+      "0.04": 8.28,
+      "0.4": 8.28,
+      "0.5": 9.93
+     }
+    },
+    {
+     "size_cm": [
+      42.0,
+      32.0
+     ],
+     "valid_area_cm": [
+      40.0,
+      24.0
+     ],
+     "price_usd": 12.64,
+     "weight_kg": 1.1,
+     "thickness_surcharge_usd": {
+      "0.08": 1.66,
+      "0.05": 4.97,
+      "0.06": 4.97,
+      "0.25": 4.97,
+      "0.3": 4.97,
+      "0.03": 8.28,
+      "0.04": 8.28,
+      "0.4": 8.28,
+      "0.5": 9.93
+     }
+    },
+    {
+     "size_cm": [
+      45.0,
+      35.0
+     ],
+     "valid_area_cm": [
+      42.0,
+      27.0
+     ],
+     "price_usd": 16.25,
+     "weight_kg": 1.4,
+     "thickness_surcharge_usd": {
+      "0.08": 1.66,
+      "0.05": 4.97,
+      "0.06": 4.97,
+      "0.25": 4.97,
+      "0.3": 4.97,
+      "0.03": 8.28,
+      "0.04": 8.28,
+      "0.4": 8.28,
+      "0.5": 9.93
+     }
+    },
+    {
+     "size_cm": [
+      52.0,
+      42.0
+     ],
+     "valid_area_cm": [
+      49.0,
+      34.0
+     ],
+     "price_usd": 21.58,
+     "weight_kg": 1.9,
+     "thickness_surcharge_usd": {
+      "0.08": 3.31,
+      "0.25": 4.97,
+      "0.3": 4.97,
+      "0.05": 8.28,
+      "0.06": 8.28,
+      "0.4": 8.28,
+      "0.03": 9.93,
+      "0.04": 9.93,
+      "0.5": 9.93
+     }
+    },
+    {
+     "size_cm": [
+      46.0,
+      46.0
+     ],
+     "valid_area_cm": [
+      38.0,
+      43.0
+     ],
+     "price_usd": 19.85,
+     "weight_kg": 2.0,
+     "thickness_surcharge_usd": {
+      "0.08": 3.31,
+      "0.05": 8.28,
+      "0.06": 8.28,
+      "0.25": 8.28,
+      "0.3": 8.28,
+      "0.03": 9.93,
+      "0.04": 9.93,
+      "0.4": 11.58,
+      "0.5": 13.24
+     }
+    },
+    {
+     "size_cm": [
+      70.0,
+      60.0
+     ],
+     "valid_area_cm": [
+      65.0,
+      58.0
+     ],
+     "price_usd": 28.4,
+     "weight_kg": 3.6,
+     "thickness_surcharge_usd": {
+      "0.08": 8.28,
+      "0.3": 16.55
+     }
+    },
+    {
+     "size_cm": [
+      60.0,
+      60.0
+     ],
+     "valid_area_cm": [
+      52.0,
+      56.0
+     ],
+     "price_usd": 25.73,
+     "weight_kg": 3.3,
+     "thickness_surcharge_usd": {
+      "0.08": 3.31,
+      "0.05": 8.28,
+      "0.06": 8.28,
+      "0.25": 8.28,
+      "0.3": 8.28,
+      "0.03": 9.93,
+      "0.04": 9.93,
+      "0.4": 11.58,
+      "0.5": 13.24
+     }
+    }
+   ],
+   "framed_from_usd": 10.68,
+   "chosen": {
+    "size_cm": [
+     38.0,
+     28.0
+    ],
+    "list_price_usd": 7.22,
+    "thickness_0.12_surcharge_usd": 0.0
+   },
+   "quoted_usd": 7.22,
+   "weight_g": 955.5,
+   "note": "one stencil per board design; a custom (smaller) outline is entered as 'custom size' and costs the same as the 380 x 280 mm frameless sheet"
+  },
+  "pcba_fees": {
+   "source": "https://jlcpcb.com/help/article/pcb-assembly-price",
+   "currency": "USD",
+   "vat": "excl. VAT",
+   "page_updated": "Sep 09, 2026",
+   "table": {
+    "Setup fee": {
+     "economic": "$8.18",
+     "standard": "$25.56/Single-side ; $51.12/Double-side"
+    },
+    "Panel ; (Applicable when the number of panelized designs > 1)": {
+     "economic": "$8.21",
+     "standard": "$8.21"
+    },
+    "Stencil": {
+     "economic": "$1.53",
+     "standard": "$8.21/Single-side assembly ; $16.42/Double-side assembly"
+    },
+    "Pre-reflow Soldering": {
+     "economic": "1–1,000,000 joints: $0.016/joint",
+     "standard": "1–1,000,000 joints: $0.016/joint"
+    },
+    "SMT Assembly": {
+     "economic": "1–100,000 joints: $0.0016/joint",
+     "standard": "1–50,000 joints: $0.0016/joint ; 50,001–100,000 joints: $0.0013/joint ; 100,001–1,000,000 joints: $0.0012/joint"
+    },
+    "Manual Assembly": {
+     "economic": "1–10,000 joints: $0.0164/joint ; 10,001–30,000 joints: $0.015/joint ; 30,001–100,000 joints: $0.012/joint",
+     "standard": "1–10,000 joints: $0.0164/joint ; 10,001–30,000 joints: $0.015/joint ; 30,001–100,000 joints: $0.012/joint"
+    },
+    "Hand-soldering Labor": {
+     "economic": "$3.58 per order",
+     "standard": "$3.58 per order"
+    },
+    "Components": {
+     "economic": "Per system",
+     "standard": "Per system"
+    },
+    "Feeder Loading": {
+     "economic": "$3.07 Extend",
+     "standard": "$1.53 Basic/Extend"
+    },
+    "Large Size ; (Charged when PCB area > 650 cm²)": {
+     "economic": "$57.46",
+     "standard": "$57.46"
+    },
+    "Packing": {
+     "economic": "Free",
+     "standard": "$0.50 + $0.00003 × PCB Area (cm²)"
+    },
+    "X-ray Inspection ; (Component Quantity)": {
+     "economic": "1–10 pcs: $1.64/pc ; 11–50 pcs: $0.82/pc ; 51–200 pcs: $0.49/pc ; 201–500 pcs: $0.33/pc ; 501–1,000 pcs: $0.25/pc ; 1,001–3,000 pcs: $0.16/pc ; 3,001–99,999 pcs: $0.082/pc",
+     "standard": "1–10 pcs: $1.64/pc ; 11–50 pcs: $0.82/pc ; 51–200 pcs: $0.49/pc ; 201–500 pcs: $0.33/pc ; 501–1,000 pcs: $0.25/pc ; 1,001–3,000 pcs: $0.16/pc ; 3,001–99,999 pcs: $0.082/pc"
+    },
+    "Handling fee": {
+     "economic": "/",
+     "standard": "≥ $14.93"
+    },
+    "Single board assembly surcharge": {
+     "economic": "/",
+     "standard": "$0.48"
+    },
+    "Confirm Parts Placement": {
+     "economic": "$0.45",
+     "standard": "$0.45"
+    },
+    "Stencil Storage": {
+     "economic": "/",
+     "standard": "$4.93"
+    },
+    "Fixture Storage": {
+     "economic": "/",
+     "standard": "$4.93"
+    },
+    "Fixture (Standard Rigid PCB)": {
+     "economic": "/",
+     "standard": "Fixture Fee: $8.21/fixture ; 1–29 pcs: 2 fixtures → $16.42 ; 30–99 pcs: 3 fixtures → $24.63 ; 100–199 pcs: 5 fixtures → $41.04 ; 200–349 pcs: 10 fixtures → $82.09 ; 350–499 pcs: 15 fixtures → $123.13 ; 500–100,000 pcs: 20 fixtures → $164.18"
+    },
+    "Fixture (Flexible PCB)": {
+     "economic": "/",
+     "standard": "Fixture Fee: $24.63/fixture ; 1–29 pcs: 2 fixtures → $49.25 ; 30–99 pcs: 3 fixtures → $73.88 ; 100–199 pcs: 5 fixtures → $123.13 ; 200–349 pcs: 10 fixtures → $246.27 ; 350–499 pcs: 15 fixtures → $369.40 ; 500–100,000 pcs: 20 fixtures → $492.54"
+    }
+   },
+   "explanations": [
+    "Setup Fee:\nThis fee covers the engineering work required to process the customer-provided design files and convert them into production-ready engineering data for SMT assembly.",
+    "Stencil:\nSMT engineers generate the stencil file based on the PCB pad layout, selected component packages, and established industry design guidelines. The stencil is used solely to support the SMT solder paste printing process and will not be shipped with the order.",
+    "SMT Assembly Fee:\nAn automated assembly fee calculated based on the total number of solder joints placed during SMT assembly.",
+    "Manual Assembly Fee:\nA labor fee for assembly processes that require manual soldering or assembly. The fee is calculated based on the number of solder joints requiring manual soldering.",
+    "Extended Components Fee:\nFor Economic PCBA orders, an additional labor fee applies to extended components that require extra feeder setup or changeover on pick-and-place machines.",
+    "Feeder Loading Fee:\nFor Standard PCBA orders, all basic and extended components require feeder loading on pick-and-place machines. An additional labor fee applies.",
+    "X-ray Inspection Fee:\nTo ensure solder joint quality, X-ray inspection is required for components such as BGA, QFN, and other leadless packages whose solder joints are not visible after SMT assembly.",
+    "Handling Fee:\nWhen both Economic PCBA and Standard PCBA are available for the same order, the total price difference between the two options must be at least $14.93. If the difference is less than $14.93, the shortfall is charged as a handling fee.",
+    "Single board assembly surcharge:\nFor bulk orders, a minimum SMT assembly charge of $0.48 per board applies. If the calculated assembly fee is below $0.48 per board, the difference is charged as a surcharge. Panelizing PCBs can help avoid this surcharge."
+   ],
+   "faq_summary_(older_wording)": "1. What does your quoted price include? The PCB assembly price including: Setup fee: $8.00 Stencil: $1.50 SMT Assembly: $0.0017 per joint Hand-soldering labor fee: $3.5 Manual Assembly: $0.0173 per joint Components cost: Based on the components you choose for assembly Our online quotes will show the exact assembly fee and components cost after you select the parts for assembly. 2. What's your wave soldering service? ",
+   "preferred_extended_rule": "Preferred Extended Parts\"? \"Preferred Extended Parts\" refers to some of the components that are manually loaded onto the P&P (Pick and Place) machines for assembly. These parts were previously classified as Basic parts, but they have now been categorized as Extended (Preferred) parts. The advantage of Preferred Extended Parts is that they are exempt from the Feeders Loading fee for Economic PCB assembly",
+   "faq_source": "https://jlcpcb.com/help/article/pcb-assembly-faqs",
+   "economic_eligibility_0.8mm_2layer": [
+    {
+     "adornColor": "Green",
+     "adornPut": "HASL(with lead),LeadFree HASL-RoHS",
+     "maxStencilCounts": 30,
+     "selectPatch": 1
+    }
+   ],
+   "economic_eligibility_note": "JLC's SMT config table (https://cart.jlcpcb.com/api/overseas-core-platform/order/getSmtOrderConfig): board options for which Economic PCBA is offered; finishes not listed for 0.8 mm (e.g. ENIG) mean Standard PCBA only",
+   "rules_summary": {
+    "standard": {
+     "setup": "$25.56/Single-side ; $51.12/Double-side",
+     "stencil": "$8.21/Single-side assembly ; $16.42/Double-side assembly",
+     "smt_per_joint": "1–50,000 joints: $0.0016/joint ; 50,001–100,000 joints: $0.0013/joint ; 100,001–1,000,000 joints: $0.0012/joint",
+     "feeder_loading": "$1.53 Basic/Extend per unique part (basic and extended)",
+     "manual_assembly_per_joint": "1–10,000 joints: $0.0164/joint ; 10,001–30,000 joints: $0.015/joint ; 30,001–100,000 joints: $0.012/joint",
+     "hand_soldering_labour": "$3.58 per order",
+     "fixture": "Fixture Fee: $8.21/fixture ; 1–29 pcs: 2 fixtures → $16.42 ; 30–99 pcs: 3 fixtures → $24.63 ; 100–199 pcs: 5 fixtures → $41.04 ; 200–349 pcs: 10 fixtures → $82.09 ; 350–499 pcs: 15 fixtures → $123.13 ; 500–100,000 pcs: 20 fixtures → $164.18",
+     "handling_fee": "≥ $14.93 (only when Economic is also possible)",
+     "single_board_surcharge": "$0.48 per board minimum SMT charge"
+    },
+    "economic": {
+     "setup": "$8.18",
+     "stencil": "$1.53",
+     "smt_per_joint": "1–100,000 joints: $0.0016/joint",
+     "extended_part_fee": "$3.07 Extend per unique extended part (basic and preferred-extended: none)",
+     "manual_assembly_per_joint": "1–10,000 joints: $0.0164/joint ; 10,001–30,000 joints: $0.015/joint ; 30,001–100,000 joints: $0.012/joint",
+     "hand_soldering_labour": "$3.58 per order"
+    },
+    "minimum_order": "no minimum fee is listed; Economic is limited by the board options (see economic_eligibility_0.8mm_2layer) and to ≤ 50 boards ('Quantity>50 is only available for standard PCBA', quote page)",
+    "standard_only_parts": [
+     "C2913204"
+    ],
+    "non_smt_parts": {},
+    "hand_soldering_note": "JLC lists the USB-C C2765186 as 'SMT Assembly' (its shell slots are reflowed), so no hand-soldering fee is expected for it; the manual-assembly rate + $3.58 labour apply only to parts JLC marks as manual / wave soldering (non_smt_parts)."
+   }
+  },
+  "pcba_estimate": {
+   "assumptions": "5 boards, Standard PCBA (Economic is not offered: 0.8 mm boards get Economic only in green HASL, and the ESP32 module and the mic are 'Standard only'); every on-board BOM part placed (DNP and the wired motor left out); fixture fee for 1-29 pcs; components, PCB, packing ($0.50 + $0.00003 x cm²), shipping and any handling fee not included. JLC's live quote after BOM/CPL upload is the authority.",
+   "rates_used_usd": {
+    "setup_single_side": 25.56,
+    "setup_double_side": 51.12,
+    "stencil_single": 8.21,
+    "stencil_double": 16.42,
+    "smt_joint": 0.0016,
+    "feeder_loading_per_unique_part": 1.53,
+    "fixture_1_29_pcs": 16.42
+   },
+   "mini28": {
+    "top_side_only": {
+     "unique_parts": 34,
+     "joints_per_board": 316,
+     "setup": 25.56,
+     "stencil": 8.21,
+     "smt_joints": 2.53,
+     "feeder_loading": 52.02,
+     "fixture": 16.42,
+     "total_usd": 104.74
+    },
+    "both_sides": {
+     "unique_parts": 37,
+     "joints_per_board": 370,
+     "setup": 51.12,
+     "stencil": 16.42,
+     "smt_joints": 2.96,
+     "feeder_loading": 56.61,
+     "fixture": 16.42,
+     "total_usd": 143.53
+    }
+   },
+   "mini24": {
+    "top_side_only": {
+     "unique_parts": 32,
+     "joints_per_board": 307,
+     "setup": 25.56,
+     "stencil": 8.21,
+     "smt_joints": 2.46,
+     "feeder_loading": 48.96,
+     "fixture": 16.42,
+     "total_usd": 101.61
+    },
+    "both_sides": {
+     "unique_parts": 34,
+     "joints_per_board": 355,
+     "setup": 51.12,
+     "stencil": 16.42,
+     "smt_joints": 2.84,
+     "feeder_loading": 52.02,
+     "fixture": 16.42,
+     "total_usd": 138.82
+    }
+   }
+  },
+  "shipping": {
+   "jlcpcb_to_cyprus": {
+    "mini28_pcb_x5": {
+     "weight_g": 199.5,
+     "options": [
+      {
+       "method": "DHL Express",
+       "usd": 23.21,
+       "days": "2-4 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "FedEx Express",
+       "usd": 27.04,
+       "days": "5-8 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "UPS Worldwide Express Saver",
+       "usd": 47.18,
+       "days": "6-8 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "DHL Express (DDP)",
+       "usd": 23.21,
+       "days": "2-4 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "EuroPacket",
+       "usd": 24.94,
+       "days": "5-10 business days",
+       "limits": "≤20kg"
+      },
+      {
+       "method": "Global Standard Direct Line",
+       "usd": 9.9,
+       "days": "12-19 business days",
+       "limits": "≤1.5kg ≤$150"
+      },
+      {
+       "method": "My DHL Account",
+       "usd": 2.0,
+       "days": null,
+       "limits": "≤10000kg"
+      }
+     ]
+    },
+    "mini28_pcb_x5_plus_stencil": {
+     "weight_g": 1155.0,
+     "options": [
+      {
+       "method": "DHL Express",
+       "usd": 30.27,
+       "days": "2-4 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "FedEx Express",
+       "usd": 38.49,
+       "days": "5-8 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "UPS Worldwide Express Saver",
+       "usd": 73.86,
+       "days": "6-8 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "DHL Express (DDP)",
+       "usd": 30.27,
+       "days": "2-4 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "EuroPacket",
+       "usd": 38.69,
+       "days": "5-10 business days",
+       "limits": "≤20kg"
+      },
+      {
+       "method": "Global Standard Direct Line",
+       "usd": 31.9,
+       "days": "12-19 business days",
+       "limits": "≤1.5kg ≤$150"
+      },
+      {
+       "method": "My DHL Account",
+       "usd": 2.0,
+       "days": null,
+       "limits": "≤10000kg"
+      }
+     ]
+    },
+    "mini24_pcb_x5": {
+     "weight_g": 178.5,
+     "options": [
+      {
+       "method": "DHL Express",
+       "usd": 23.21,
+       "days": "2-4 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "FedEx Express",
+       "usd": 27.04,
+       "days": "5-8 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "UPS Worldwide Express Saver",
+       "usd": 47.18,
+       "days": "6-8 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "DHL Express (DDP)",
+       "usd": 23.21,
+       "days": "2-4 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "EuroPacket",
+       "usd": 24.94,
+       "days": "5-10 business days",
+       "limits": "≤20kg"
+      },
+      {
+       "method": "Global Standard Direct Line",
+       "usd": 9.44,
+       "days": "12-19 business days",
+       "limits": "≤1.5kg ≤$150"
+      },
+      {
+       "method": "My DHL Account",
+       "usd": 2.0,
+       "days": null,
+       "limits": "≤10000kg"
+      }
+     ]
+    },
+    "mini24_pcb_x5_plus_stencil": {
+     "weight_g": 1134.0,
+     "options": [
+      {
+       "method": "DHL Express",
+       "usd": 30.27,
+       "days": "2-4 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "FedEx Express",
+       "usd": 38.49,
+       "days": "5-8 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "UPS Worldwide Express Saver",
+       "usd": 73.86,
+       "days": "6-8 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "DHL Express (DDP)",
+       "usd": 30.27,
+       "days": "2-4 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "EuroPacket",
+       "usd": 38.69,
+       "days": "5-10 business days",
+       "limits": "≤20kg"
+      },
+      {
+       "method": "Global Standard Direct Line",
+       "usd": 31.21,
+       "days": "12-19 business days",
+       "limits": "≤1.5kg ≤$150"
+      },
+      {
+       "method": "My DHL Account",
+       "usd": 2.0,
+       "days": null,
+       "limits": "≤10000kg"
+      }
+     ]
+    },
+    "both_models_pcbs_plus_2_stencils": {
+     "weight_g": 2289.0,
+     "options": [
+      {
+       "method": "DHL Express",
+       "usd": 54.16,
+       "days": "2-4 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "FedEx Express",
+       "usd": 48.06,
+       "days": "5-8 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "UPS Worldwide Express Saver",
+       "usd": 100.51,
+       "days": "6-8 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "DHL Express (DDP)",
+       "usd": 54.16,
+       "days": "2-4 business days",
+       "limits": "≤10000kg"
+      },
+      {
+       "method": "EuroPacket",
+       "usd": 53.82,
+       "days": "5-10 business days",
+       "limits": "≤20kg"
+      },
+      {
+       "method": "My DHL Account",
+       "usd": 2.0,
+       "days": null,
+       "limits": "≤10000kg"
+      }
+     ]
+    }
+   },
+   "lcsc_to_cyprus": {
+    "parts_only": {
+     "net_weight_g": 152.5,
+     "options": [
+      {
+       "method": "Global Direct Standard Line",
+       "usd": 22.43,
+       "days": "7-15",
+       "gross_weight_g": 1500
+      },
+      {
+       "method": "UPS",
+       "usd": 132.69,
+       "days": "3-7",
+       "gross_weight_g": 1500
+      },
+      {
+       "method": "4PX",
+       "usd": 21.7,
+       "days": "5-23",
+       "gross_weight_g": 1500
+      },
+      {
+       "method": "FedEx International Economy",
+       "usd": 39.9,
+       "days": "4-8",
+       "gross_weight_g": 1500
+      },
+      {
+       "method": "DHL Express",
+       "usd": 51.66,
+       "days": "3-7",
+       "gross_weight_g": 1500
+      },
+      {
+       "method": "FedEx International Priority",
+       "usd": 40.34,
+       "days": "3-7",
+       "gross_weight_g": 1500
+      },
+      {
+       "method": "Singapore Post",
+       "usd": 31.25,
+       "days": "20-35",
+       "gross_weight_g": 1500
+      }
+     ]
+    },
+    "parts_plus_jlc_parcel_1kg": {
+     "net_weight_g": 1152.5,
+     "options": [
+      {
+       "method": "Global Direct Standard Line",
+       "usd": 40.09,
+       "days": "7-15",
+       "gross_weight_g": 3500
+      },
+      {
+       "method": "UPS",
+       "usd": 253.48,
+       "days": "3-7",
+       "gross_weight_g": 3500
+      },
+      {
+       "method": "4PX",
+       "usd": 42.82,
+       "days": "5-23",
+       "gross_weight_g": 3500
+      },
+      {
+       "method": "FedEx International Economy",
+       "usd": 68.33,
+       "days": "4-8",
+       "gross_weight_g": 3500
+      },
+      {
+       "method": "DHL Express",
+       "usd": 85.7,
+       "days": "3-7",
+       "gross_weight_g": 3500
+      },
+      {
+       "method": "FedEx International Priority",
+       "usd": 69.57,
+       "days": "3-7",
+       "gross_weight_g": 3500
+      },
+      {
+       "method": "Singapore Post",
+       "usd": 63.01,
+       "days": "20-35",
+       "gross_weight_g": 3500
+      }
+     ]
+    },
+    "parts_plus_jlc_parcels_2.5kg": {
+     "net_weight_g": 2652.5,
+     "options": [
+      {
+       "method": "UPS",
+       "usd": 403.05,
+       "days": "3-7",
+       "gross_weight_g": 5500
+      },
+      {
+       "method": "FedEx International Economy",
+       "usd": 97.65,
+       "days": "4-8",
+       "gross_weight_g": 5500
+      },
+      {
+       "method": "DHL Express",
+       "usd": 120.18,
+       "days": "3-7",
+       "gross_weight_g": 5500
+      },
+      {
+       "method": "FedEx International Priority",
+       "usd": 99.7,
+       "days": "3-7",
+       "gross_weight_g": 5500
+      }
+     ]
+    }
+   },
+   "currency": "USD",
+   "jlcpcb_source": "https://cart.jlcpcb.com/api/overseas-core-platform/shoppingCart/calculateGoodsFreight (country set to Cyprus via saveCountryAndRate)",
+   "lcsc_source": "https://wmsc.lcsc.com/wmsc/cart/product/getExpress (the cart's shipping estimate; weight = net grams, LCSC adds packaging)",
+   "combined_order": {
+    "how": "Order the JLCPCB part shipped to LCSC's Hong Kong warehouse (address in the LCSC FAQ), then pick 'combine with JLCPCB order' at LCSC checkout. LCSC recalculates the shipment by total weight and bills any difference; the JLCPCB order still pays JLC's (domestic) leg to the warehouse.",
+    "source": "https://www.lcsc.com/faqs/ordering-quotation/combine-lcsc-jlcpcb-orders (read 2026-10-11)",
+    "estimate": "use lcsc_to_cyprus.parts_plus_jlc_parcel_* for the international leg"
+   },
+   "vat": {
+    "cyprus_vat": "19 %",
+    "jlcpcb": "JLCPCB is IOSS-registered: for individual (B2C) orders of US$170 or less, the 19 % VAT is charged at checkout and nothing is due on delivery; above that the parcel is cleared normally (import VAT + courier fee on delivery) unless 'DHL Express (DDP)' is chosen. B2B buyers give a VAT number.",
+    "jlcpcb_source": "https://jlcpcb.com/help/article/EU-VAT-E-commerce-Rules-%26-Adjustments (updated Sep 09, 2026; read 2026-10-11)",
+    "lcsc": "LCSC ships FCA / EXW: 'Customers are expected to pay any amount charged by the government or customs at the destination' (duties, taxes, courier fees). LCSC's own pages say nothing about IOSS; forum reports differ. Budget 19 % import VAT + a courier handling fee on delivery.",
+    "lcsc_source": "https://www.lcsc.com/help-center/shipping-delivering/customs-duties-taxes (read 2026-10-11)",
+    "customs_duty": "no customs duty on consignments with an intrinsic value ≤ €150 (EU rule quoted in JLC's article)"
+   }
+  }
+ },
+ "joints": {
+  "mini28": {
+   "top": 316,
+   "bottom": 54,
+   "dnp": {
+    "R17": 2
+   },
+   "not_counted": {
+    "LOGO_FRONT2": "1 pad(s), top: not a BOM part (logo LED dot)",
+    "LOGO_FRONT1": "1 pad(s), top: not a BOM part (logo LED dot)",
+    "M1": "2 pad(s), bottom: 8 mm coin motor (wired), wired by hand (no JLC part)",
+    "LOGO_BACK1": "1 pad(s), bottom: not a BOM part (logo LED dot)",
+    "TP3": "1 pad(s), bottom: not a BOM part (pad)",
+    "LOGO_BACK2": "1 pad(s), bottom: not a BOM part (logo LED dot)",
+    "TP4": "1 pad(s), bottom: not a BOM part (pad)",
+    "TP5": "1 pad(s), bottom: not a BOM part (pad)"
+   },
+   "pth_pads": {
+    "J3": 4,
+    "U1": 4
+   },
+   "by_ref": {
+    "SW5": {
+     "side": "top",
+     "pads": 4
+    },
+    "SW2": {
+     "side": "top",
+     "pads": 4
+    },
+    "U7": {
+     "side": "top",
+     "pads": 6
+    },
+    "R21": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW12": {
+     "side": "top",
+     "pads": 4
+    },
+    "C8": {
+     "side": "top",
+     "pads": 2
+    },
+    "R3": {
+     "side": "top",
+     "pads": 2
+    },
+    "R1": {
+     "side": "top",
+     "pads": 2
+    },
+    "R9": {
+     "side": "top",
+     "pads": 2
+    },
+    "C9": {
+     "side": "top",
+     "pads": 2
+    },
+    "R23": {
+     "side": "top",
+     "pads": 2
+    },
+    "U4": {
+     "side": "top",
+     "pads": 16
+    },
+    "D4": {
+     "side": "top",
+     "pads": 2
+    },
+    "R14": {
+     "side": "top",
+     "pads": 2
+    },
+    "J1": {
+     "side": "top",
+     "pads": 52
+    },
+    "C17": {
+     "side": "top",
+     "pads": 2
+    },
+    "LOGO_FRONT2": {
+     "side": "top",
+     "pads": 1
+    },
+    "C18": {
+     "side": "top",
+     "pads": 2
+    },
+    "C13": {
+     "side": "top",
+     "pads": 2
+    },
+    "U6": {
+     "side": "top",
+     "pads": 4
+    },
+    "C26": {
+     "side": "top",
+     "pads": 2
+    },
+    "R2": {
+     "side": "top",
+     "pads": 2
+    },
+    "C21": {
+     "side": "top",
+     "pads": 2
+    },
+    "C7": {
+     "side": "top",
+     "pads": 2
+    },
+    "R20": {
+     "side": "top",
+     "pads": 2
+    },
+    "R18": {
+     "side": "top",
+     "pads": 2
+    },
+    "C3": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW6": {
+     "side": "top",
+     "pads": 4
+    },
+    "C6": {
+     "side": "top",
+     "pads": 2
+    },
+    "U3": {
+     "side": "top",
+     "pads": 10
+    },
+    "Q2": {
+     "side": "top",
+     "pads": 3
+    },
+    "R13": {
+     "side": "top",
+     "pads": 2
+    },
+    "R10": {
+     "side": "top",
+     "pads": 2
+    },
+    "U5": {
+     "side": "top",
+     "pads": 9
+    },
+    "Y1": {
+     "side": "top",
+     "pads": 2
+    },
+    "R4": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW11": {
+     "side": "top",
+     "pads": 4
+    },
+    "R16": {
+     "side": "top",
+     "pads": 2
+    },
+    "U8": {
+     "side": "top",
+     "pads": 9
+    },
+    "C19": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW3": {
+     "side": "top",
+     "pads": 4
+    },
+    "C4": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW1": {
+     "side": "top",
+     "pads": 4
+    },
+    "J2": {
+     "side": "top",
+     "pads": 8
+    },
+    "R19": {
+     "side": "top",
+     "pads": 2
+    },
+    "U2": {
+     "side": "top",
+     "pads": 5
+    },
+    "R5": {
+     "side": "top",
+     "pads": 2
+    },
+    "C5": {
+     "side": "top",
+     "pads": 2
+    },
+    "R6": {
+     "side": "top",
+     "pads": 2
+    },
+    "R7": {
+     "side": "top",
+     "pads": 2
+    },
+    "D3": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW8": {
+     "side": "top",
+     "pads": 4
+    },
+    "C16": {
+     "side": "top",
+     "pads": 2
+    },
+    "R8": {
+     "side": "top",
+     "pads": 2
+    },
+    "R11": {
+     "side": "top",
+     "pads": 2
+    },
+    "R17": {
+     "side": "top",
+     "pads": 2,
+     "dnp": true
+    },
+    "D2": {
+     "side": "top",
+     "pads": 2
+    },
+    "C1": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW4": {
+     "side": "top",
+     "pads": 4
+    },
+    "C25": {
+     "side": "top",
+     "pads": 2
+    },
+    "R12": {
+     "side": "top",
+     "pads": 2
+    },
+    "U9": {
+     "side": "top",
+     "pads": 8
+    },
+    "R15": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW13": {
+     "side": "top",
+     "pads": 4
+    },
+    "SW14": {
+     "side": "top",
+     "pads": 4
+    },
+    "C14": {
+     "side": "top",
+     "pads": 2
+    },
+    "LOGO_FRONT1": {
+     "side": "top",
+     "pads": 1
+    },
+    "C11": {
+     "side": "top",
+     "pads": 2
+    },
+    "Q1": {
+     "side": "top",
+     "pads": 3
+    },
+    "C12": {
+     "side": "top",
+     "pads": 2
+    },
+    "C20": {
+     "side": "top",
+     "pads": 2
+    },
+    "J3": {
+     "side": "top",
+     "pads": 20,
+     "pth": 4
+    },
+    "SW10": {
+     "side": "top",
+     "pads": 4
+    },
+    "R26": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW9": {
+     "side": "top",
+     "pads": 4
+    },
+    "C2": {
+     "side": "top",
+     "pads": 2
+    },
+    "D1": {
+     "side": "top",
+     "pads": 2
+    },
+    "Q3": {
+     "side": "top",
+     "pads": 3
+    },
+    "R22": {
+     "side": "top",
+     "pads": 2
+    },
+    "U10": {
+     "side": "top",
+     "pads": 6
+    },
+    "SW7": {
+     "side": "top",
+     "pads": 4
+    },
+    "U1": {
+     "side": "bottom",
+     "pads": 45,
+     "pth": 4
+    },
+    "M1": {
+     "side": "bottom",
+     "pads": 2
+    },
+    "LOGO_BACK1": {
+     "side": "bottom",
+     "pads": 1
+    },
+    "TP3": {
+     "side": "bottom",
+     "pads": 1
+    },
+    "LOGO_BACK2": {
+     "side": "bottom",
+     "pads": 1
+    },
+    "Q4": {
+     "side": "bottom",
+     "pads": 3
+    },
+    "TP4": {
+     "side": "bottom",
+     "pads": 1
+    },
+    "TP5": {
+     "side": "bottom",
+     "pads": 1
+    },
+    "R24": {
+     "side": "bottom",
+     "pads": 2
+    },
+    "J4": {
+     "side": "bottom",
+     "pads": 4
+    }
+   },
+   "source": "mini28/mainboard/mainboard.kicad_pcb"
+  },
+  "mini24": {
+   "top": 307,
+   "bottom": 48,
+   "dnp": {
+    "R21": 2
+   },
+   "not_counted": {
+    "TP3": "1 pad(s), top: not a BOM part (test pad)",
+    "LOGO_FRONT1": "1 pad(s), top: not a BOM part (logo LED dot)",
+    "LOGO_FRONT2": "1 pad(s), top: not a BOM part (logo LED dot)",
+    "TP2": "1 pad(s), bottom: not a BOM part (test pad)",
+    "LOGO_BACK1": "1 pad(s), bottom: not a BOM part (logo LED dot)",
+    "M1": "2 pad(s), bottom: ERM 0827 (8 mm coin, wired), wired by hand (no JLC part)",
+    "LOGO_BACK2": "1 pad(s), bottom: not a BOM part (logo LED dot)",
+    "TP1": "1 pad(s), bottom: not a BOM part (test pad)"
+   },
+   "pth_pads": {
+    "J3": 4,
+    "U1": 3
+   },
+   "by_ref": {
+    "C9": {
+     "side": "top",
+     "pads": 2
+    },
+    "C18": {
+     "side": "top",
+     "pads": 2
+    },
+    "C3": {
+     "side": "top",
+     "pads": 2
+    },
+    "R20": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW9": {
+     "side": "top",
+     "pads": 4
+    },
+    "SW14": {
+     "side": "top",
+     "pads": 4
+    },
+    "R24": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW2": {
+     "side": "top",
+     "pads": 4
+    },
+    "R11": {
+     "side": "top",
+     "pads": 2
+    },
+    "C20": {
+     "side": "top",
+     "pads": 2
+    },
+    "J1": {
+     "side": "top",
+     "pads": 52
+    },
+    "R2": {
+     "side": "top",
+     "pads": 2
+    },
+    "U2": {
+     "side": "top",
+     "pads": 5
+    },
+    "R12": {
+     "side": "top",
+     "pads": 2
+    },
+    "R25": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW3": {
+     "side": "top",
+     "pads": 4
+    },
+    "R26": {
+     "side": "top",
+     "pads": 2
+    },
+    "Q4": {
+     "side": "top",
+     "pads": 3
+    },
+    "U4": {
+     "side": "top",
+     "pads": 16
+    },
+    "R3": {
+     "side": "top",
+     "pads": 2
+    },
+    "R27": {
+     "side": "top",
+     "pads": 2
+    },
+    "C17": {
+     "side": "top",
+     "pads": 2
+    },
+    "R18": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW7": {
+     "side": "top",
+     "pads": 4
+    },
+    "SW1": {
+     "side": "top",
+     "pads": 4
+    },
+    "R21": {
+     "side": "top",
+     "pads": 2,
+     "dnp": true
+    },
+    "U8": {
+     "side": "top",
+     "pads": 9
+    },
+    "Q1": {
+     "side": "top",
+     "pads": 3
+    },
+    "R10": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW11": {
+     "side": "top",
+     "pads": 4
+    },
+    "C12": {
+     "side": "top",
+     "pads": 2
+    },
+    "R22": {
+     "side": "top",
+     "pads": 2
+    },
+    "C5": {
+     "side": "top",
+     "pads": 2
+    },
+    "R13": {
+     "side": "top",
+     "pads": 2
+    },
+    "D2": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW8": {
+     "side": "top",
+     "pads": 4
+    },
+    "D4": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW12": {
+     "side": "top",
+     "pads": 4
+    },
+    "R8": {
+     "side": "top",
+     "pads": 2
+    },
+    "C21": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW10": {
+     "side": "top",
+     "pads": 4
+    },
+    "U5": {
+     "side": "top",
+     "pads": 9
+    },
+    "SW5": {
+     "side": "top",
+     "pads": 4
+    },
+    "SW4": {
+     "side": "top",
+     "pads": 4
+    },
+    "C7": {
+     "side": "top",
+     "pads": 2
+    },
+    "Y1": {
+     "side": "top",
+     "pads": 2
+    },
+    "C23": {
+     "side": "top",
+     "pads": 2
+    },
+    "J3": {
+     "side": "top",
+     "pads": 20,
+     "pth": 4
+    },
+    "D3": {
+     "side": "top",
+     "pads": 2
+    },
+    "D1": {
+     "side": "top",
+     "pads": 2
+    },
+    "C13": {
+     "side": "top",
+     "pads": 2
+    },
+    "Q2": {
+     "side": "top",
+     "pads": 3
+    },
+    "R16": {
+     "side": "top",
+     "pads": 2
+    },
+    "U6": {
+     "side": "top",
+     "pads": 4
+    },
+    "C6": {
+     "side": "top",
+     "pads": 2
+    },
+    "C14": {
+     "side": "top",
+     "pads": 2
+    },
+    "R5": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW13": {
+     "side": "top",
+     "pads": 4
+    },
+    "TP3": {
+     "side": "top",
+     "pads": 1
+    },
+    "C16": {
+     "side": "top",
+     "pads": 2
+    },
+    "U9": {
+     "side": "top",
+     "pads": 8
+    },
+    "R28": {
+     "side": "top",
+     "pads": 2
+    },
+    "Q3": {
+     "side": "top",
+     "pads": 3
+    },
+    "U7": {
+     "side": "top",
+     "pads": 6
+    },
+    "R19": {
+     "side": "top",
+     "pads": 2
+    },
+    "C8": {
+     "side": "top",
+     "pads": 2
+    },
+    "C22": {
+     "side": "top",
+     "pads": 2
+    },
+    "R17": {
+     "side": "top",
+     "pads": 2
+    },
+    "LOGO_FRONT1": {
+     "side": "top",
+     "pads": 1
+    },
+    "U3": {
+     "side": "top",
+     "pads": 10
+    },
+    "C19": {
+     "side": "top",
+     "pads": 2
+    },
+    "SW6": {
+     "side": "top",
+     "pads": 4
+    },
+    "R1": {
+     "side": "top",
+     "pads": 2
+    },
+    "R9": {
+     "side": "top",
+     "pads": 2
+    },
+    "LOGO_FRONT2": {
+     "side": "top",
+     "pads": 1
+    },
+    "R30": {
+     "side": "top",
+     "pads": 2
+    },
+    "R23": {
+     "side": "top",
+     "pads": 2
+    },
+    "C2": {
+     "side": "top",
+     "pads": 2
+    },
+    "C4": {
+     "side": "top",
+     "pads": 2
+    },
+    "R4": {
+     "side": "top",
+     "pads": 2
+    },
+    "C1": {
+     "side": "top",
+     "pads": 2
+    },
+    "C11": {
+     "side": "top",
+     "pads": 2
+    },
+    "TP2": {
+     "side": "bottom",
+     "pads": 1
+    },
+    "U1": {
+     "side": "bottom",
+     "pads": 44,
+     "pth": 3
+    },
+    "LOGO_BACK1": {
+     "side": "bottom",
+     "pads": 1
+    },
+    "J2": {
+     "side": "bottom",
+     "pads": 4
+    },
+    "M1": {
+     "side": "bottom",
+     "pads": 2
+    },
+    "LOGO_BACK2": {
+     "side": "bottom",
+     "pads": 1
+    },
+    "TP1": {
+     "side": "bottom",
+     "pads": 1
+    }
+   },
+   "source": "mini24/mainboard/mainboard.kicad_pcb"
+  },
+  "notes": "joints = copper pads of the BOM parts (each pad = 1 joint); DNP parts, test points, logo pads and the hand-wired motor pads are listed separately and not counted. pth_pads are plated through-holes/slots inside SMD footprints (USB-C shell slots, the module's EPAD stitching holes). Cross-checked with KiCad 10 pcbnew (tools/kicad.sh) on 2026-10-11."
+ },
+ "summary": {
+  "lcsc_basket": {
+   "note": "LCSC lines only (role 'bom', alternatives excluded, DNP = 0; Kapton = 1 roll per order); order qty = need rounded up to MOQ / multiple; unit price at that qty. US$ excl. VAT and shipping; EUR at the ECB rate.",
+   "usd_eur": 0.892379,
+   "mini28": {
+    "1_board": {
+     "total_usd": 39.29,
+     "total_eur": 35.06,
+     "total_eur_incl_19pct_vat": 41.73,
+     "lines": [
+      {
+       "c": "C11360",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 3.1449,
+       "usd": 3.1449
+      },
+      {
+       "c": "C14663",
+       "need": 5,
+       "order": 50,
+       "unit_usd": 0.0141,
+       "usd": 0.705
+      },
+      {
+       "c": "C15127",
+       "need": 2,
+       "order": 5,
+       "unit_usd": 0.1026,
+       "usd": 0.513
+      },
+      {
+       "c": "C15849",
+       "need": 7,
+       "order": 50,
+       "unit_usd": 0.0166,
+       "usd": 0.83
+      },
+      {
+       "c": "C15850",
+       "need": 5,
+       "order": 20,
+       "unit_usd": 0.0695,
+       "usd": 1.39,
+       "stock_short": true
+      },
+      {
+       "c": "C16581",
+       "need": 1,
+       "order": 5,
+       "unit_usd": 0.1862,
+       "usd": 0.931
+      },
+      {
+       "c": "C1685",
+       "need": 2,
+       "order": 100,
+       "unit_usd": 0.0058,
+       "usd": 0.58
+      },
+      {
+       "c": "C177225",
+       "need": 1,
+       "order": 5,
+       "unit_usd": 0.142,
+       "usd": 0.71
+      },
+      {
+       "c": "C17958",
+       "need": 2,
+       "order": 100,
+       "unit_usd": 0.0067,
+       "usd": 0.67
+      },
+      {
+       "c": "C19077497",
+       "need": 1,
+       "order": 20,
+       "unit_usd": 0.0284,
+       "usd": 0.568
+      },
+      {
+       "c": "C19702",
+       "need": 1,
+       "order": 20,
+       "unit_usd": 0.0308,
+       "usd": 0.616
+      },
+      {
+       "c": "C20340322",
+       "need": 1,
+       "order": 5,
+       "unit_usd": 0.1953,
+       "usd": 0.9765
+      },
+      {
+       "c": "C20917",
+       "need": 2,
+       "order": 5,
+       "unit_usd": 0.0898,
+       "usd": 0.449
+      },
+      {
+       "c": "C224194",
+       "need": 1,
+       "order": 5,
+       "unit_usd": 0.0918,
+       "usd": 0.459
+      },
+      {
+       "c": "C22775",
+       "need": 3,
+       "order": 100,
+       "unit_usd": 0.0032,
+       "usd": 0.32
+      },
+      {
+       "c": "C22940",
+       "need": 1,
+       "order": 100,
+       "unit_usd": 0.0026,
+       "usd": 0.26
+      },
+      {
+       "c": "C22962",
+       "need": 1,
+       "order": 100,
+       "unit_usd": 0.0035,
+       "usd": 0.35
+      },
+      {
+       "c": "C23162",
+       "need": 2,
+       "order": 100,
+       "unit_usd": 0.0028,
+       "usd": 0.28
+      },
+      {
+       "c": "C23186",
+       "need": 2,
+       "order": 100,
+       "unit_usd": 0.0015,
+       "usd": 0.15
+      },
+      {
+       "c": "C25196",
+       "need": 4,
+       "order": 100,
+       "unit_usd": 0.0027,
+       "usd": 0.27
+      },
+      {
+       "c": "C25803",
+       "need": 5,
+       "order": 100,
+       "unit_usd": 0.0031,
+       "usd": 0.31
+      },
+      {
+       "c": "C25804",
+       "need": 3,
+       "order": 100,
+       "unit_usd": 0.0022,
+       "usd": 0.22,
+       "stock_short": true
+      },
+      {
+       "c": "C2682616",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 2.1654,
+       "usd": 2.1654
+      },
+      {
+       "c": "C2765186",
+       "need": 1,
+       "order": 20,
+       "unit_usd": 0.0751,
+       "usd": 1.502
+      },
+      {
+       "c": "C2913204",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 4.6784,
+       "usd": 4.6784
+      },
+      {
+       "c": "C293613",
+       "need": 1,
+       "order": 50,
+       "unit_usd": 0.0167,
+       "usd": 0.835
+      },
+      {
+       "c": "C3169104",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 0.6363,
+       "usd": 0.6363
+      },
+      {
+       "c": "C318884",
+       "need": 14,
+       "order": 20,
+       "unit_usd": 0.0207,
+       "usd": 0.414
+      },
+      {
+       "c": "C357393",
+       "need": 4,
+       "order": 100,
+       "unit_usd": 0.0019,
+       "usd": 0.19
+      },
+      {
+       "c": "C364577",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 0.5486,
+       "usd": 0.5486
+      },
+      {
+       "c": "C425927",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 1.1602,
+       "usd": 1.1602
+      },
+      {
+       "c": "C45783",
+       "need": 1,
+       "order": 20,
+       "unit_usd": 0.2227,
+       "usd": 4.454
+      },
+      {
+       "c": "C51928215",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 0.575,
+       "usd": 0.575
+      },
+      {
+       "c": "C51938879",
+       "need": 6,
+       "order": 50,
+       "unit_usd": 0.0101,
+       "usd": 0.505
+      },
+      {
+       "c": "C587850",
+       "need": 2,
+       "order": 5,
+       "unit_usd": 0.2147,
+       "usd": 1.0735
+      },
+      {
+       "c": "C64885",
+       "need": 1,
+       "order": 50,
+       "unit_usd": 0.0196,
+       "usd": 0.98
+      },
+      {
+       "c": "C6604342",
+       "need": 2,
+       "order": 2,
+       "unit_usd": 0.4507,
+       "usd": 0.9014
+      },
+      {
+       "c": "C7519",
+       "need": 1,
+       "order": 5,
+       "unit_usd": 0.1786,
+       "usd": 0.893
+      },
+      {
+       "c": "C82942",
+       "need": 1,
+       "order": 10,
+       "unit_usd": 0.0619,
+       "usd": 0.619
+      },
+      {
+       "c": "C91447",
+       "need": 1,
+       "order": 5,
+       "unit_usd": 0.2611,
+       "usd": 1.3055
+      },
+      {
+       "c": "C92418",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 0.8131,
+       "usd": 0.8131
+      },
+      {
+       "c": "C98220",
+       "need": 1,
+       "order": 100,
+       "unit_usd": 0.0034,
+       "usd": 0.34
+      }
+     ]
+    },
+    "5_boards": {
+     "total_usd": 99.09,
+     "total_eur": 88.42,
+     "total_eur_incl_19pct_vat": 105.22,
+     "lines": [
+      {
+       "c": "C11360",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 3.1449,
+       "usd": 15.7245
+      },
+      {
+       "c": "C14663",
+       "need": 25,
+       "order": 50,
+       "unit_usd": 0.0141,
+       "usd": 0.705
+      },
+      {
+       "c": "C15127",
+       "need": 10,
+       "order": 10,
+       "unit_usd": 0.1026,
+       "usd": 1.026
+      },
+      {
+       "c": "C15849",
+       "need": 35,
+       "order": 50,
+       "unit_usd": 0.0166,
+       "usd": 0.83
+      },
+      {
+       "c": "C15850",
+       "need": 25,
+       "order": 40,
+       "unit_usd": 0.0695,
+       "usd": 2.78,
+       "stock_short": true
+      },
+      {
+       "c": "C16581",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.1862,
+       "usd": 0.931
+      },
+      {
+       "c": "C1685",
+       "need": 10,
+       "order": 100,
+       "unit_usd": 0.0058,
+       "usd": 0.58
+      },
+      {
+       "c": "C177225",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.142,
+       "usd": 0.71
+      },
+      {
+       "c": "C17958",
+       "need": 10,
+       "order": 100,
+       "unit_usd": 0.0067,
+       "usd": 0.67
+      },
+      {
+       "c": "C19077497",
+       "need": 5,
+       "order": 20,
+       "unit_usd": 0.0284,
+       "usd": 0.568
+      },
+      {
+       "c": "C19702",
+       "need": 5,
+       "order": 20,
+       "unit_usd": 0.0308,
+       "usd": 0.616
+      },
+      {
+       "c": "C20340322",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.1953,
+       "usd": 0.9765
+      },
+      {
+       "c": "C20917",
+       "need": 10,
+       "order": 10,
+       "unit_usd": 0.0898,
+       "usd": 0.898
+      },
+      {
+       "c": "C224194",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.0918,
+       "usd": 0.459
+      },
+      {
+       "c": "C22775",
+       "need": 15,
+       "order": 100,
+       "unit_usd": 0.0032,
+       "usd": 0.32
+      },
+      {
+       "c": "C22940",
+       "need": 5,
+       "order": 100,
+       "unit_usd": 0.0026,
+       "usd": 0.26
+      },
+      {
+       "c": "C22962",
+       "need": 5,
+       "order": 100,
+       "unit_usd": 0.0035,
+       "usd": 0.35
+      },
+      {
+       "c": "C23162",
+       "need": 10,
+       "order": 100,
+       "unit_usd": 0.0028,
+       "usd": 0.28
+      },
+      {
+       "c": "C23186",
+       "need": 10,
+       "order": 100,
+       "unit_usd": 0.0015,
+       "usd": 0.15
+      },
+      {
+       "c": "C25196",
+       "need": 20,
+       "order": 100,
+       "unit_usd": 0.0027,
+       "usd": 0.27
+      },
+      {
+       "c": "C25803",
+       "need": 25,
+       "order": 100,
+       "unit_usd": 0.0031,
+       "usd": 0.31
+      },
+      {
+       "c": "C25804",
+       "need": 15,
+       "order": 100,
+       "unit_usd": 0.0022,
+       "usd": 0.22,
+       "stock_short": true
+      },
+      {
+       "c": "C2682616",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 2.1654,
+       "usd": 10.827
+      },
+      {
+       "c": "C2765186",
+       "need": 5,
+       "order": 20,
+       "unit_usd": 0.0751,
+       "usd": 1.502
+      },
+      {
+       "c": "C2913204",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 4.6784,
+       "usd": 23.392
+      },
+      {
+       "c": "C293613",
+       "need": 5,
+       "order": 50,
+       "unit_usd": 0.0167,
+       "usd": 0.835
+      },
+      {
+       "c": "C3169104",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.6363,
+       "usd": 3.1815
+      },
+      {
+       "c": "C318884",
+       "need": 70,
+       "order": 80,
+       "unit_usd": 0.0207,
+       "usd": 1.656
+      },
+      {
+       "c": "C357393",
+       "need": 20,
+       "order": 100,
+       "unit_usd": 0.0019,
+       "usd": 0.19
+      },
+      {
+       "c": "C364577",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.5486,
+       "usd": 2.743
+      },
+      {
+       "c": "C425927",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 1.1602,
+       "usd": 5.801
+      },
+      {
+       "c": "C45783",
+       "need": 5,
+       "order": 20,
+       "unit_usd": 0.2227,
+       "usd": 4.454
+      },
+      {
+       "c": "C51928215",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.575,
+       "usd": 2.875
+      },
+      {
+       "c": "C51938879",
+       "need": 30,
+       "order": 50,
+       "unit_usd": 0.0101,
+       "usd": 0.505
+      },
+      {
+       "c": "C587850",
+       "need": 10,
+       "order": 10,
+       "unit_usd": 0.2147,
+       "usd": 2.147
+      },
+      {
+       "c": "C64885",
+       "need": 5,
+       "order": 50,
+       "unit_usd": 0.0196,
+       "usd": 0.98
+      },
+      {
+       "c": "C6604342",
+       "need": 10,
+       "order": 10,
+       "unit_usd": 0.4393,
+       "usd": 4.393
+      },
+      {
+       "c": "C7519",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.1786,
+       "usd": 0.893
+      },
+      {
+       "c": "C82942",
+       "need": 5,
+       "order": 10,
+       "unit_usd": 0.0619,
+       "usd": 0.619
+      },
+      {
+       "c": "C91447",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.2611,
+       "usd": 1.3055
+      },
+      {
+       "c": "C92418",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 0.8131,
+       "usd": 0.8131
+      },
+      {
+       "c": "C98220",
+       "need": 5,
+       "order": 100,
+       "unit_usd": 0.0034,
+       "usd": 0.34
+      }
+     ]
+    }
+   },
+   "mini24": {
+    "1_board": {
+     "total_usd": 37.52,
+     "total_eur": 33.48,
+     "total_eur_incl_19pct_vat": 39.85,
+     "lines": [
+      {
+       "c": "C11360",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 3.1449,
+       "usd": 3.1449
+      },
+      {
+       "c": "C14663",
+       "need": 4,
+       "order": 50,
+       "unit_usd": 0.0141,
+       "usd": 0.705
+      },
+      {
+       "c": "C15127",
+       "need": 2,
+       "order": 5,
+       "unit_usd": 0.1026,
+       "usd": 0.513
+      },
+      {
+       "c": "C15849",
+       "need": 7,
+       "order": 50,
+       "unit_usd": 0.0166,
+       "usd": 0.83
+      },
+      {
+       "c": "C15850",
+       "need": 5,
+       "order": 20,
+       "unit_usd": 0.0695,
+       "usd": 1.39,
+       "stock_short": true
+      },
+      {
+       "c": "C16581",
+       "need": 1,
+       "order": 5,
+       "unit_usd": 0.1862,
+       "usd": 0.931
+      },
+      {
+       "c": "C1685",
+       "need": 2,
+       "order": 100,
+       "unit_usd": 0.0058,
+       "usd": 0.58
+      },
+      {
+       "c": "C177225",
+       "need": 1,
+       "order": 5,
+       "unit_usd": 0.142,
+       "usd": 0.71
+      },
+      {
+       "c": "C17958",
+       "need": 2,
+       "order": 100,
+       "unit_usd": 0.0067,
+       "usd": 0.67
+      },
+      {
+       "c": "C19702",
+       "need": 2,
+       "order": 20,
+       "unit_usd": 0.0308,
+       "usd": 0.616
+      },
+      {
+       "c": "C20340322",
+       "need": 1,
+       "order": 5,
+       "unit_usd": 0.1953,
+       "usd": 0.9765
+      },
+      {
+       "c": "C20917",
+       "need": 2,
+       "order": 5,
+       "unit_usd": 0.0898,
+       "usd": 0.449
+      },
+      {
+       "c": "C22775",
+       "need": 3,
+       "order": 100,
+       "unit_usd": 0.0032,
+       "usd": 0.32
+      },
+      {
+       "c": "C22940",
+       "need": 1,
+       "order": 100,
+       "unit_usd": 0.0026,
+       "usd": 0.26
+      },
+      {
+       "c": "C22962",
+       "need": 1,
+       "order": 100,
+       "unit_usd": 0.0035,
+       "usd": 0.35
+      },
+      {
+       "c": "C23162",
+       "need": 2,
+       "order": 100,
+       "unit_usd": 0.0028,
+       "usd": 0.28
+      },
+      {
+       "c": "C23186",
+       "need": 2,
+       "order": 100,
+       "unit_usd": 0.0015,
+       "usd": 0.15
+      },
+      {
+       "c": "C25803",
+       "need": 5,
+       "order": 100,
+       "unit_usd": 0.0031,
+       "usd": 0.31
+      },
+      {
+       "c": "C25804",
+       "need": 4,
+       "order": 100,
+       "unit_usd": 0.0022,
+       "usd": 0.22,
+       "stock_short": true
+      },
+      {
+       "c": "C2682616",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 2.1654,
+       "usd": 2.1654
+      },
+      {
+       "c": "C27592",
+       "need": 4,
+       "order": 100,
+       "unit_usd": 0.0013,
+       "usd": 0.13
+      },
+      {
+       "c": "C2765186",
+       "need": 1,
+       "order": 20,
+       "unit_usd": 0.0751,
+       "usd": 1.502
+      },
+      {
+       "c": "C2913204",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 4.6784,
+       "usd": 4.6784
+      },
+      {
+       "c": "C293613",
+       "need": 1,
+       "order": 50,
+       "unit_usd": 0.0167,
+       "usd": 0.835
+      },
+      {
+       "c": "C3169104",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 0.6363,
+       "usd": 0.6363
+      },
+      {
+       "c": "C318884",
+       "need": 14,
+       "order": 20,
+       "unit_usd": 0.0207,
+       "usd": 0.414
+      },
+      {
+       "c": "C357393",
+       "need": 3,
+       "order": 100,
+       "unit_usd": 0.0019,
+       "usd": 0.19
+      },
+      {
+       "c": "C364577",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 0.5486,
+       "usd": 0.5486
+      },
+      {
+       "c": "C383210",
+       "need": 1,
+       "order": 20,
+       "unit_usd": 0.0315,
+       "usd": 0.63
+      },
+      {
+       "c": "C425927",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 1.1602,
+       "usd": 1.1602
+      },
+      {
+       "c": "C45783",
+       "need": 1,
+       "order": 20,
+       "unit_usd": 0.2227,
+       "usd": 4.454
+      },
+      {
+       "c": "C51928215",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 0.575,
+       "usd": 0.575
+      },
+      {
+       "c": "C51938879",
+       "need": 5,
+       "order": 50,
+       "unit_usd": 0.0101,
+       "usd": 0.505
+      },
+      {
+       "c": "C587850",
+       "need": 2,
+       "order": 5,
+       "unit_usd": 0.2147,
+       "usd": 1.0735
+      },
+      {
+       "c": "C64885",
+       "need": 1,
+       "order": 50,
+       "unit_usd": 0.0196,
+       "usd": 0.98
+      },
+      {
+       "c": "C6604342",
+       "need": 2,
+       "order": 2,
+       "unit_usd": 0.4507,
+       "usd": 0.9014
+      },
+      {
+       "c": "C82942",
+       "need": 1,
+       "order": 10,
+       "unit_usd": 0.0619,
+       "usd": 0.619
+      },
+      {
+       "c": "C91447",
+       "need": 1,
+       "order": 5,
+       "unit_usd": 0.2611,
+       "usd": 1.3055
+      },
+      {
+       "c": "C92418",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 0.8131,
+       "usd": 0.8131
+      }
+     ]
+    },
+    "5_boards": {
+     "total_usd": 97.32,
+     "total_eur": 86.84,
+     "total_eur_incl_19pct_vat": 103.34,
+     "lines": [
+      {
+       "c": "C11360",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 3.1449,
+       "usd": 15.7245
+      },
+      {
+       "c": "C14663",
+       "need": 20,
+       "order": 50,
+       "unit_usd": 0.0141,
+       "usd": 0.705
+      },
+      {
+       "c": "C15127",
+       "need": 10,
+       "order": 10,
+       "unit_usd": 0.1026,
+       "usd": 1.026
+      },
+      {
+       "c": "C15849",
+       "need": 35,
+       "order": 50,
+       "unit_usd": 0.0166,
+       "usd": 0.83
+      },
+      {
+       "c": "C15850",
+       "need": 25,
+       "order": 40,
+       "unit_usd": 0.0695,
+       "usd": 2.78,
+       "stock_short": true
+      },
+      {
+       "c": "C16581",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.1862,
+       "usd": 0.931
+      },
+      {
+       "c": "C1685",
+       "need": 10,
+       "order": 100,
+       "unit_usd": 0.0058,
+       "usd": 0.58
+      },
+      {
+       "c": "C177225",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.142,
+       "usd": 0.71
+      },
+      {
+       "c": "C17958",
+       "need": 10,
+       "order": 100,
+       "unit_usd": 0.0067,
+       "usd": 0.67
+      },
+      {
+       "c": "C19702",
+       "need": 10,
+       "order": 20,
+       "unit_usd": 0.0308,
+       "usd": 0.616
+      },
+      {
+       "c": "C20340322",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.1953,
+       "usd": 0.9765
+      },
+      {
+       "c": "C20917",
+       "need": 10,
+       "order": 10,
+       "unit_usd": 0.0898,
+       "usd": 0.898
+      },
+      {
+       "c": "C22775",
+       "need": 15,
+       "order": 100,
+       "unit_usd": 0.0032,
+       "usd": 0.32
+      },
+      {
+       "c": "C22940",
+       "need": 5,
+       "order": 100,
+       "unit_usd": 0.0026,
+       "usd": 0.26
+      },
+      {
+       "c": "C22962",
+       "need": 5,
+       "order": 100,
+       "unit_usd": 0.0035,
+       "usd": 0.35
+      },
+      {
+       "c": "C23162",
+       "need": 10,
+       "order": 100,
+       "unit_usd": 0.0028,
+       "usd": 0.28
+      },
+      {
+       "c": "C23186",
+       "need": 10,
+       "order": 100,
+       "unit_usd": 0.0015,
+       "usd": 0.15
+      },
+      {
+       "c": "C25803",
+       "need": 25,
+       "order": 100,
+       "unit_usd": 0.0031,
+       "usd": 0.31
+      },
+      {
+       "c": "C25804",
+       "need": 20,
+       "order": 100,
+       "unit_usd": 0.0022,
+       "usd": 0.22,
+       "stock_short": true
+      },
+      {
+       "c": "C2682616",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 2.1654,
+       "usd": 10.827
+      },
+      {
+       "c": "C27592",
+       "need": 20,
+       "order": 100,
+       "unit_usd": 0.0013,
+       "usd": 0.13
+      },
+      {
+       "c": "C2765186",
+       "need": 5,
+       "order": 20,
+       "unit_usd": 0.0751,
+       "usd": 1.502
+      },
+      {
+       "c": "C2913204",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 4.6784,
+       "usd": 23.392
+      },
+      {
+       "c": "C293613",
+       "need": 5,
+       "order": 50,
+       "unit_usd": 0.0167,
+       "usd": 0.835
+      },
+      {
+       "c": "C3169104",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.6363,
+       "usd": 3.1815
+      },
+      {
+       "c": "C318884",
+       "need": 70,
+       "order": 80,
+       "unit_usd": 0.0207,
+       "usd": 1.656
+      },
+      {
+       "c": "C357393",
+       "need": 15,
+       "order": 100,
+       "unit_usd": 0.0019,
+       "usd": 0.19
+      },
+      {
+       "c": "C364577",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.5486,
+       "usd": 2.743
+      },
+      {
+       "c": "C383210",
+       "need": 5,
+       "order": 20,
+       "unit_usd": 0.0315,
+       "usd": 0.63
+      },
+      {
+       "c": "C425927",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 1.1602,
+       "usd": 5.801
+      },
+      {
+       "c": "C45783",
+       "need": 5,
+       "order": 20,
+       "unit_usd": 0.2227,
+       "usd": 4.454
+      },
+      {
+       "c": "C51928215",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.575,
+       "usd": 2.875
+      },
+      {
+       "c": "C51938879",
+       "need": 25,
+       "order": 50,
+       "unit_usd": 0.0101,
+       "usd": 0.505
+      },
+      {
+       "c": "C587850",
+       "need": 10,
+       "order": 10,
+       "unit_usd": 0.2147,
+       "usd": 2.147
+      },
+      {
+       "c": "C64885",
+       "need": 5,
+       "order": 50,
+       "unit_usd": 0.0196,
+       "usd": 0.98
+      },
+      {
+       "c": "C6604342",
+       "need": 10,
+       "order": 10,
+       "unit_usd": 0.4393,
+       "usd": 4.393
+      },
+      {
+       "c": "C82942",
+       "need": 5,
+       "order": 10,
+       "unit_usd": 0.0619,
+       "usd": 0.619
+      },
+      {
+       "c": "C91447",
+       "need": 5,
+       "order": 5,
+       "unit_usd": 0.2611,
+       "usd": 1.3055
+      },
+      {
+       "c": "C92418",
+       "need": 1,
+       "order": 1,
+       "unit_usd": 0.8131,
+       "usd": 0.8131
+      }
+     ]
+    }
+   }
+  }
+ }
+}

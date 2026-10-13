@@ -1,0 +1,453 @@
+<title>Bleep Size Lineup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one-screen studio like the v1 Remote Studio. The three remotes stand
+   side by side on the stage; a rail on the right compares them and holds the
+   colour presets. Tokens are the v1 studio's (graphite ground, cyan accent). */
+:root {
+  --bg: #0d0e0f; --stage-a: #1b1d20; --stage-b: #0a0b0c; --panel: #131416; --line: #26282c;
+  --fg: #ece9e4; --muted: #9a9893; --accent: #5ac4da; --accent-ink: #071417; --chip: #1b1d20;
+  --warn: #e3a64a; --ok: #62c38a;
+  --font-ui: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #eceef0; --stage-a: #f7f8f9; --stage-b: #d5d9dd; --panel: #ffffff; --line: #d6dadf;
+    --fg: #15171a; --muted: #5b6168; --accent: #13809a; --accent-ink: #ffffff; --chip: #eef0f2;
+    --warn: #a86b10; --ok: #2c8a52; color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #eceef0; --stage-a: #f7f8f9; --stage-b: #d5d9dd; --panel: #ffffff; --line: #d6dadf;
+  --fg: #15171a; --muted: #5b6168; --accent: #13809a; --accent-ink: #ffffff; --chip: #eef0f2;
+  --warn: #a86b10; --ok: #2c8a52; color-scheme: light;
+}
+html, body { height: 100%; }
+body { overflow-x: hidden; background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 14px; }
+* { box-sizing: border-box; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 360px; }
+.stage { position: relative; min-width: 0; min-height: 0; overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 35%, var(--stage-a), var(--stage-b)); }
+#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.hud { position: absolute; left: 16px; top: 14px; display: flex; flex-direction: column; gap: 2px; pointer-events: none; }
+.eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; color: var(--accent); }
+.hud h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+.hud .sub { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+
+.toolbar { position: absolute; right: 12px; top: 12px; display: flex; gap: 6px; }
+.tool { padding: 6px 10px; border-radius: 10px; font-size: 12px; font-weight: 600;
+  background: color-mix(in srgb, var(--panel) 82%, transparent); border: 1px solid var(--line); backdrop-filter: blur(8px); }
+.tool[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.views { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 2px; padding: 3px;
+  background: color-mix(in srgb, var(--panel) 82%, transparent); border: 1px solid var(--line); border-radius: 999px;
+  backdrop-filter: blur(8px); max-width: calc(100% - 24px); overflow-x: auto; }
+.views button { border: 0; background: transparent; padding: 7px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; color: var(--muted); }
+.views button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.views button:hover:not([aria-pressed="true"]) { color: var(--fg); }
+
+.tags { position: absolute; inset: 0; pointer-events: none; }
+.tag { position: absolute; left: 0; top: 0; transform: translate(-50%, 0); text-align: center; white-space: nowrap; will-change: transform; }
+.tag b { display: block; font-size: 13px; font-weight: 800; }
+.tag small { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-mono); font-size: 12px; color: var(--muted); pointer-events: none; }
+
+.panel { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; min-width: 0;
+  padding-inline: 18px; padding-block: 18px 28px; display: flex; flex-direction: column; gap: 22px; }
+.section { display: flex; flex-direction: column; gap: 10px; }
+.section h2 { margin: 0; font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+.cards { display: flex; flex-direction: column; gap: 8px; }
+.card { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--chip); }
+.card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.card .top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.card b { font-size: 14px; font-weight: 800; }
+.card .size { font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+.card dl { margin: 0; display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 3px 8px; font-size: 12px; }
+.card dt { color: var(--muted); }
+.card dd { margin: 0; min-width: 0; }
+.chip { align-self: flex-start; font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid currentColor; }
+.chip.ok { color: var(--ok); } .chip.warn { color: var(--warn); } .chip.base { color: var(--muted); }
+
+.compare { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.compare th, .compare td { padding: 5px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+.compare th:first-child, .compare td:first-child { text-align: left; color: var(--muted); font-weight: 500; }
+.compare thead th { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); font-weight: 600; }
+
+.presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.preset { display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--chip); }
+.preset[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.preset .bar { display: flex; height: 14px; border-radius: 5px; overflow: hidden; box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 12%, transparent) inset; }
+.preset .bar span { flex: 1; } .preset .bar span:first-child { flex: 2.4; }
+.preset b { font-size: 13px; font-weight: 700; }
+.note { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 0; }
+.note code { font-family: var(--font-mono); font-size: 11px; }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: minmax(380px, 62vh) auto; height: auto; min-height: 100%; }
+  .panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .hud h1 { font-size: 18px; }
+  .tag small { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <canvas id="gl" aria-label="3D view of Bleep v1 and the two Bleep mini designs. Drag to orbit, scroll or pinch to zoom."></canvas>
+    <div class="tags" id="tags"></div>
+    <div class="hud">
+      <div class="eyebrow">BLEEP · v1 NEXT TO MINI 2.8 AND MINI 2.4</div>
+      <h1>Size lineup</h1>
+      <div class="sub">1:1 · same shell rules, keys and windows as v1</div>
+    </div>
+    <div class="toolbar">
+      <button class="tool" id="xray" type="button" aria-pressed="false">X-ray</button>
+    </div>
+    <div class="views" role="group" aria-label="Camera views" id="views">
+      <button type="button" data-view="hero" aria-pressed="true">3/4</button>
+      <button type="button" data-view="top" aria-pressed="false">Top</button>
+      <button type="button" data-view="end" aria-pressed="false">End-on</button>
+      <button type="button" data-view="side" aria-pressed="false">Side</button>
+    </div>
+    <div class="loading" id="loading">Loading the three models…</div>
+  </div>
+
+  <aside class="panel">
+    <div class="section">
+      <h2>Models · tap to focus</h2>
+      <div class="cards" id="cards"></div>
+    </div>
+    <div class="section">
+      <h2>Side by side</h2>
+      <table class="compare" id="compare"></table>
+    </div>
+    <div class="section">
+      <h2>Colours</h2>
+      <div class="presets" id="presets"></div>
+    </div>
+    <div class="section">
+      <h2>How these were made</h2>
+      <p class="note">Each mini has its own <code>layout.py</code>, shell (<code>remote.scad</code>) and routed main board, derived from v1 and checked by independent audits (<code>hardware-mini/mini28</code>, <code>hardware-mini/mini24</code>). The keys, windows and corners follow v1's design; the panels are BuyDisplay parts from AliExpress and the cells come from Ampul. X-ray shows the board, the cell, the module and the panel inside each shell. The screens show the emulator's Home tab at each panel's own resolution (240×320 on the minis).</p>
+    </div>
+  </aside>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { STLLoader } from "three/addons/loaders/STLLoader.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
+
+// ---------- data -----------------------------------------------------------
+// Shell dimensions (mm): v1 from hardware/enclosure/params.scad, the minis from
+// hardware-mini/mini28|mini24/layout.py (viewer/dims.json)
+const MODELS = [
+  { id: "v1", file: "v1.json", screen: "screen_320x480.png", name: "Bleep v1", status: ["base", "ordered"],
+    W: 60.74, L: 182.23, H: 12.95, LENS: [56.54, 84.96, 0.3], LENS_C: [30.37, 47.28], ACTIVE: [48.96, 73.44], ACTIVE_DY: 2.00, Z_LENS_TOP: 12.15,
+    panel: "3.5″ IPS 320×480, glass", ppi: 166, cell: "405085 · 4.0 mm · ≈2000 mAh", board: "53.9 mm" },
+  { id: "mini28", file: "mini28.json", screen: "screen_240x320.png", name: "Mini 2.8″", status: ["ok", "designed: cell under the keys, on a printed deck"],
+    W: 54.4, L: 168.83, H: 15.3, LENS: [50.2, 69.3, 0.3], LENS_C: [27.2, 40.8], ACTIVE: [43.2, 57.6], ACTIVE_DY: 2.65, Z_LENS_TOP: 14.5,
+    panel: "2.8″ IPS 240×320, glass", ppi: 141, cell: "484251 · 4.8 mm · 1500 mAh, under the keys", board: "49.6 mm" },
+  { id: "mini24", file: "mini24.json", screen: "screen_240x320.png", name: "Mini 2.4″", status: ["ok", "designed: cell under the keys, on a printed deck"],
+    W: 46.92, L: 159.51, H: 15.73, LENS: [42.72, 59.46, 0.3], LENS_C: [23.46, 36.23], ACTIVE: [36.72, 48.96], ACTIVE_DY: 2.35, Z_LENS_TOP: 14.93,
+    panel: "2.4″ IPS 240×320, PET cover", ppi: 166, cell: "504050 · 5.0 mm · 1500 mAh, under the keys", board: "40.1 mm" },
+];
+const GAP = 24;
+const L_REF = MODELS[0].L, H_MAX = Math.max(...MODELS.map(m => m.H));
+
+const PARTS = [
+  { id: "shell", file: "shell" }, { id: "back", file: "back" }, { id: "dpad", file: "dpad", key: true },
+  { id: "ok", file: "ok", key: true }, { id: "nav", file: "nav", key: true }, { id: "apps", file: "apps", key: true },
+  { id: "vol", file: "vol", key: true }, { id: "pwr", file: "pwr", key: true }, { id: "labels", file: "labels" },
+  { id: "windows", file: "windows" },
+];
+const INTERNALS = { v_panel: "#3d63dd", v_fpc: "#d9a441", v_zif: "#3b3f46", v_pcb: "#2f8f5b", v_switches: "#cfd2d6",
+  v_ics: "#26282c", v_irleds: "#8b5cf6", v_usbc: "#9aa0a6", v_module: "#c9ccd1", v_lra: "#b9bccb", v_screws: "#a7abb3", v_battery: "#e0683a", v_deck: "#8f9bb0" };   // v_deck: the minis' printed cell deck (optional per model)
+const METAL = new Set(["v_usbc", "v_lra", "v_screws"]);
+
+// The v1 studio's presets
+const S = { "Jet black": "#18191b", Graphite: "#34363a", Slate: "#5d636b", "Cool grey": "#9ea3a8", "Arctic white": "#e8e9e8",
+  Sand: "#cdbb98", Clay: "#b9775a", "Signal orange": "#e5612b", Sunflower: "#efb630", Sage: "#93a48c", Olive: "#646b48",
+  Petrol: "#1e5a66", "Concept cyan": "#5ac4da", Navy: "#1d2a45", "Translucent blue": "#4a8fe0" };
+const P = (shell, back, keys, ok, pwr, labels) => ({ shell, back, dpad: keys, ok, nav: keys, apps: keys, vol: keys, pwr, labels, windows: "#4a8fe0" });
+const PRESETS = [
+  { name: "Concept", c: P("#232427", "#151618", "#2a2c30", "#2a2c30", "#2a2c30", "#bdbab4") },
+  { name: "Arctic", c: P(S["Arctic white"], S["Cool grey"], S["Cool grey"], S["Concept cyan"], S["Signal orange"], S["Jet black"]) },
+  { name: "Deck", c: P(S.Graphite, S.Graphite, S.Sand, S.Sand, S.Clay, S.Graphite) },
+  { name: "Signal", c: P(S.Slate, S["Jet black"], S["Jet black"], S["Signal orange"], S["Signal orange"], S["Arctic white"]) },
+  { name: "Sage", c: P(S.Sage, S.Olive, S["Arctic white"], S["Arctic white"], S.Olive, S.Olive) },
+  { name: "Petrol", c: P(S.Petrol, S.Navy, S["Arctic white"], S.Sunflower, S.Sunflower, S.Petrol) },
+  { name: "Lagoon", c: P(S.Navy, S.Navy, S["Arctic white"], S["Translucent blue"], S["Translucent blue"], S.Navy) },
+];
+let presetIdx = 1;
+try { const v = parseInt(localStorage.getItem("bleep-lineup-preset"), 10); if (v >= 0 && v < PRESETS.length) presetIdx = v; } catch (e) {}
+
+// ---------- scene ----------------------------------------------------------
+const canvas = document.getElementById("gl");
+const stage = document.getElementById("stage");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(30, 1, 1, 4000);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 60; controls.maxDistance = 900;
+
+const key = new THREE.DirectionalLight(0xffffff, 1.6);
+key.position.set(160, 280, 140); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -220, right: 220, top: 220, bottom: -220, near: 10, far: 900 });
+key.shadow.radius = 6; key.shadow.bias = -0.0005;
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xbfd8ff, 0.35);
+fill.position.set(-220, 90, -140); scene.add(fill);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), new THREE.ShadowMaterial({ opacity: 0.28 }));
+ground.rotation.x = -Math.PI / 2; ground.position.y = -H_MAX / 2 - 0.02; ground.receiveShadow = true;
+scene.add(ground);
+
+// pivot lays the remotes flat (front up, IR end away); each model holds its
+// parts in the SCAD shell coordinates, top ends lined up, back faces on the ground
+const pivot = new THREE.Group();
+pivot.rotation.x = -Math.PI / 2;
+scene.add(pivot);
+const totalW = MODELS.reduce((s, m) => s + m.W, 0) + GAP * (MODELS.length - 1);
+let x = -totalW / 2;
+for (const m of MODELS) {
+  m.cx = x + m.W / 2;                     // centre line in world x
+  m.group = new THREE.Group();
+  m.group.position.set(x, L_REF / 2, -H_MAX / 2);
+  m.solid = new THREE.Group(); m.inner = new THREE.Group(); m.inner.visible = false;
+  m.group.add(m.solid, m.inner);
+  pivot.add(m.group);
+  x += m.W + GAP;
+}
+
+const materials = {};
+for (const p of PARTS) materials[p.id] = new THREE.MeshPhysicalMaterial({ color: PRESETS[presetIdx].c[p.id], roughness: 0.55, clearcoat: 0.08, clearcoatRoughness: 0.35 });
+materials.windows.transparent = true; materials.windows.opacity = 0.72; materials.windows.transmission = 0.3;
+const ghost = new THREE.MeshPhysicalMaterial({ color: 0x9fb4c8, roughness: 0.4, transparent: true, opacity: 0.1, depthWrite: false });
+const xMats = Object.fromEntries(Object.entries(INTERNALS).map(([id, c]) =>
+  [id, new THREE.MeshStandardMaterial({ color: c, roughness: id === "v_ics" ? 0.4 : 0.6, metalness: METAL.has(id) ? 0.5 : 0 })]));
+
+// screen: black lens + the emulator's screenshot on the active area + faint glass
+const texLoader = new THREE.TextureLoader();
+const lensMat = new THREE.MeshPhysicalMaterial({ color: 0x050607, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05 });
+function addScreen(m) {
+  const [lw, lh, lr] = m.LENS, s = new THREE.Shape(), x0 = -lw / 2, y0 = -lh / 2;
+  s.moveTo(x0 + lr, y0); s.lineTo(x0 + lw - lr, y0); s.quadraticCurveTo(x0 + lw, y0, x0 + lw, y0 + lr);
+  s.lineTo(x0 + lw, y0 + lh - lr); s.quadraticCurveTo(x0 + lw, y0 + lh, x0 + lw - lr, y0 + lh);
+  s.lineTo(x0 + lr, y0 + lh); s.quadraticCurveTo(x0, y0 + lh, x0, y0 + lh - lr);
+  s.lineTo(x0, y0 + lr); s.quadraticCurveTo(x0, y0, x0 + lr, y0);
+  const g = new THREE.Group();
+  const lens = new THREE.Mesh(new THREE.ShapeGeometry(s), lensMat);
+  lens.position.z = m.Z_LENS_TOP - 0.06; g.add(lens);
+  const tex = texLoader.load(m.screen);
+  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  const ui = new THREE.Mesh(new THREE.PlaneGeometry(...m.ACTIVE), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+  ui.position.set(0, m.ACTIVE_DY, m.Z_LENS_TOP - 0.04); g.add(ui);
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(m.ACTIVE[0] + 2, m.ACTIVE[1] + 2),
+    new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.04, transparent: true, opacity: 0.06, clearcoat: 1 }));
+  glass.position.set(0, m.ACTIVE_DY, m.Z_LENS_TOP - 0.01); g.add(glass);
+  g.position.set(m.LENS_C[0], -m.LENS_C[1], 0);
+  m.screenGroup = g;
+  m.solid.add(g);
+}
+
+// ---------- load -----------------------------------------------------------
+const stl = new STLLoader();
+function b64ToBuffer(b64) {
+  const bin = atob(b64), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out.buffer;
+}
+const loadingEl = document.getElementById("loading");
+let loaded = 0;
+for (const m of MODELS) {
+  addScreen(m);
+  fetch(m.file).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(pack => {
+    const geo = name => stl.parse(b64ToBuffer(pack[name]));
+    m.shellMesh = null;
+    for (const p of PARTS) {
+      const mesh = new THREE.Mesh(toCreasedNormals(geo(p.file), THREE.MathUtils.degToRad(32)), materials[p.id]);
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      mesh.userData.part = p.id;
+      if (p.id === "shell") m.shellMesh = mesh;
+      m.solid.add(mesh);
+    }
+    for (const id of Object.keys(INTERNALS)) if (pack[id]) {
+      const mesh = new THREE.Mesh(toCreasedNormals(geo(id), 0.6), xMats[id]);
+      mesh.castShadow = true; m.inner.add(mesh);
+    }
+    applyXray();
+    if (++loaded === MODELS.length) loadingEl.hidden = true;
+    else loadingEl.textContent = `Loading the three models… ${loaded}/3`;
+  }).catch(err => {
+    loadingEl.hidden = false;
+    loadingEl.textContent = "A model file didn't load. Reload the page to try again.";
+    console.error(err);
+  });
+}
+
+// ---------- x-ray ----------------------------------------------------------
+let xray = false;
+function applyXray() {
+  for (const m of MODELS) {
+    m.inner.visible = xray;
+    m.screenGroup.visible = !xray;
+    for (const c of m.solid.children) {
+      if (!c.userData.part) continue;
+      if (c.userData.part === "shell") { c.material = xray ? ghost : materials.shell; c.castShadow = !xray; }
+      else c.visible = !xray;
+    }
+  }
+}
+const xrayBtn = document.getElementById("xray");
+xrayBtn.addEventListener("click", () => {
+  xray = !xray; xrayBtn.setAttribute("aria-pressed", String(xray)); applyXray();
+});
+
+// ---------- camera ---------------------------------------------------------
+const VIEWS = {
+  hero: { pos: [190, 330, 400], target: [0, 0, 10] },
+  top:  { pos: [0, 520, 0.01], target: [0, 0, 0] },
+  end:  { pos: [0, 20, 460], target: [0, 4, 60] },
+  side: { pos: [420, 36, 20], target: [0, 4, 0] },
+};
+let tween = null;
+function goTo(pos, target, instant) {
+  const p = new THREE.Vector3(...pos), t = new THREE.Vector3(...target);
+  if (instant || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    camera.position.copy(p); controls.target.copy(t); controls.update(); tween = null; return;
+  }
+  tween = { p0: camera.position.clone(), t0: controls.target.clone(), p, t, start: performance.now(), dur: 700 };
+}
+function fitDistance(v) {   // pull the camera back on narrow stages so the lineup fits
+  const aspect = camera.aspect, need = aspect < 1.1 ? 1.1 / Math.max(aspect, 0.45) : 1;
+  return v.pos.map((c, i) => v.target[i] + (c - v.target[i]) * need);
+}
+const viewsEl = document.getElementById("views");
+let currentView = "hero";
+function goView(name, instant = false) {
+  currentView = name;
+  for (const b of viewsEl.querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.view === name));
+  for (const c of cardsEl.querySelectorAll(".card")) c.setAttribute("aria-pressed", "false");
+  goTo(fitDistance(VIEWS[name]), VIEWS[name].target, instant);
+}
+viewsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (b) goView(b.dataset.view); });
+function focusModel(m) {
+  for (const b of viewsEl.querySelectorAll("button")) b.setAttribute("aria-pressed", "false");
+  for (const c of cardsEl.querySelectorAll(".card")) c.setAttribute("aria-pressed", String(c.dataset.id === m.id));
+  const zc = -L_REF / 2 + m.L / 2;
+  goTo([m.cx + 70, 150, zc + 170], [m.cx, 0, zc], false);
+}
+
+// ---------- rail -----------------------------------------------------------
+const cardsEl = document.getElementById("cards");
+for (const m of MODELS) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "card"; b.dataset.id = m.id; b.setAttribute("aria-pressed", "false");
+  b.innerHTML = `<div class="top"><b>${m.name}</b><span class="size">${m.W.toFixed(1)} × ${m.L.toFixed(1)} × ${m.H.toFixed(1)}</span></div>
+    <dl><dt>Screen</dt><dd>${m.panel}</dd><dt>Cell</dt><dd>${m.cell}</dd><dt>Board</dt><dd>${m.board} wide</dd></dl>
+    <span class="chip ${m.status[0]}">${m.status[1]}</span>`;
+  b.addEventListener("click", () => focusModel(m));
+  cardsEl.appendChild(b);
+}
+const v1 = MODELS[0];
+const pct = (a, b) => (a === b ? "—" : `${a < b ? "−" : "+"}${Math.abs((a - b) / b * 100).toFixed(0)} %`);
+const rows = [
+  ["Width", m => `${m.W.toFixed(1)} mm`, m => pct(m.W, v1.W)],
+  ["Length", m => `${m.L.toFixed(1)} mm`, m => pct(m.L, v1.L)],
+  ["Thickness", m => `${m.H.toFixed(1)} mm`],
+  ["Screen area", m => `${(m.ACTIVE[0] * m.ACTIVE[1] / 100).toFixed(1)} cm²`, m => pct(m.ACTIVE[0] * m.ACTIVE[1], v1.ACTIVE[0] * v1.ACTIVE[1])],
+  ["Pixel density", m => `${m.ppi} ppi`],
+];
+document.getElementById("compare").innerHTML =
+  `<thead><tr><th></th>${MODELS.map(m => `<th>${m.name.replace("Bleep ", "")}</th>`).join("")}</tr></thead><tbody>` +
+  rows.map(([label, val, delta]) => `<tr><td>${label}</td>${MODELS.map(m =>
+    `<td>${val(m)}${delta && m !== v1 ? `<br><small style="color:var(--muted)">${delta(m)}</small>` : ""}</td>`).join("")}</tr>`).join("") + "</tbody>";
+
+const presetsEl = document.getElementById("presets");
+function renderPresets() {
+  presetsEl.innerHTML = "";
+  PRESETS.forEach((p, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "preset"; b.setAttribute("aria-pressed", String(i === presetIdx));
+    b.innerHTML = `<div class="bar">${["shell", "dpad", "ok", "pwr", "labels"].map(k => `<span style="background:${p.c[k]}"></span>`).join("")}</div><b>${p.name}</b>`;
+    b.addEventListener("click", () => {
+      presetIdx = i;
+      for (const part of PARTS) materials[part.id].color.set(p.c[part.id]);
+      try { localStorage.setItem("bleep-lineup-preset", String(i)); } catch (e) {}
+      renderPresets();
+    });
+    presetsEl.appendChild(b);
+  });
+}
+renderPresets();
+
+// name tags under each remote's bottom end
+const tagsEl = document.getElementById("tags");
+for (const m of MODELS) {
+  m.tag = document.createElement("div");
+  m.tag.className = "tag";
+  m.tag.innerHTML = `<b>${m.name}</b><small>${m.W.toFixed(1)} mm wide</small>`;
+  tagsEl.appendChild(m.tag);
+}
+const v = new THREE.Vector3();
+function updateTags() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  for (const m of MODELS) {
+    v.set(m.cx, -H_MAX / 2, -L_REF / 2 + m.L + 6).project(camera);
+    const show = v.z < 1 && currentView !== "end" && currentView !== "side";
+    m.tag.hidden = !show;
+    if (show) m.tag.style.transform = `translate(${(v.x + 1) / 2 * w}px, ${(1 - v.y) / 2 * h}px) translate(-50%, 0)`;
+  }
+}
+
+// ---------- loop -----------------------------------------------------------
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / Math.max(h, 1);
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+goView("hero", true);
+function loop(now) {
+  if (tween) {
+    const k = Math.min((now - tween.start) / tween.dur, 1), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    camera.position.lerpVectors(tween.p0, tween.p, e);
+    controls.target.lerpVectors(tween.t0, tween.t, e);
+    if (k === 1) tween = null;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  updateTags();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>

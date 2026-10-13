@@ -1,0 +1,48 @@
+Ref,Value,Footprint,LCSC / source,Qty,Side,Note,Link
+C1,22uF,C_0805_2012Metric,C45783,1,top,,https://www.lcsc.com/product-detail/C45783.html
+C2 C9 C13 C22,100nF,C_0603_1608Metric,C14663,4,top,"X7R 50 V (YAGEO CC0603KRX7R9BB104, JLC basic)",https://www.lcsc.com/product-detail/C14663.html
+C3 C4 C7 C8 C17 C18 C21,1uF,C_0603_1608Metric,C15849,7,top,"X5R 50 V (Samsung CL10A105KB8NNNC, JLC basic)",https://www.lcsc.com/product-detail/C15849.html
+C5 C11 C12 C14 C23,10uF,C_0805_2012Metric,C15850,5,top,"X5R 25 V 0805 (Samsung CL21A106KAYNNNE, JLC basic)",https://www.lcsc.com/product-detail/C15850.html
+C6 C16,10uF,C_0603_1608Metric,C19702,2,top,10 V X5R 0603,https://www.lcsc.com/product-detail/C19702.html
+C19 C20,8.2pF C0G,C_0603_1608Metric,C1685,2,top,32 kHz load caps (6.8 pF C1679 to tune),https://www.lcsc.com/product-detail/C1685.html https://www.lcsc.com/product-detail/C1679.html
+D1 D2,VSMB2948SL,VSMB2948SL_SideView,C6604342,2,top,940 nm side-view IR LED,https://www.lcsc.com/product-detail/C6604342.html
+D3,B5819W,D_SOD-123,C64885,1,top,Schottky 1 A 40 V (MDD; JSCJ C8598 is low on stock),https://www.lcsc.com/product-detail/C64885.html https://www.lcsc.com/product-detail/C8598.html
+D4,LESD3Z5.0T1G,D_SOD-323,C383210,1,top,"5 V TVS on VBUS, cathode (band) = VBUS",https://www.lcsc.com/product-detail/C383210.html
+J1,FH34SRJ-50S-0.5SH(50),Hirose_FH34SRJ-50S-0.5SH,C3169104,1,top,"50-pin 0.5 mm FPC ZIF, 1.0 mm, top+bottom contact, back flip",https://www.lcsc.com/product-detail/C3169104.html
+J2,53261-0271,Molex_PicoBlade_53261-0271_1x02-1MP_P1.25mm_Horizontal,C177225,1,bottom,"PicoBlade 2-pin right angle, battery",https://www.lcsc.com/product-detail/C177225.html
+J3,TYPE-C 16PIN 2MD(073),USB_C_Receptacle_HRO_TYPE-C-31-M-12,C2765186,1,top,USB-C receptacle 16-pin,https://www.lcsc.com/product-detail/C2765186.html
+M1,"ERM 0827 (8 mm coin, wired)",Motor_8mm_WirePads,AliExpress: 1005007600971536 (variant 8x2.7mm),1,bottom,"vibration motor, stuck to the underside",https://www.aliexpress.com/item/1005007600971536.html
+Q1 Q2,AO3400A,SOT-23,C20917,2,top,N-MOSFET,https://www.lcsc.com/product-detail/C20917.html
+Q3,AO3401A,SOT-23,C15127,1,top,P-MOSFET,https://www.lcsc.com/product-detail/C15127.html
+Q4,AO3401A,SOT-23,C15127,1,bottom,P-MOSFET,https://www.lcsc.com/product-detail/C15127.html
+R1 R10 R19,10k,R_0603_1608Metric,C25804,3,top,"1 % (UNI-ROYAL 0603WAF1002T5E, JLC basic)",https://www.lcsc.com/product-detail/C25804.html
+R2 R3,22R,R_1206_3216Metric,C17958,2,top,"IR LED series, 1206 / 250 mW (burst power)",https://www.lcsc.com/product-detail/C17958.html
+R4 R8 R27,100R,R_0603_1608Metric,C22775,3,top,,https://www.lcsc.com/product-detail/C22775.html
+R5 R9 R11 R26 R30,100k,R_0603_1608Metric,C25803,5,top,,https://www.lcsc.com/product-detail/C25803.html
+R12 R13,4.7k,R_0603_1608Metric,C23162,2,top,,https://www.lcsc.com/product-detail/C23162.html
+R16,2.4k,R_0603_1608Metric,C22940,1,top,TP4056 PROG: 500 mA,https://www.lcsc.com/product-detail/C22940.html
+R17 R18,5.1k,R_0603_1608Metric,C23186,2,top,,https://www.lcsc.com/product-detail/C23186.html
+R20,220R,R_0603_1608Metric,C22962,1,top,,https://www.lcsc.com/product-detail/C22962.html
+R21,10M (DO NOT FIT),R_0603_1608Metric,C114606,1,top,32 kHz bias: leave EMPTY (fit only if the crystal won't start),https://www.lcsc.com/product-detail/C114606.html
+R22 R23 R24 R25,68R,R_0603_1608Metric,C27592,4,top,"backlight, one per LED cathode",https://www.lcsc.com/product-detail/C27592.html
+R28,10k,R_0603_1608Metric,C98220,1,bottom,"underside, by iron (LCSC loose stock)",https://www.lcsc.com/product-detail/C98220.html
+SW1 SW2 SW3 SW4 SW5 SW6 SW7 SW8 SW9 SW10 SW11 SW12 SW13 SW14,TS-1187A-B-A-B,SW_Push_1P1T_XKB_TS-1187A,C318884,14,top,tact switch 5.1x5.1x1.5,https://www.lcsc.com/product-detail/C318884.html
+U1,ESP32-S3-WROOM-1-N8R2,ESP32-S3-WROOM-1,C2913204,1,bottom,"Wi-Fi/BLE module, 8 MB flash, 2 MB quad PSRAM (NOT N8R8)",https://www.lcsc.com/product-detail/C2913204.html
+U2,ME6211C33M5G-N,SOT-23-5,C82942,1,top,3.3 V 500 mA LDO,https://www.lcsc.com/product-detail/C82942.html
+U3,DRV2605LDGST,MSOP-10_3x3mm_P0.5mm,C425927,1,top,"haptic driver, VSSOP-10",https://www.lcsc.com/product-detail/C425927.html
+U4,MMA8452QR1,MMA8452Q_QFN-16_3x3mm_P0.5mm,C11360,1,top,accelerometer QFN-16 (hot air),https://www.lcsc.com/product-detail/C11360.html
+U5,TP4056,SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.41x3.3mm,C16581,1,top,"Li-ion charger, ESOP-8 (EP needs paste + reflow)",https://www.lcsc.com/product-detail/C16581.html
+U6,IRM-H638T/TR2,IRM-H638T,C91447,1,top,38 kHz IR receiver (learning),https://www.lcsc.com/product-detail/C91447.html
+U7,LTR-303ALS-01,LTR-303ALS-01,C364577,1,top,ambient light sensor DFN-6 (hot air),https://www.lcsc.com/product-detail/C364577.html
+U8,MAX17048G+T10,MAX17048_TDFN-8_2x2mm,C2682616,1,top,fuel gauge TDFN-8 + EP (hotplate),https://www.lcsc.com/product-detail/C2682616.html
+U9,MSM261DHT006,MSM261DHT006_LGA-8_3x4mm,C51928215,1,top,"PDM MEMS mic, TOP port Ø0.65; no washing, don't cover the port",https://www.lcsc.com/product-detail/C51928215.html
+Y1,32.768kHz 6pF,Epson_FC-135_3.2x1.5mm,C20340322,1,top,Epson FC-135 32.7680KA-E,https://www.lcsc.com/product-detail/C20340322.html
+—,display ER-TFT024IPS-3 + ER-TPC024-1 (capacitive),50-pin 0.5 mm FPC,"AliExpress: 1005008088847517 (BuyDisplay, CTP variant)",1,,not on the board,https://www.aliexpress.com/item/1005008088847517.html
+—,"Li-Po 504050 5.0x40x50 1500 mAh, PCM",bare leads,Ampul: AM4289 https://ampul.eu/en/battery/4395-li-pol-battery-1500mah-37v-504050,1,,not on the board,https://ampul.eu/en/battery/4395-li-pol-battery-1500mah-37v-504050
+—,PicoBlade housing 51021-0200,for the cell's leads,C293613,1,,not on the board,https://www.lcsc.com/product-detail/C293613.html
+—,PicoBlade crimp 50079-8100 (26-28 AWG) or 50058-8000 (28-32 AWG),by the cell's lead gauge,C587850 / C293573,2,,not on the board,https://www.lcsc.com/product-detail/C587850.html https://www.lcsc.com/product-detail/C293573.html
+—,M2 x 3 x 3.2 heat-set insert,"front-shell post + 2 bosses, 2 in the deck's bosses",C51938879,5,,not on the board,https://www.lcsc.com/product-detail/C51938879.html
+—,M2 x 4 pan head,"3 board screws (2 also clamp the deck), with the washer below; 2 back-plate screws into the deck, heads flush in the plate's counterbores",C357393,5,,not on the board,https://www.lcsc.com/product-detail/C357393.html
+—,"M2 flat washer DIN 125 A / ISO 7089, Ø5 x 0.3, A2",under each board-screw head (the holes are 2.5 mm),"AliExpress: 32812536491 (pick M2, 304 stainless, 100 pcs); EU alternative: 3DJake https://www.3djake.com/cnc-kitchen/standard-washer-din-125-stainless-steel-a2?sai=30454",3,,not on the board,https://www.aliexpress.com/item/32812536491.html https://www.3djake.com/cnc-kitchen/standard-washer-din-125-stainless-steel-a2?sai=30454
+—,"SOFT double-sided foam tape (PE/EVA sponge), 1.0 mm and 1.5 mm",panel pads: one 1.5 + one 1.0 layer per pad (8 % into the 2.3 gap); 1.0 mm also for the mic gasket ring (OD 2.3 / ID 1.1),"AliExpress: 1005003980172009 (pick 1.0 mm and 1.5 mm, 10 mm wide; fallback 4000803370856: stack 1.0 + 0.5) or any SOFT foam tape of those thicknesses",1,,not on the board,https://www.aliexpress.com/item/1005003980172009.html https://www.aliexpress.com/item/4000803370856.html
+—,Kapton tape 10-20 mm,"tack strips for the folded panel, over the cell's PCM end",C92418 (10 mm x 33 m roll; 20 mm: C92419),1,,not on the board,https://www.lcsc.com/product-detail/C92418.html https://www.lcsc.com/product-detail/C92419.html

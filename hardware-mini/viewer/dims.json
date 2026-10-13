@@ -1,0 +1,48 @@
+{
+ "mini28": {
+  "title": "Bleep mini 2.8\"",
+  "panel": "BuyDisplay ER-TFT028A2-4 + ER-TPC028-4.1 (ILI9341, glass, 4.3 mm)",
+  "cell": "Ampul AM7240 484251: 4.8 \u00d7 42 \u00d7 51 mm, 1500 mAh",
+  "W": 54.4,
+  "L": 168.83,
+  "H": 15.3,
+  "LENS": [
+   50.2,
+   69.3,
+   0.3
+  ],
+  "LENS_C": [
+   27.2,
+   40.8
+  ],
+  "ACTIVE": [
+   43.2,
+   57.6
+  ],
+  "ACTIVE_DY": 2.65,
+  "Z_LENS_TOP": 14.5
+ },
+ "mini24": {
+  "title": "Bleep mini 2.4\"",
+  "panel": "BuyDisplay ER-TFT024IPS-3 + ER-TPC024-1 (ST7789V, PET cover, 4.23 mm)",
+  "cell": "Ampul 504050: 5.0 \u00d7 40 \u00d7 50 mm, 1500 mAh",
+  "W": 46.92,
+  "L": 159.51,
+  "H": 15.73,
+  "LENS": [
+   42.72,
+   59.46,
+   0.3
+  ],
+  "LENS_C": [
+   23.46,
+   36.23
+  ],
+  "ACTIVE": [
+   36.72,
+   48.96
+  ],
+  "ACTIVE_DY": 2.35,
+  "Z_LENS_TOP": 14.93
+ }
+}
