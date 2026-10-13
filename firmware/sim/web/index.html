@@ -46,9 +46,10 @@
   <div>
     <div class="device">
       <div id="loading">Loading…</div>
-      <canvas id="canvas" width="320" height="480" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+      <canvas id="canvas" width="@BLEEP_SCREEN_W@" height="@BLEEP_SCREEN_H@" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
     </div>
     <div class="zoom" id="zoom"></div>
+    <div class="zoom" id="screens"></div>
   </div>
 
   <div class="side">
@@ -125,19 +126,27 @@
   if (params.has('demo')) {
     try { localStorage.removeItem('bleep-config'); localStorage.removeItem('bleep-secrets'); } catch (e) {}
   }
+  // ?screen=240x320: the Bleep mini's panel (2.8" and 2.4"); ?screen=320x480: Bleep v1.
+  // Without it, the build's default (BLEEP_SCREEN), which is the canvas's size here.
+  const screens = {'320x480': 'v1 · 3.5″', '240x320': 'mini · 2.8″ / 2.4″'};
+  const screen = screens[params.get('screen')] ? params.get('screen') : canvas.width + 'x' + canvas.height;
+  const [W, H] = screen.split('x').map(Number);
+  canvas.width = W; canvas.height = H;
+  const args = ['--screen', screen];
+  if (params.has('factory')) args.push('--factory');   // ?factory: a new remote
   var Module = {
     canvas,
-    arguments: params.has('factory') ? ['--factory'] : [],   // ?factory: a new remote
+    arguments: args,
     print: log,
     printErr: (t) => console.warn(t),
     onRuntimeInitialized() { document.getElementById('loading').remove(); startPanel(); },
   };
 
-  // Zoom: CSS scaling; SDL maps pointer positions back to 320 x 480
+  // Zoom: CSS scaling; SDL maps pointer positions back to the screen's pixels
   const zoomEl = document.getElementById('zoom');
   function setZoom(z) {
-    canvas.style.width = 320 * z + 'px';
-    canvas.style.height = 480 * z + 'px';
+    canvas.style.width = W * z + 'px';
+    canvas.style.height = H * z + 'px';
     [...zoomEl.children].forEach(b => b.classList.toggle('sel', +b.dataset.z === z));
     try { localStorage.setItem('bleep-zoom', z); } catch (e) {}
   }
@@ -150,6 +159,16 @@
   try { z0 = +localStorage.getItem('bleep-zoom') || z0; } catch (e) {}
   if (window.innerWidth < 900) z0 = 1;
   setZoom(z0);
+
+  // The other screen: the page again with ?screen= (the remote's flash, in localStorage, is shared)
+  const screensEl = document.getElementById('screens');
+  Object.entries(screens).forEach(([wh, name]) => {
+    const b = document.createElement('button');
+    b.textContent = wh.replace('x', '×') + ' ' + name;
+    b.classList.toggle('sel', wh === screen);
+    b.onclick = () => { if (wh !== screen) location.search = '?screen=' + wh; };
+    screensEl.appendChild(b);
+  });
 
   function startPanel() {
     const call = (name, ...args) => Module.ccall(name, null, args.map(() => 'number'), args);

@@ -181,10 +181,10 @@ static void settings_build(lv_obj_t *root, int arg)
 
     hal_battery_t b = *app_battery();
     lv_obj_t *card = w_card(col, false, false);
-    lv_obj_set_style_pad_all(card, 16, 0);
+    lv_obj_set_style_pad_all(card, UI_PICK(16, 14), 0);
     lv_obj_set_style_margin_bottom(card, 6, 0);
-    lv_obj_t *row = w_row(card, 14);
-    lv_obj_t *ring = w_ring(row, 52, 5, b.percent);
+    lv_obj_t *row = w_row(card, UI_PICK(14, 10));
+    lv_obj_t *ring = w_ring(row, UI_PICK(52, 46), 5, b.percent);
     char buf[48], l2[48];
     snprintf(buf, sizeof(buf), "%d%%", b.percent);
     lv_obj_center(w_label(ring, F_LABEL_B, T->text, buf));
@@ -192,8 +192,8 @@ static void settings_build(lv_obj_t *root, int arg)
     lv_obj_set_flex_grow(txt, 1);
     lv_obj_set_width(txt, LV_SIZE_CONTENT);
     battery_text(buf, sizeof(buf), l2, sizeof(l2));
-    w_label(txt, F_BODY_B, T->text, buf);
-    w_label(txt, F_CAPTION, T->text2, l2);
+    w_wrap(w_label(txt, F_BODY_B, T->text, buf));
+    w_wrap(w_label(txt, F_CAPTION, T->text2, l2));
 
     w_section(col, "REMOTE");
     w_on_click(w_list_row(col, theme_is_light() ? ICON_SUN : ICON_MOON, "Display & haptics", theme_names[s->theme], NULL),
@@ -377,6 +377,7 @@ static void bright_build(lv_obj_t *root, int arg)
     lv_obj_add_event_cb(sl, bright_cb, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_add_event_cb(sl, bright_released_cb, LV_EVENT_RELEASED, NULL);
     bright_now = w_label(col, F_LABEL, T->text2, "");
+    w_wrap(bright_now);
     bright_now_text();
     lv_obj_t *n = w_label(col, F_CAPTION, T->text2,
                           s->auto_brightness
@@ -504,9 +505,12 @@ static void wifi_pass_done(const char *t, void *c)
 
 static void ask_password(void)
 {
-    char sub[48];
+    char sub[48], title[48];
     snprintf(sub, sizeof(sub), "Wi-Fi · %s", wf.ssid);
-    ui_text_entry(sub, "Password", "Network password", wf.pass, "8 to 63 characters, or empty for an open network",
+    /* the small screen has no subtitle: the network goes in the title */
+    if (UI->compact) snprintf(title, sizeof(title), "Password · %s", wf.ssid);
+    else snprintf(title, sizeof(title), "Password");
+    ui_text_entry(sub, title, "Network password", wf.pass, "8 to 63 characters, or empty for an open network",
                   KB_PASSWORD, 63, wifi_pass_done, NULL);
 }
 
@@ -614,7 +618,8 @@ static void wifi_build(lv_obj_t *root, int arg)
         lv_obj_set_style_pad_gap(c, 4, 0);
         lv_obj_t *h = w_row(c, 8);
         w_icon(h, ok ? ICON_CHECK : ICON_X, 16, ok ? T->accent : T->warning);
-        w_label(h, F_BODY_B, ok ? T->accent : T->warning, ok ? "Connected and saved" : "Couldn't connect, nothing saved");
+        lv_obj_t *hl = w_label(h, F_BODY_B, ok ? T->accent : T->warning, ok ? "Connected and saved" : "Couldn't connect, nothing saved");
+        lv_obj_set_flex_grow(hl, 1);   /* wraps on the small screen */
         char msg[160];
         if (ok) snprintf(msg, sizeof(msg), "The remote will use “%s” from now on.", wf.tested);
         else test_error(wf.result, msg, sizeof(msg));

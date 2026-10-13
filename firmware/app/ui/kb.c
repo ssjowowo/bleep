@@ -65,7 +65,7 @@ static struct {
     uint32_t last_shift;
 } tx;
 
-static lv_font_t key_font;      /* Sora 21/600 with the icon font as fallback */
+static lv_font_t key_font;      /* the title font (21 px, 18 compact) with the icon font as fallback */
 
 lv_obj_t *kb_textarea(void) { return ui_current() == &page_text ? tx.ta : NULL; }
 
@@ -202,7 +202,15 @@ static void kb_draw(lv_event_t *e)
         if (enter) l->color = T->on_accent;
         else if (shift_on) l->color = T->accent;
         const char *t = lv_buttonmatrix_get_button_text(kb, id);
-        if (mod && t && (t[0] & 0x80) == 0 && tx.mode != KB_PIN) l->font = F_BODY;
+        if (mod && t && (t[0] & 0x80) == 0 && tx.mode != KB_PIN) {
+            /* LVGL placed the word for the key font: move the smaller one to the key's middle */
+            lv_point_t big, small;
+            lv_text_get_size(&big, t, l->font, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+            lv_text_get_size(&small, t, F_BODY, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+            l->font = F_BODY;
+            l->ofs_x = (big.x - small.x) / 2;
+            l->ofs_y = (big.y - small.y) / 2;
+        }
     }
 }
 
@@ -221,14 +229,17 @@ static void ta_changed(lv_event_t *e)
     if (tx.live) tx.live(lv_textarea_get_text(tx.ta), tx.ctx);
 }
 
+/* 203 px (the number pad 235), or 164 (196) on the small screen: 36 px keys (44) */
+static int kb_height(bool pin) { return pin ? UI_PICK(235, 196) : UI_PICK(203, 164); }
+
 static lv_obj_t *make_keyboard(void)
 {
-    key_font = font_21;
-    key_font.fallback = &icons_20;
+    key_font = *F_TITLE;
+    key_font.fallback = icon_font(20);
     lv_obj_t *kb = lv_keyboard_create(lv_screen_active());
     lv_obj_set_floating(kb, true);
     bool pin = tx.mode == KB_PIN;
-    lv_obj_set_size(kb, SCREEN_W, pin ? 235 : 203);
+    lv_obj_set_size(kb, SCREEN_W, kb_height(pin));
     lv_obj_align(kb, LV_ALIGN_BOTTOM_MID, 0, 0);
     lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_LOWER, map_lower, ctrl_text);
     lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_UPPER, map_upper, ctrl_text);
@@ -241,15 +252,15 @@ static lv_obj_t *make_keyboard(void)
     lv_obj_set_send_draw_task_events(kb, true);
     lv_obj_add_event_cb(kb, kb_draw, LV_EVENT_DRAW_TASK_ADDED, NULL);
 
-    /* background: pad 3 outside, 4 between keys, 5 between rows */
+    /* background: pad 3 outside, 4 between keys, 5 between rows (2, 3, 4 on the small screen) */
     lv_obj_set_style_bg_opa(kb, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(kb, T->tabbar, 0);
     lv_obj_set_style_border_side(kb, LV_BORDER_SIDE_TOP, 0);
     lv_obj_set_style_border_width(kb, 1, 0);
     lv_obj_set_style_border_color(kb, T->tabbar_line, 0);
-    lv_obj_set_style_pad_all(kb, 3, 0);
-    lv_obj_set_style_pad_column(kb, pin ? 6 : 4, 0);
-    lv_obj_set_style_pad_row(kb, pin ? 6 : 5, 0);
+    lv_obj_set_style_pad_all(kb, UI_PICK(3, 2), 0);
+    lv_obj_set_style_pad_column(kb, pin ? 6 : UI_PICK(4, 3), 0);
+    lv_obj_set_style_pad_row(kb, pin ? UI_PICK(6, 5) : UI_PICK(5, 4), 0);
     /* keys */
     lv_obj_set_style_bg_opa(kb, LV_OPA_COVER, LV_PART_ITEMS);
     lv_obj_set_style_bg_color(kb, T->surface2, LV_PART_ITEMS);
@@ -273,7 +284,10 @@ static void text_build(lv_obj_t *root, int arg)
     tx.dots = tx.count = NULL;
     tx.caps_lock = false;
     w_header(root, tx.sub, tx.title, ui_back_cb);
-    lv_obj_t *col = w_col(root, 8);
+    /* the page scrolls clear of the keyboard, which floats over its bottom */
+    lv_obj_set_style_pad_bottom(root, kb_height(tx.mode == KB_PIN) + 8, 0);
+    if (UI->compact) lv_obj_set_style_pad_gap(root, 8, 0);
+    lv_obj_t *col = w_col(root, UI_PICK(8, 6));
     lv_obj_set_style_pad_hor(col, PAD, 0);
 
     tx.ta = lv_textarea_create(col);
@@ -288,7 +302,7 @@ static void text_build(lv_obj_t *root, int arg)
         lv_textarea_set_accepted_chars(tx.ta, "0123456789");
         tx.dots = w_row(col, 14);
         lv_obj_set_flex_align(tx.dots, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-        lv_obj_set_style_pad_top(tx.dots, 24, 0);
+        lv_obj_set_style_pad_top(tx.dots, UI_PICK(24, 8), 0);
         for (int i = 0; i < tx.max_len; i++) {
             lv_obj_t *d = w_box(tx.dots);
             lv_obj_set_size(d, 12, 12);
@@ -303,18 +317,24 @@ static void text_build(lv_obj_t *root, int arg)
         w_label(h, F_LABEL, T->text2, tx.helper);
         update_pin_dots();
     } else {
-        w_label(col, F_LABEL, T->text2, tx.label);
-        lv_obj_move_to_index(lv_obj_get_child(col, -1), 0);
-        lv_obj_set_size(tx.ta, lv_pct(100), 48);
+        if (!UI->compact) {
+            w_label(col, F_LABEL, T->text2, tx.label);
+            lv_obj_move_to_index(lv_obj_get_child(col, -1), 0);
+        } else {
+            /* the small screen: the label is the empty box's placeholder, room for the helper */
+            lv_textarea_set_placeholder_text(tx.ta, tx.label);
+            lv_obj_set_style_text_color(tx.ta, T->text2, LV_PART_TEXTAREA_PLACEHOLDER);
+        }
+        lv_obj_set_size(tx.ta, lv_pct(100), UI_PICK(48, 40));
         lv_obj_set_style_bg_opa(tx.ta, LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(tx.ta, T->surface, 0);
         lv_obj_set_style_border_width(tx.ta, 1, 0);
         lv_obj_set_style_border_color(tx.ta, T->accent_edge, 0);
-        lv_obj_set_style_radius(tx.ta, 12, 0);
-        lv_obj_set_style_pad_left(tx.ta, 14, 0);
+        lv_obj_set_style_radius(tx.ta, UI_PICK(12, 10), 0);
+        lv_obj_set_style_pad_left(tx.ta, UI_PICK(14, 12), 0);
         bool masked = tx.mode == KB_PASSWORD || tx.mode == KB_SECRET;
-        lv_obj_set_style_pad_right(tx.ta, masked ? 44 : 14, 0);
-        lv_obj_set_style_pad_ver(tx.ta, 14, 0);
+        lv_obj_set_style_pad_right(tx.ta, masked ? UI_PICK(44, 40) : UI_PICK(14, 12), 0);
+        lv_obj_set_style_pad_ver(tx.ta, UI_PICK(14, 10), 0);
         lv_obj_set_style_text_font(tx.ta, F_BODY, 0);
         lv_obj_set_style_text_color(tx.ta, T->text, 0);
         lv_obj_set_style_border_width(tx.ta, 2, LV_PART_CURSOR);
@@ -328,8 +348,8 @@ static void text_build(lv_obj_t *root, int arg)
             lv_textarea_set_password_show_time(tx.ta, 1500);
             lv_obj_t *eye = w_box(tx.ta);
             lv_obj_set_floating(eye, true);
-            lv_obj_set_size(eye, 40, 46);
-            lv_obj_align(eye, LV_ALIGN_RIGHT_MID, 40, 0);
+            lv_obj_set_size(eye, UI_PICK(40, 36), UI_PICK(46, 38));
+            lv_obj_align(eye, LV_ALIGN_RIGHT_MID, UI_PICK(40, 36), 0);
             lv_obj_center(w_icon(eye, ICON_EYE, 18, T->text2));
             w_on_click(eye, eye_cb, 0);
         }

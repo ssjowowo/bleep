@@ -32,7 +32,7 @@ wait 300
 click Search
 wait 300
 type shop
-tap 294 455
+kbkey enter
 wait 300
 expect Shopping list
 expect-no Porch light
@@ -46,15 +46,15 @@ click Shopping list
 wait 300
 expect Settings and diagnostics
 shot 186_home_add_ticked
-tap 26 62
+back
 wait 300
 # one of the kitchen's own, hidden here: adding it shows it again
-tap 270 353
+clickin Coffee machine | eye
 wait 300
 expect Hidden in this room
 click Add a card
 wait 300
-tap 281 118
+clickicon x
 wait 300
 expect Search
 click Kitchen
@@ -68,14 +68,14 @@ click Add a card
 wait 300
 click All
 wait 300
-tap 284 163
+switch Settings and diagnostics
 wait 300
 expect Coffee machine child lock
 expect Garage hub battery
 expect Garage · diagnostic
 expect Showing 50 of
 shot 187_home_add_diag
-tap 26 62
+back
 wait 300
 click Done
 wait 300

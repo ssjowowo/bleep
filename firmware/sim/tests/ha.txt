@@ -18,11 +18,11 @@ expect Enter code
 shot 90_alarm_code
 type 1234
 shot 91_alarm_code_typed
-tap 266 455
+kbkey enter
 wait 300
 expect Disarmed
 click Bedroom
 wait 200
-tap 191 221
+click 3
 wait 200
 expect speed 3

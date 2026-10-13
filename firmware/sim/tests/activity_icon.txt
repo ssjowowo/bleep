@@ -1,7 +1,7 @@
 # Activity editor: pick an icon; the tile, the editor row and the status pill follow it
 click Start
 wait 300
-hold 85 201 600
+press Watch TV
 wait 200
 expect Icon
 expect TV
@@ -20,13 +20,13 @@ click Update
 wait 300
 shot 93_activities_night_tile
 # it sticks: open the picker again and Night is the selected one
-hold 85 201 600
+press Watch TV
 wait 200
 click Icon
 wait 300
 shot 94_icon_picker_night
 # tapping the round button itself picks once (one step back, to the editor)
-tap 124 307
+clickin Scene | scene
 wait 300
 expect START SEQUENCE
 expect Scene

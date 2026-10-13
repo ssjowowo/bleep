@@ -1,7 +1,7 @@
 # Home Assistant without tokens: find the server, sign in with a phone or on the remote
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 300
 click Home Assistant
 wait 600
@@ -49,11 +49,11 @@ click Sign in on the remote
 wait 300
 click Username
 type sam
-tap 294 455
+kbkey enter
 wait 300
 click Password
 type wrong
-tap 294 455
+kbkey enter
 wait 300
 click Sign in
 wait 200
@@ -64,20 +64,20 @@ shot 73_ha_bad_password
 click Password
 clear
 type correcthorse
-tap 294 455
+kbkey enter
 wait 300
 click Sign in
 wait 1300
 expect Two-factor code
 shot 74_ha_mfa
 type 111111
-tap 266 455
+kbkey enter
 wait 1300
 expect That code didn't match
 click Enter two-factor code
 wait 300
 type 123456
-tap 266 455
+kbkey enter
 wait 1300
 expect Signed in as
 expect Sam

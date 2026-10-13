@@ -21,12 +21,12 @@
 
 #define W        8               /* a well of its own: 8 x 16, big cells */
 #define H        16
-#define CELL     25
+#define CELL     UI_PICK(25, 15)       /* the well fills the height: 400 px, or 240 */
 #define TOP      48                    /* the score strip */
 #define BOARD_X  PAD                   /* in the play area below it */
 #define BOARD_Y  12
 #define SIDE_X   (BOARD_X + W * CELL + 16)
-#define MINI     14                    /* the next piece's cells */
+#define MINI     UI_PICK(14, 10)       /* the next piece's cells */
 #define SWIPE    24
 #define TAP_SLOP 10
 #define REPEAT_AFTER_MS 170            /* a held key repeats after this, */
@@ -382,7 +382,7 @@ static void play_draw(lv_event_t *e)
     lv_area_t well = {bx - 3, by - 3, bx + W * CELL + 2, by + H * CELL + 2};
     lv_draw_rect(layer, &r, &well);
     r.border_width = 0;
-    r.radius = 7;   /* soft, like the remote's buttons */
+    r.radius = UI_PICK(7, 4);   /* soft, like the remote's buttons */
     /* what's landed */
     for (int y = 0; y < H; y++)
         for (int x = 0; x < W; x++)
@@ -397,7 +397,7 @@ static void play_draw(lv_event_t *e)
         lv_draw_rect_dsc_init(&ghost);
         ghost.bg_color = T->text;
         ghost.bg_opa = LV_OPA_10;
-        ghost.radius = 7;
+        ghost.radius = UI_PICK(7, 4);
         r.bg_color = color(bk.piece);
         for (int i = 0; i < 4; i++) {
             int cx, cy;
@@ -409,7 +409,7 @@ static void play_draw(lv_event_t *e)
     /* the next one, centred in a 4 x 4 box under NEXT */
     int n = shapes[bk.next].n, sx = p.x1 + SIDE_X + (4 - n) * MINI / 2, sy = p.y1 + BOARD_Y + 22 + (4 - n) * MINI / 2;
     r.bg_color = color(bk.next);
-    r.radius = 4;
+    r.radius = UI_PICK(4, 3);
     for (int i = 0; i < 4; i++) {
         int cx, cy;
         cell_of(bk.next, 0, i, &cx, &cy);

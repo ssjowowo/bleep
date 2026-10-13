@@ -11,6 +11,16 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 option(BLEEP_SDL "Open SDL windows (needs libsdl2-dev). OFF builds the headless test runner only." ON)
+# The panel the emulator starts with: 320x480 (Bleep v1) or 240x320 (Bleep mini).
+# --screen WxH (the browser: ?screen=WxH) picks the other one at start-up.
+set(BLEEP_SCREEN "320x480" CACHE STRING "Default screen: 320x480 (Bleep v1) or 240x320 (Bleep mini)")
+set_property(CACHE BLEEP_SCREEN PROPERTY STRINGS 320x480 240x320)
+if(NOT BLEEP_SCREEN MATCHES "^(320x480|240x320)$")
+  message(FATAL_ERROR "BLEEP_SCREEN must be 320x480 or 240x320, not ${BLEEP_SCREEN}")
+endif()
+string(REPLACE "x" ";" BLEEP_SCREEN_WH ${BLEEP_SCREEN})
+list(GET BLEEP_SCREEN_WH 0 BLEEP_SCREEN_W)
+list(GET BLEEP_SCREEN_WH 1 BLEEP_SCREEN_H)
 set(LVGL_DIR "" CACHE PATH "Use a local LVGL checkout instead of fetching v9.6.0")
 
 set(FW ${CMAKE_CURRENT_LIST_DIR}/..)
@@ -79,7 +89,7 @@ add_executable(bleep_sim
   png.c
   web.c)
 target_include_directories(bleep_sim PRIVATE ${FW}/app ${FW}/hal ${CMAKE_CURRENT_LIST_DIR} ${cjson_SOURCE_DIR})
-target_compile_definitions(bleep_sim PRIVATE BLEEP_SIM=1)
+target_compile_definitions(bleep_sim PRIVATE BLEEP_SIM=1 BLEEP_SCREEN_W=${BLEEP_SCREEN_W} BLEEP_SCREEN_H=${BLEEP_SCREEN_H})
 target_compile_options(bleep_sim PRIVATE -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers)
 target_link_libraries(bleep_sim PRIVATE lvgl m)
 if(EMSCRIPTEN AND NOT BLEEP_SDL)
@@ -90,7 +100,7 @@ elseif(EMSCRIPTEN)
     -sEXPORTED_FUNCTIONS=_main,_malloc,_free,_web_save,_web_key,_web_key_down,_web_key_up,_web_lift,_web_battery,_web_usb,_web_lux,_web_skip_idle,_web_status
     -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,lengthBytesUTF8)
   set_target_properties(bleep_sim PROPERTIES OUTPUT_NAME bleep SUFFIX ".js")
-  configure_file(${CMAKE_CURRENT_LIST_DIR}/web/index.html ${CMAKE_CURRENT_BINARY_DIR}/index.html COPYONLY)
+  configure_file(${CMAKE_CURRENT_LIST_DIR}/web/index.html ${CMAKE_CURRENT_BINARY_DIR}/index.html @ONLY)
 elseif(BLEEP_SDL)
   target_link_libraries(bleep_sim PRIVATE ${SDL2_LIBRARIES})
   target_include_directories(bleep_sim PRIVATE ${SDL2_INCLUDE_DIRS})

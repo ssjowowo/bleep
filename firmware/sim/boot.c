@@ -33,8 +33,10 @@ EM_JS(char *, ss_take, (void), {
 });
 EM_JS(void, ss_put_and_reload, (const char *s), {
     try { sessionStorage.setItem('bleep-state', UTF8ToString(s)); } catch (e) {}
-    // without ?factory or ?demo, which would wipe the flash again
-    setTimeout(() => location.replace(location.pathname), 0);
+    // without ?factory or ?demo, which would wipe the flash again; the same screen
+    const screen = new URLSearchParams(location.search).get('screen');
+    const query = screen ? '?screen=' + encodeURIComponent(screen) : "";
+    setTimeout(() => location.replace(location.pathname + query), 0);
 });
 #else
 #define WEB 0

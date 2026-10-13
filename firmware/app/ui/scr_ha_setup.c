@@ -37,7 +37,7 @@ static lv_obj_t *error_card(lv_obj_t *parent, const char *title, const char *tex
     lv_obj_set_style_pad_gap(c, 4, 0);
     lv_obj_t *h = w_row(c, 8);
     w_icon(h, ICON_X, 16, T->warning);
-    w_label(h, F_BODY_B, T->warning, title);
+    lv_obj_set_flex_grow(w_label(h, F_BODY_B, T->warning, title), 1);   /* wraps on the small screen */
     lv_obj_t *l = w_label(c, F_LABEL, T->text2, text);
     lv_obj_set_width(l, lv_pct(100));
     return c;
@@ -252,7 +252,7 @@ static void server_build(lv_obj_t *root, int arg)
         for (int i = 0; i < n_servers; i++) {
             bool cur = !strcmp(servers[i].url, g_model.settings.ha_url);
             lv_obj_t *r = w_list_row(col, ICON_HOME, servers[i].name, short_url(servers[i].url), NULL);
-            lv_obj_set_height(r, 52);
+            lv_obj_set_height(r, UI_PICK(52, 44));
             if (cur) {
                 lv_obj_set_style_text_color(lv_obj_get_child(r, 1), T->accent, 0);
                 w_icon(r, ICON_CHECK, 16, T->accent);
@@ -339,8 +339,10 @@ static void phone_build(lv_obj_t *root, int arg)
     lv_obj_set_flex_align(status, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_top(status, 4, 0);
     w_icon(status, open ? ICON_CHECK : ICON_CAMERA, 16, open ? T->accent : T->text);
-    w_label(status, F_BODY_B, open ? T->accent : T->text,
-            open ? "Now sign in on your phone" : "Scan with your phone's camera");
+    lv_obj_t *st = w_label(status, F_BODY_B, open ? T->accent : T->text,
+                           open ? "Now sign in on your phone" : "Scan with your phone's camera");
+    lv_obj_set_style_max_width(st, CONTENT_W - 24, 0);   /* wraps on the small screen */
+    lv_obj_set_style_text_align(st, LV_TEXT_ALIGN_CENTER, 0);
 
     lv_obj_t *l = w_label(col, F_CAPTION, T->text2,
                           "Your phone opens Home Assistant's own sign-in page, so two-factor codes and passkeys "

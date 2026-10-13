@@ -21,7 +21,7 @@ click Name
 wait 300
 clear
 type Espresso
-tap 294 455
+kbkey enter
 wait 300
 expect Espresso
 # an icon of its own
@@ -43,17 +43,17 @@ wait 300
 click Living room
 wait 300
 shot 191_home_card_rooms
-tap 26 62
+back
 wait 300
 expect 2 rooms
-tap 26 62
+back
 wait 300
 expect Espresso
 expect-no Coffee machine
 click Done
 wait 300
 expect Espresso
-drag 160 400 160 160
+drag ~160 ~400 ~160 ~160
 wait 300
 shot 192_home_compact_kitchen
 click Living room
@@ -79,7 +79,7 @@ wait 300
 click Name
 wait 300
 clear
-tap 294 455
+kbkey enter
 wait 300
 expect Coffee machine
 expect-no Espresso

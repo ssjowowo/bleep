@@ -118,31 +118,33 @@ static void show_lock(void)
     hal_battery_t b = *app_battery();
     lv_obj_t *pct = w_label(ambient, F_CAPTION, T->text2, "");
     lv_label_set_text_fmt(pct, "%d%%", b.percent);
-    lv_obj_align(pct, LV_ALIGN_TOP_RIGHT, -16, 12);
+    lv_obj_align(pct, LV_ALIGN_TOP_RIGHT, -PAD, 12);
+    /* the clock, the date and the now-playing card; higher up on the small screen */
+    int top = UI_PICK(88, 40);
     clock_lbl = w_label(ambient, F_CLOCK, T->text, "");
-    lv_obj_align(clock_lbl, LV_ALIGN_TOP_MID, 0, 88);
+    lv_obj_align(clock_lbl, LV_ALIGN_TOP_MID, 0, top);
     date_lbl = w_label(ambient, F_BODY, T->text2, "");
-    lv_obj_align(date_lbl, LV_ALIGN_TOP_MID, 0, 186);
+    lv_obj_align(date_lbl, LV_ALIGN_TOP_MID, 0, top + UI_PICK(98, 74));
     update_clock();
 
     ha_entity_t *m = running_media(NULL);
     if (m && ha_link() == HA_CONNECTED) {
         const activity_t *a = &g_model.activities[g_model.running];
         lv_obj_t *c = w_card(ambient, false, false);
-        lv_obj_set_width(c, 292);
-        lv_obj_align(c, LV_ALIGN_TOP_MID, 0, 338);
-        lv_obj_set_style_pad_all(c, 12, 0);
-        lv_obj_set_style_pad_gap(c, 10, 0);
-        lv_obj_t *r = w_row(c, 12);
-        w_artwork(r, 48, 48, 10, false);
+        lv_obj_set_width(c, SCREEN_W - 28);
+        lv_obj_align(c, LV_ALIGN_TOP_MID, 0, UI_PICK(338, 180));
+        lv_obj_set_style_pad_all(c, UI_PICK(12, 10), 0);
+        lv_obj_set_style_pad_gap(c, UI_PICK(10, 8), 0);
+        lv_obj_t *r = w_row(c, UI_PICK(12, 10));
+        w_artwork(r, UI_PICK(48, 40), UI_PICK(48, 40), UI_PICK(10, 8), false);
         lv_obj_t *col = w_col(r, 2);
         lv_obj_set_flex_grow(col, 1);
         lv_obj_set_width(col, LV_SIZE_CONTENT);
-        w_label(col, F_BODY_B, T->text, m->title);
+        w_one_line(w_label(col, F_BODY_B, T->text, m->title));
         char buf[72];
         snprintf(buf, sizeof(buf), "%s · %s", a->name, m->artist);
-        w_label(col, F_LABEL, T->text2, buf);
-        mini_play = w_icon_button(r, ICON_PAUSE, 40, BTN_PRIMARY);
+        w_one_line(w_label(col, F_LABEL, T->text2, buf));
+        mini_play = w_icon_button(r, ICON_PAUSE, UI_PICK(40, 36), BTN_PRIMARY);
         lv_obj_add_event_cb(mini_play, mini_play_cb, LV_EVENT_CLICKED, NULL);
         mini_bar = lv_bar_create(c);
         lv_obj_set_size(mini_bar, lv_pct(100), 3);
@@ -153,7 +155,7 @@ static void show_lock(void)
         update_mini();
     }
     lv_obj_t *hint = w_label(ambient, F_LABEL, T->text2, "Pick up or press any key");
-    lv_obj_align(hint, LV_ALIGN_BOTTOM_MID, 0, -20);
+    lv_obj_align(hint, LV_ALIGN_BOTTOM_MID, 0, UI_PICK(-20, -14));
 }
 
 static void show_charging(void)
@@ -165,28 +167,30 @@ static void show_charging(void)
     lv_obj_t *bar = w_status_bar(ambient);
     lv_obj_align(bar, LV_ALIGN_TOP_MID, 0, 0);
     hal_battery_t b = *app_battery();
-    lv_obj_t *ring = w_ring(ambient, 180, 8, b.percent);
-    lv_obj_align(ring, LV_ALIGN_TOP_MID, 0, 98);
+    /* the ring, then two lines under it: a smaller ring, higher up, on the small screen */
+    int ring_d = UI_PICK(180, 150), ring_y = UI_PICK(98, 46), under = ring_y + ring_d + UI_PICK(18, 14);
+    lv_obj_t *ring = w_ring(ambient, ring_d, 8, b.percent);
+    lv_obj_align(ring, LV_ALIGN_TOP_MID, 0, ring_y);
     lv_obj_set_style_bg_opa(ring, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(ring, T->surface, 0);
     lv_obj_set_style_radius(ring, LV_RADIUS_CIRCLE, 0);
     lv_obj_t *bolt = w_icon(ring, ICON_BOLT, 24, T->accent);
-    lv_obj_align(bolt, LV_ALIGN_TOP_MID, 0, 44);
+    lv_obj_align(bolt, LV_ALIGN_TOP_MID, 0, UI_PICK(44, 30));
     lv_obj_t *pct = w_label(ring, F_BIG, T->text, "");
     lv_label_set_text_fmt(pct, "%d%%", b.percent);
     lv_obj_align(pct, LV_ALIGN_CENTER, 0, 10);
     lv_obj_t *l1 = w_label(ambient, F_BODY_B, T->text, b.charging ? "Charging · USB-C" : "Charged · USB-C");
-    lv_obj_align(l1, LV_ALIGN_TOP_MID, 0, 296);
+    lv_obj_align(l1, LV_ALIGN_TOP_MID, 0, under);
     int mins = (100 - b.percent) * 90 / 100;
     lv_obj_t *l2 = w_label(ambient, F_LABEL, T->text2, "");
     if (b.charging && mins >= 60) lv_label_set_text_fmt(l2, "Full in about %d h %02d m", mins / 60, mins % 60);
     else if (b.charging) lv_label_set_text_fmt(l2, "Full in about %d m", mins < 1 ? 1 : mins);
     else lv_label_set_text(l2, "Unplug when you like");
-    lv_obj_align(l2, LV_ALIGN_TOP_MID, 0, 320);
+    lv_obj_align(l2, LV_ALIGN_TOP_MID, 0, under + 24);
     lv_obj_t *hint = w_label(ambient, F_LABEL, T->text2,
                              power_state() == PWR_OFF ? "Off · hold PWR for 2 s to turn it on"
                                                       : "The remote stays usable while charging");
-    lv_obj_align(hint, LV_ALIGN_BOTTOM_MID, 0, -20);
+    lv_obj_align(hint, LV_ALIGN_BOTTOM_MID, 0, UI_PICK(-20, -14));
 }
 
 /* ---- nightstand: idle on USB, a big clock, the date, the weather ---- */
@@ -320,22 +324,22 @@ static lv_obj_t *sheet_card(lv_color_t edge)
     lv_obj_set_width(c, SCREEN_W - 12);
     lv_obj_align(c, LV_ALIGN_BOTTOM_MID, 0, -6);
     lv_obj_set_style_border_color(c, edge, 0);
-    lv_obj_set_style_pad_all(c, 18, 0);
-    lv_obj_set_style_pad_gap(c, 8, 0);
+    lv_obj_set_style_pad_all(c, UI_PICK(18, 14), 0);
+    lv_obj_set_style_pad_gap(c, UI_PICK(8, 6), 0);
     return c;
 }
 
 static void sheet_buttons(lv_obj_t *c, const char *a, int aid, const char *b, int bid, bool danger)
 {
-    lv_obj_t *r = w_row(c, 10);
-    lv_obj_set_style_pad_top(r, 10, 0);
+    lv_obj_t *r = w_row(c, UI_PICK(10, 8));
+    lv_obj_set_style_pad_top(r, UI_PICK(10, 8), 0);
     lv_obj_t *x = w_button(r, a, NULL, BTN_DEFAULT);
     lv_obj_set_flex_grow(x, 1);
-    lv_obj_set_height(x, 48);
+    lv_obj_set_height(x, UI_PICK(48, 40));
     lv_obj_add_event_cb(x, sheet_btn, LV_EVENT_CLICKED, ARG(aid));
     lv_obj_t *y = w_button(r, b, NULL, BTN_PRIMARY);
     lv_obj_set_flex_grow(y, 1);
-    lv_obj_set_height(y, 48);
+    lv_obj_set_height(y, UI_PICK(48, 40));
     if (danger) {
         lv_obj_set_style_bg_color(y, T->warning, 0);
         lv_obj_set_style_border_color(y, T->warning, 0);
@@ -361,7 +365,7 @@ static void show_low_battery(int percent)
     char buf[32];
     snprintf(buf, sizeof(buf), "Battery at %d%%", percent);
     w_label(c, F_TITLE, T->text, buf);
-    w_label(c, F_LABEL, T->text2, "About half a day left. Charge with USB-C.");
+    w_wrap(w_label(c, F_LABEL, T->text2, "About half a day left. Charge with USB-C."));
     sheet_buttons(c, "Battery saver", 1, "OK", 2, false);
     app_buzz(HAPTIC_ALERT);
 }
@@ -490,10 +494,10 @@ static void rp_build(void)
     lv_obj_center(c);
     lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(c, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_all(c, 20, 0);
-    lv_obj_set_style_pad_gap(c, 6, 0);
+    lv_obj_set_style_pad_all(c, UI_PICK(20, 14), 0);
+    lv_obj_set_style_pad_gap(c, UI_PICK(6, 4), 0);
 
-    w_icon_circle(c, activity_icons[rt->icon < activity_icon_count ? rt->icon : 0].glyph, 48, true);
+    w_icon_circle(c, activity_icons[rt->icon < activity_icon_count ? rt->icon : 0].glyph, UI_PICK(48, 40), true);
     lv_obj_t *name = rp_line(c, F_TITLE, T->text);
     lv_label_set_text(name, r->name);
     lv_obj_set_style_margin_top(name, 4, 0);
@@ -508,14 +512,14 @@ static void rp_build(void)
     lv_obj_set_style_bg_opa(rp.bar, LV_OPA_COVER, LV_PART_INDICATOR);
     lv_obj_set_style_radius(rp.bar, 3, 0);
     lv_obj_set_style_radius(rp.bar, 3, LV_PART_INDICATOR);
-    lv_obj_set_style_margin_ver(rp.bar, 8, 0);
+    lv_obj_set_style_margin_ver(rp.bar, UI_PICK(8, 6), 0);
 
     rp.step = rp_line(c, F_BODY_B, T->text);
     rp.detail = rp_line(c, F_LABEL, T->text2);
 
     rp.btn = w_button(c, "Stop", ICON_STOP, BTN_OUTLINE);
-    lv_obj_set_size(rp.btn, lv_pct(100), 48);
-    lv_obj_set_style_margin_top(rp.btn, 10, 0);
+    lv_obj_set_size(rp.btn, lv_pct(100), UI_PICK(48, 40));
+    lv_obj_set_style_margin_top(rp.btn, UI_PICK(10, 8), 0);
     lv_obj_add_event_cb(rp.btn, rp_btn_cb, LV_EVENT_CLICKED, NULL);
 }
 
@@ -585,11 +589,11 @@ void ov_volume(int dir)
     const device_t *d = &g_model.devices[dev];
     if (volume) lv_obj_delete(volume);
     volume = w_card(layer(), false, false);
-    lv_obj_set_width(volume, 288);
-    lv_obj_align(volume, LV_ALIGN_TOP_MID, 0, 40);
-    lv_obj_set_style_pad_ver(volume, 10, 0);
-    lv_obj_set_style_pad_hor(volume, 14, 0);
-    lv_obj_t *r = w_row(volume, 12);
+    lv_obj_set_width(volume, CONTENT_W);
+    lv_obj_align(volume, LV_ALIGN_TOP_MID, 0, UI_PICK(40, STATUS_H + 4));
+    lv_obj_set_style_pad_ver(volume, UI_PICK(10, 8), 0);
+    lv_obj_set_style_pad_hor(volume, UI_PICK(14, 12), 0);
+    lv_obj_t *r = w_row(volume, UI_PICK(12, 10));
     w_icon(r, dir == 0 ? ICON_MUTE : ICON_VOLUME, 18, T->text);
 
     /* Only an HA media player reports a level (open item 5) */
@@ -608,9 +612,11 @@ void ov_volume(int dir)
         snprintf(b, sizeof(b), "%d", m->value);
         w_label(r, F_BODY_B, T->text, b);
     } else {
-        lv_obj_t *l = w_label(r, F_BODY_B, T->text, dir > 0 ? "Volume +" : dir < 0 ? "Volume −" : "Mute");
-        lv_obj_set_flex_grow(l, 1);
-        w_label(r, F_CAPTION, T->text2, d->name);
+        w_label(r, F_BODY_B, T->text, dir > 0 ? "Volume +" : dir < 0 ? "Volume −" : "Mute");
+        lv_obj_t *n = w_label(r, F_CAPTION, T->text2, d->name);   /* the device's name, at the right */
+        lv_obj_set_flex_grow(n, 1);
+        w_one_line(n);
+        lv_obj_set_style_text_align(n, LV_TEXT_ALIGN_RIGHT, 0);
     }
     if (!volume_timer) volume_timer = lv_timer_create(volume_hide, 1500, NULL);
     lv_timer_reset(volume_timer);
@@ -630,21 +636,21 @@ void ov_toast(const char *msg)
 {
     if (toast) lv_obj_delete(toast);
     toast = w_box(layer());
-    lv_obj_set_style_max_width(toast, 288, 0);
+    lv_obj_set_style_max_width(toast, CONTENT_W, 0);
     lv_obj_set_style_bg_opa(toast, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(toast, T->surface2, 0);
     lv_obj_set_style_border_width(toast, 1, 0);
     lv_obj_set_style_border_color(toast, T->line, 0);
-    lv_obj_set_style_radius(toast, 18, 0);
-    lv_obj_set_style_pad_hor(toast, 14, 0);
-    lv_obj_set_style_pad_ver(toast, 10, 0);
+    lv_obj_set_style_radius(toast, UI_PICK(18, 15), 0);
+    lv_obj_set_style_pad_hor(toast, UI_PICK(14, 12), 0);
+    lv_obj_set_style_pad_ver(toast, UI_PICK(10, 8), 0);
     lv_obj_t *l = w_label(toast, F_LABEL, T->text, msg);
     lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_WRAP);
-    lv_obj_set_style_max_width(l, 260, 0);
+    lv_obj_set_style_max_width(l, CONTENT_W - UI_PICK(28, 24), 0);
     /* pages with their controls at the bottom get it at the top, under the status bar */
     const page_t *p = ui_current();
     if (p == &page_now_playing || p == &page_activity_page) lv_obj_align(toast, LV_ALIGN_TOP_MID, 0, STATUS_H + 6);
-    else lv_obj_align(toast, LV_ALIGN_BOTTOM_MID, 0, -TABBAR_H - 12);
+    else lv_obj_align(toast, LV_ALIGN_BOTTOM_MID, 0, -TABBAR_H - UI_PICK(12, 8));
     if (!toast_timer) toast_timer = lv_timer_create(toast_hide, 2200, NULL);
     lv_timer_reset(toast_timer);
 }

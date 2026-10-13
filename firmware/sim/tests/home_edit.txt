@@ -15,14 +15,14 @@ wait 300
 expect-before Alarm | Front door
 expect-before Siren | Front porch
 # the eye hides Siren here: it moves to the bottom
-tap 270 360
+clickin Siren | eye
 wait 300
 expect Hidden in this room
 expect-before Front porch | Siren
 expect Hidden here
 shot 181_home_edit_hidden
 # hold Front porch and drag it to the top
-holddrag 120 360 120 228
+pressdrag Front porch | Alarm
 wait 300
 expect-before Front porch | Alarm
 click Done
@@ -36,7 +36,7 @@ click Edit
 wait 300
 click Garden
 wait 300
-tap 284 165
+switch Show this room
 wait 300
 expect Garden
 click Done
@@ -47,7 +47,7 @@ click Edit
 wait 300
 click Bedroom
 wait 300
-holddrag 151 113 40 113
+pressdrag Kitchen | Living room
 wait 300
 expect-before Kitchen | Living room
 shot 183_home_room_moved
@@ -56,9 +56,9 @@ wait 300
 # leaving the tab ends Edit
 click Edit
 wait 300
-tap 40 450
+tab Activities
 wait 300
-tap 200 450
+tab Home
 wait 800
 expect Edit
 expect-no Done
@@ -80,15 +80,15 @@ click Hallway
 wait 300
 click Edit
 wait 300
-drag 160 400 160 100
+drag ~160 ~400 ~160 ~100
 wait 300
 shot 184_home_hidden_bottom
-tap 270 333
+clickin Siren | eye
 wait 300
 expect-no Hidden in this room
 click Garden
 wait 300
-tap 284 165
+switch Show this room
 wait 300
 click Done
 wait 300

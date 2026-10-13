@@ -11,7 +11,7 @@ wait 4000
 expect Device name
 shot 32_name_entry
 type  Lounge
-tap 294 455
+kbkey enter
 wait 300
 expect Google TV Lounge
 shot 33_new_ble_device
@@ -23,7 +23,7 @@ click Samsung
 shot 35_ir_test
 click No, try the next set
 click Yes, it works
-tap 294 455
+kbkey enter
 wait 300
 expect Samsung TV
 click Devices
@@ -44,20 +44,20 @@ wait 200
 expect Press Mute on the old remote
 click Stop
 # back with learned keys asks; Cancel keeps them
-tap 20 70
+back
 wait 300
 expect Discard the learned keys?
 click Cancel
 wait 300
 click Done
-tap 294 455
+kbkey enter
 wait 300
 expect Living room TV
 click Devices
 click Add device
 click Home Assistant media player
 click Kodi ·
-tap 294 455
+kbkey enter
 wait 300
 expect Kodi
 shot 38_ha_device

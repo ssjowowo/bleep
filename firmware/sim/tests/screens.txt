@@ -1,0 +1,202 @@
+# Every main screen once, with no toast in the way: for looking at the layout
+# on either panel (test.sh --screen 240x320 puts these next to the v1 ones)
+click Start
+wait 300
+shot s01_activities
+click Routines
+wait 300
+shot s02_routines
+click Activities
+wait 300
+# an activity without Now playing: its own page
+click Watch TV
+wait 6000
+shot s03_activity_page
+click Sleep timer
+wait 300
+shot s04_sleep_timer
+back
+wait 300
+key PWR
+wait 1500
+# Now playing
+click Shield TV
+wait 6000
+shot s05_now_playing
+key VOL+
+wait 100
+shot s06_volume
+wait 2500
+# the lock screen with the now-playing card
+wait 9000
+shot s07_lock
+tap 50% 50%
+wait 300
+click End
+wait 2500
+# devices
+tab Devices
+wait 300
+shot s10_devices
+click Living room TV
+wait 2500
+shot s11_device_ir
+drag ~160 ~400 ~160 ~100
+wait 300
+shot s12_device_ir_2
+back
+wait 300
+click Shield TV
+wait 2500
+shot s13_device_ble
+back
+wait 300
+click Sonos
+wait 2500
+shot s14_device_ha
+clickicon gear
+wait 300
+shot s15_device_edit
+back
+wait 300
+back
+wait 300
+click Add device
+wait 300
+shot s16_add_device
+click IR from the library
+wait 300
+shot s17_brands
+click Samsung
+wait 300
+shot s18_ir_test
+back
+wait 300
+back
+wait 300
+click Learn from its remote
+wait 300
+click Power
+wait 2000
+shot s19_learn
+click Save
+wait 300
+back
+wait 300
+click Discard
+wait 300
+back
+wait 300
+# Home: a light with its colours, Edit, Add a card
+tab Home
+wait 1200
+shot s20_home
+drag ~160 ~400 ~160 ~100
+wait 300
+shot s21_home_2
+click Kitchen
+wait 600
+clickin LED strip | expand
+wait 600
+drag ~160 ~380 ~160 ~200
+wait 300
+shot s22_colour_wheel
+click Edit
+wait 300
+shot s23_home_edit
+click Add a card
+wait 300
+shot s24_home_add
+back
+wait 300
+click Coffee machine
+wait 300
+shot s25_card_page
+back
+wait 300
+click Done
+wait 300
+click Hallway
+wait 600
+shot s26_hallway
+# Settings
+tab Settings
+wait 1500
+shot s30_settings
+drag ~160 ~400 ~160 ~100
+wait 300
+shot s31_settings_2
+drag ~160 ~100 ~160 ~400
+wait 300
+click Display & haptics
+wait 300
+shot s32_display
+click Brightness
+wait 300
+shot s33_brightness
+back
+wait 300
+click Theme
+wait 300
+shot s41_choice
+back
+wait 300
+back
+wait 300
+click Power & sleep
+wait 300
+shot s34_power
+back
+wait 300
+click Wi-Fi
+wait 300
+click Scan
+wait 2500
+shot s35_wifi_scan
+click Password
+wait 300
+shot s36_keyboard
+kbkey 123
+wait 100
+shot s37_keyboard_symbols
+back
+wait 300
+back
+wait 300
+click Home Assistant
+wait 1000
+shot s38_ha_settings
+back
+wait 300
+click Software update
+wait 300
+shot s39_update
+back
+wait 300
+click About
+wait 300
+shot s40_about
+back
+wait 300
+click Power off
+wait 300
+shot s42_confirm
+key BACK
+wait 300
+# the routine progress window
+tab Activities
+wait 300
+click Routines
+wait 300
+click Louder
+wait 400
+shot s43_routine
+wait 4000
+click Activities
+wait 300
+# charging
+usb on
+wait 300
+shot s44_charging
+usb off
+wait 2500

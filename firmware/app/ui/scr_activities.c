@@ -199,8 +199,8 @@ static void wake_build(lv_obj_t *root, int arg)
         lv_obj_t *wrap = w_col(root, 0);
         lv_obj_set_style_pad_hor(wrap, PAD, 0);
         lv_obj_t *c = w_card(wrap, true, false);
-        lv_obj_set_style_pad_all(c, 16, 0);
-        lv_obj_set_style_pad_gap(c, 10, 0);
+        lv_obj_set_style_pad_all(c, UI_PICK(16, 12), 0);
+        lv_obj_set_style_pad_gap(c, UI_PICK(10, 8), 0);
         lv_obj_set_clickable(c, true);
         lv_obj_add_event_cb(c, resume_cb, LV_EVENT_CLICKED, NULL);
         lv_obj_t *row = w_row(c, 10);
@@ -212,15 +212,15 @@ static void wake_build(lv_obj_t *root, int arg)
         ha_entity_t *m = np_entity(last, NULL);
         char sub[96], tb[16];
         if (m && m->title[0]) {
-            w_label(col, F_TITLE, T->text, m->title);
+            w_one_line(w_label(col, F_TITLE, T->text, m->title));
             fmt_time(tb, sizeof(tb), m->pos);
             snprintf(sub, sizeof(sub), "%s · %s · %s", a->name, m->artist, tb);
         } else {
-            w_label(col, F_TITLE, T->text, a->name);
+            w_one_line(w_label(col, F_TITLE, T->text, a->name));
             snprintf(sub, sizeof(sub), "%s", a->sub);
         }
-        w_label(col, F_LABEL, T->text2, sub);
-        lv_obj_t *play = w_icon_button(row, ICON_PLAY, 52, BTN_PRIMARY);
+        w_one_line(w_label(col, F_LABEL, T->text2, sub));
+        lv_obj_t *play = w_icon_button(row, ICON_PLAY, UI_PICK(52, 44), BTN_PRIMARY);
         lv_obj_set_clickable(play, false);
         if (m && m->dur) {
             lv_obj_t *bar = lv_bar_create(c);
@@ -246,9 +246,9 @@ static void wake_build(lv_obj_t *root, int arg)
         if (i == last || a->all_off) continue;
         lv_obj_t *t = lv_obj_create(g);
         lv_obj_set_scrollable(t, false);
-        lv_obj_set_size(t, 90, 72);
-        lv_obj_set_style_pad_all(t, 10, 0);
-        lv_obj_set_style_radius(t, 14, 0);
+        lv_obj_set_size(t, w_col_w(3, 8), UI_PICK(72, 54));   /* three across */
+        lv_obj_set_style_pad_all(t, UI_PICK(10, 8), 0);
+        lv_obj_set_style_radius(t, UI_PICK(14, 12), 0);
         lv_obj_set_style_bg_opa(t, LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(t, T->surface, 0);
         lv_obj_set_style_bg_color(t, T->surface2, LV_STATE_PRESSED);
@@ -259,7 +259,7 @@ static void wake_build(lv_obj_t *root, int arg)
         w_icon(t, activity_icon(a), 16, T->text2);
         lv_obj_t *n = w_label(t, F_LABEL_B, T->text, a->name);
         lv_obj_set_width(n, lv_pct(100));
-        lv_label_set_long_mode(n, LV_LABEL_LONG_MODE_DOTS);
+        w_one_line(n);
         lv_obj_add_event_cb(t, tile_cb, LV_EVENT_CLICKED, ARG(i));
         shown++;
     }
@@ -350,14 +350,14 @@ static void np_send(fn_t fn)
 static void np_btn_cb(lv_event_t *e) { np_send((fn_t)ARG_INT(e)); }
 static void np_kb_cb(lv_event_t *e) { ui_type_on(ARG_INT(e)); }
 
-/* A plain icon in the top row, like the moon and End: 32 px, 44 to touch */
+/* A plain icon in the top row, like the moon and End: 32 px, 44 to touch (compact 34, 36) */
 static void top_icon(lv_obj_t *top, const char *icon, lv_event_cb_t cb, int arg)
 {
     lv_obj_t *b = w_box(top);
-    lv_obj_set_size(b, 32, 32);
+    lv_obj_set_size(b, UI_PICK(32, 34), UI_PICK(32, 36));
     lv_obj_center(w_icon(b, icon, 16, T->text2));
-    lv_obj_set_ext_click_area(b, 6);
-    lv_obj_set_style_margin_right(b, 4, 0);
+    lv_obj_set_ext_click_area(b, UI_PICK(6, 1));
+    lv_obj_set_style_margin_right(b, UI_PICK(4, 0), 0);
     w_on_click(b, cb, arg);
 }
 static void np_pad_cb(lv_event_t *e) { ui_open(&page_trackpad, ARG_INT(e)); }
@@ -399,7 +399,7 @@ static lv_obj_t *round_btn(lv_obj_t *parent, const char *text, fn_t fn)
 {
     if (!np_has(fn)) return NULL;
     lv_obj_t *b = w_button(parent, text, NULL, BTN_OUTLINE);
-    lv_obj_set_size(b, 48, 48);
+    lv_obj_set_size(b, UI_PICK(48, 40), UI_PICK(48, 40));
     lv_obj_set_style_pad_hor(b, 0, 0);
     lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
     lv_obj_add_event_cb(b, np_btn_cb, LV_EVENT_CLICKED, ARG(fn));
@@ -410,8 +410,8 @@ static lv_obj_t *round_btn(lv_obj_t *parent, const char *text, fn_t fn)
 static lv_obj_t *small_btn(lv_obj_t *parent, const char *icon, fn_t fn)
 {
     if (!np_has(fn)) return NULL;
-    lv_obj_t *b = w_icon_button(parent, icon, 40, BTN_DEFAULT);
-    lv_obj_set_ext_click_area(b, 4);   /* 48 px to touch */
+    lv_obj_t *b = w_icon_button(parent, icon, UI_PICK(40, 34), BTN_DEFAULT);
+    lv_obj_set_ext_click_area(b, UI_PICK(4, 2));   /* 48 px to touch (38 on the small screen) */
     lv_obj_add_event_cb(b, np_btn_cb, LV_EVENT_CLICKED, ARG(fn));
     return b;
 }
@@ -424,13 +424,14 @@ static void np_build(lv_obj_t *root, int act)
     ha_entity_t *m = np_entity(act, &np.ent);
     lv_obj_set_style_pad_gap(root, 0, 0);
 
-    lv_obj_t *top = w_row(root, 4);
+    lv_obj_t *top = w_row(root, UI_PICK(4, 0));
     lv_obj_set_style_pad_hor(top, PAD, 0);
+    if (UI->compact) lv_obj_set_style_pad_right(top, PAD - 2, 0);
     char buf[64];
     snprintf(buf, sizeof(buf), "%s%s%s", a->name, m && m->artist[0] ? " · " : "", m ? m->artist : "");
     lv_obj_t *t = w_label(top, F_LABEL, T->text2, buf);
     lv_obj_set_flex_grow(t, 1);
-    lv_label_set_long_mode(t, LV_LABEL_LONG_MODE_DOTS);
+    w_one_line(t);
     /* typing and the trackpad, for the device that gets the D-pad */
     int nav = a->nav_dev >= 0 ? a->nav_dev : a->np_dev;
     if (device_can_type(nav)) top_icon(top, ICON_KEYBOARD, np_kb_cb, nav);
@@ -438,32 +439,55 @@ static void np_build(lv_obj_t *root, int act)
     /* the sleep timer: a moon, and the minutes left once it's set */
     lv_obj_t *zz = w_row(top, 4);
     lv_obj_set_width(zz, LV_SIZE_CONTENT);
-    lv_obj_set_height(zz, 32);
-    lv_obj_set_style_margin_right(zz, 10, 0);
-    w_icon(zz, ICON_MOON, 14, sleep_timer_at() ? T->accent : T->text2);
+    lv_obj_set_height(zz, UI_PICK(32, 36));
+    if (UI->compact) lv_obj_set_style_min_width(zz, 34, 0), lv_obj_set_flex_align(zz, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    else lv_obj_set_style_margin_right(zz, 10, 0);
+    w_icon(zz, ICON_MOON, UI_PICK(14, 16), sleep_timer_at() ? T->accent : T->text2);
     np.sleep = w_label(zz, F_LABEL_B, T->accent, sleep_text(buf, sizeof(buf), false));
-    lv_obj_set_ext_click_area(zz, 8);
+    lv_obj_set_ext_click_area(zz, UI_PICK(8, 1));
     w_on_click(zz, sleep_cb, 0);
-    lv_obj_t *end = w_row(top, 4);
-    lv_obj_set_width(end, LV_SIZE_CONTENT);
-    lv_obj_set_height(end, 32);
-    w_label(end, F_LABEL_B, T->text2, "End");
-    w_icon(end, ICON_X, 14, T->text2);
-    lv_obj_set_ext_click_area(end, 8);
-    w_on_click(end, np_end_cb, 0);
+    if (UI->compact) {
+        /* End: an x button, as on the activity page */
+        lv_obj_t *end = w_icon_button(top, ICON_X, 32, BTN_OUTLINE);
+        w_name(end, "End");
+        lv_obj_set_ext_click_area(end, 2);
+        lv_obj_set_style_margin_left(end, 4, 0);
+        lv_obj_add_event_cb(end, np_end_cb, LV_EVENT_CLICKED, NULL);
+    } else {
+        lv_obj_t *end = w_row(top, 4);
+        lv_obj_set_width(end, LV_SIZE_CONTENT);
+        lv_obj_set_height(end, 32);
+        w_label(end, F_LABEL_B, T->text2, "End");
+        w_icon(end, ICON_X, 14, T->text2);
+        lv_obj_set_ext_click_area(end, 8);
+        w_on_click(end, np_end_cb, 0);
+    }
 
-    lv_obj_t *art_wrap = w_col(root, 0);
-    lv_obj_set_style_pad_hor(art_wrap, PAD, 0);
-    lv_obj_set_style_pad_top(art_wrap, 6, 0);
-    w_artwork(art_wrap, 288, 166, 16, true);   /* fills what is left above the tab bar */
-
-    lv_obj_t *info = w_col(root, 3);
-    lv_obj_set_style_pad_hor(info, PAD, 0);
-    lv_obj_set_style_pad_top(info, 10, 0);
+    lv_obj_t *info;
+    if (!UI->compact) {
+        lv_obj_t *art_wrap = w_col(root, 0);
+        lv_obj_set_style_pad_hor(art_wrap, PAD, 0);
+        lv_obj_set_style_pad_top(art_wrap, 6, 0);
+        w_artwork(art_wrap, 288, 166, 16, true);   /* fills what is left above the tab bar */
+        info = w_col(root, 3);
+        lv_obj_set_style_pad_hor(info, PAD, 0);
+        lv_obj_set_style_pad_top(info, 10, 0);
+    } else {
+        /* the small screen: the artwork beside the title */
+        lv_obj_t *row = w_row(root, 12);
+        lv_obj_set_style_pad_hor(row, PAD, 0);
+        lv_obj_set_style_pad_top(row, 6, 0);
+        w_artwork(row, 84, 84, 12, false);
+        info = w_col(row, 3);
+        lv_obj_set_flex_grow(info, 1);
+        lv_obj_set_width(info, LV_SIZE_CONTENT);
+    }
     np.title = w_label(info, F_TITLE, T->text, "");
     lv_obj_set_width(np.title, lv_pct(100));
-    lv_label_set_long_mode(np.title, LV_LABEL_LONG_MODE_DOTS);
+    w_one_line(np.title);
     np.sub = w_label(info, F_LABEL, T->text2, "");
+    lv_obj_set_width(np.sub, lv_pct(100));
+    w_one_line(np.sub);
 
     lv_obj_t *prog = w_col(root, 8);
     lv_obj_set_style_pad_hor(prog, PAD, 0);
@@ -475,13 +499,15 @@ static void np_build(lv_obj_t *root, int act)
     w_spacer(times);
     np.dur = w_label(times, F_CAPTION, T->text2, "");
 
-    /* subtitles · −10 · play · +30 · audio, in one row */
-    lv_obj_t *ctl = w_row(root, 12);
+    /* subtitles · −10 · play · +30 · audio, in one row; closer together when
+     * all five are on the small screen */
+    int n_ctl = np_has(FN_SUBTITLES) + np_has(FN_REW) + np_has(FN_PLAY_PAUSE) + np_has(FN_FWD) + np_has(FN_AUDIO);
+    lv_obj_t *ctl = w_row(root, UI_PICK(12, n_ctl >= 5 ? 5 : 10));
     lv_obj_set_flex_align(ctl, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_top(ctl, 10, 0);
+    lv_obj_set_style_pad_top(ctl, UI_PICK(10, 14), 0);
     small_btn(ctl, ICON_SUBS, FN_SUBTITLES);
     round_btn(ctl, "−10", FN_REW);
-    np.play = w_icon_button(ctl, ICON_PAUSE, 60, BTN_PRIMARY);
+    np.play = w_icon_button(ctl, ICON_PAUSE, UI_PICK(60, 52), BTN_PRIMARY);
     lv_obj_add_event_cb(np.play, np_btn_cb, LV_EVENT_CLICKED, ARG(FN_PLAY_PAUSE));
     lv_obj_set_hidden(np.play, !np_has(FN_PLAY_PAUSE));   /* kept: np_update sets its icon */
     round_btn(ctl, "+30", FN_FWD);
@@ -531,11 +557,18 @@ static void ap_build(lv_obj_t *root, int idx)
     ap = idx;
     const activity_t *a = &g_model.activities[idx];
     lv_obj_t *hdr = w_header(root, g_model.running == idx ? "Activity · running" : "Activity", a->name, ui_back_cb);
-    lv_obj_set_style_text_color(lv_obj_get_child(lv_obj_get_child(hdr, 1), 0), T->accent, 0);
-    lv_obj_t *end = w_button(hdr, "End", ICON_X, BTN_OUTLINE);
-    lv_obj_set_height(end, 36);
-    lv_obj_set_ext_click_area(end, 4);   /* taps: 44 px */
-    lv_obj_set_style_margin_right(end, 10, 0);
+    lv_obj_t *end;
+    if (UI->compact) {
+        /* no subtitle: the name in the accent says it's running; End is an x */
+        if (g_model.running == idx) lv_obj_set_style_text_color(w_header_title(hdr), T->accent, 0);
+        end = w_header_action(hdr, "End", ICON_X, BTN_OUTLINE);
+    } else {
+        lv_obj_set_style_text_color(lv_obj_get_child(lv_obj_get_child(hdr, 1), 0), T->accent, 0);
+        end = w_button(hdr, "End", ICON_X, BTN_OUTLINE);
+        lv_obj_set_height(end, 36);
+        lv_obj_set_ext_click_area(end, 4);   /* taps: 44 px */
+        lv_obj_set_style_margin_right(end, 10, 0);
+    }
     lv_obj_add_event_cb(end, ap_end_cb, LV_EVENT_CLICKED, NULL);
 
     char keys[96];
@@ -790,7 +823,8 @@ static void ed_build(lv_obj_t *root, int arg)
         snprintf(buf, sizeof(buf), "%d. %s · %s%s", i + 1, g_model.devices[s->dev].name, fn_name(s->fn),
                  s->delay_ms >= 1000 ? " · wait" : "");
         lv_obj_t *l = w_label(col, F_LABEL, T->text, buf);
-        lv_obj_set_style_pad_ver(l, 4, 0);
+        w_wrap(l);
+        lv_obj_set_style_pad_ver(l, UI_PICK(4, 3), 0);
     }
     lv_obj_t *note = w_label(col, F_CAPTION, T->text2, "Ending switches off every device in it. PWR ends the running activity.");
     lv_obj_set_width(note, lv_pct(100));
@@ -798,7 +832,7 @@ static void ed_build(lv_obj_t *root, int arg)
     if (ed >= 0) {
         lv_obj_t *del = w_button(col, "Delete activity", ICON_TRASH, BTN_OUTLINE);
         lv_obj_set_width(del, lv_pct(100));
-        lv_obj_set_style_margin_top(del, 16, 0);
+        lv_obj_set_style_margin_top(del, UI_PICK(16, 10), 0);
         lv_obj_set_style_text_color(del, T->warning, 0);
         lv_obj_set_style_text_color(lv_obj_get_child(del, 0), T->warning, 0);
         lv_obj_set_style_text_color(lv_obj_get_child(del, 1), T->warning, 0);
@@ -881,17 +915,18 @@ static void icon_build(lv_obj_t *root, int arg)
     LV_UNUSED(arg);
     w_header(root, pick.sub, "Icon", ui_back_cb);
     lv_obj_t *g = grid(root);
-    lv_obj_set_style_pad_row(g, 14, 0);
+    lv_obj_set_style_pad_row(g, UI_PICK(14, 10), 0);
     lv_obj_set_style_pad_column(g, 0, 0);
     int cell = (SCREEN_W - 2 * PAD) / ICON_COLS;
     for (int i = pick.ha_glyph ? -1 : 0; i < pick.n; i++) {
         bool sel = i == pick.sel;
-        lv_obj_t *c = w_col(g, 6);
+        lv_obj_t *c = w_col(g, UI_PICK(6, 4));
         lv_obj_set_width(c, cell);
         lv_obj_set_flex_align(c, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-        lv_obj_t *b = w_icon_button(c, i < 0 ? pick.ha_glyph : pick.icons[i].glyph, 56, sel ? BTN_SELECTED : BTN_DEFAULT);
+        lv_obj_t *b = w_icon_button(c, i < 0 ? pick.ha_glyph : pick.icons[i].glyph, UI_PICK(56, 44),
+                                    sel ? BTN_SELECTED : BTN_DEFAULT);
         lv_obj_set_event_bubble(b, true);   /* the button shows the press, the cell takes the tap */
-        w_label(c, F_CAPTION, sel ? T->accent : T->text2, i < 0 ? "From HA" : pick.icons[i].name);
+        w_one_line(w_label(c, F_CAPTION, sel ? T->accent : T->text2, i < 0 ? "From HA" : pick.icons[i].name));
         w_on_click(c, icon_pick_cb, i);   /* icon or name */
     }
 }

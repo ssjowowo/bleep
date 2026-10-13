@@ -2,14 +2,14 @@
 # Bluetooth device gets its own link, not the deleted device's
 click Start
 wait 300
-tap 120 450
+tab Devices
 wait 300
 click Bedroom Google TV
 wait 1000
 expect-log ble: connecting to Bedroom Google TV
-tap 20 70
+back
 wait 300
-hold 160 312 600
+press Bedroom Google TV
 wait 300
 mark
 click Delete device

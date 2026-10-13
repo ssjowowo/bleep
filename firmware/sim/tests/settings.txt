@@ -1,7 +1,7 @@
 # Settings pages and Home Assistant setup
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 300
 expect Wi-Fi
 shot 59_settings_list
@@ -11,7 +11,7 @@ wait 300
 expect Remote ID
 expect 7c2f1a
 shot 59_about
-tap 20 70
+back
 wait 300
 click Home Assistant
 wait 600

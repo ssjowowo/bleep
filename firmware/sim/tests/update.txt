@@ -2,7 +2,7 @@
 expect Firmware 0.1.0
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 300
 expect Software update
 click Software update
@@ -51,12 +51,12 @@ expect Try 0.2.0 again
 wait 9000
 shot 75b_update_idle_usb
 expect Try 0.2.0 again
-tap 160 400
+tap ~160 ~400
 wait 300
 click Try 0.2.0 again
 wait 4000
 # leaving the page doesn't stop it; the Settings row shows it
-tap 20 70
+back
 wait 300
 expect Installing…
 click Software update
@@ -69,7 +69,7 @@ expect Firmware 0.2.0
 shot 77_update_rebooted
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 300
 expect 0.2.0
 click Software update

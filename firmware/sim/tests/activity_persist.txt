@@ -3,24 +3,24 @@ click Start
 wait 300
 click Watch TV
 wait 3000
-expect Activity · running
+expect Sleep timer
 expect D-pad: Living room TV
 expect Settings
 shot a0_activity_page
 click HDMI 3
 wait 100
-tap 120 450
+tab Devices
 wait 300
 shot a1_devices
 expect Watch TV
 key VOL+
 key OK
-tap 200 450
+tab Home
 wait 900
 shot a2_home
 expect Watch TV
 key VOL-
-tap 280 450
+tab Settings
 # let Home Assistant connect and the update check finish: each refreshes the page
 wait 1500
 click Display & haptics
@@ -37,9 +37,9 @@ shot a4_after_sleep
 expect Watch TV
 
 # the pill goes back to the activity page; the volume buttons there go to the receiver
-tap 100 17
+pill
 wait 300
-expect Activity · running
-drag 160 380 160 80
-tap 271 382
+expect Sleep timer
+drag ~160 ~380 ~160 ~80
+clickicon volume
 wait 100

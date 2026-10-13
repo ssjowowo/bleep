@@ -6,9 +6,9 @@ click Display & haptics
 click Theme
 click Light
 wait 300
-expect Settings
+expect Display & haptics
 shot 80_light_settings
-tap 20 70
+back
 wait 300
 click Activities
 click Shield TV

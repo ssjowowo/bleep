@@ -2,6 +2,8 @@
  * Bleep emulator.
  *   bleep_sim                      remote window + control panel (SDL)
  *   bleep_sim --zoom 2             bigger remote window
+ *   bleep_sim --screen 240x320     the Bleep mini's panel (default: 320x480, Bleep v1;
+ *                                  the CMake option BLEEP_SCREEN changes the default)
  *   bleep_sim --factory            start as a new remote: nothing set up, no devices
  *   bleep_sim --store FILE         keep what the remote saves in FILE (its flash), across runs
  *   bleep_sim --script FILE [--shots DIR]   headless run, see script.c
@@ -133,7 +135,7 @@ static void web_loop(void)
 static int run_web(void)
 {
     lv_init();
-    g_sim.disp = lv_sdl_window_create(320, 480);
+    g_sim.disp = lv_sdl_window_create(g_sim.screen_w, g_sim.screen_h);
     remote_input(g_sim.disp);
     sim_backlight_layer();
     app_early();
@@ -155,8 +157,8 @@ static int run_sdl(float zoom)
                           &lv_font_montserrat_14);
     panel_create();
 
-    g_sim.disp = lv_sdl_window_create(320, 480);
-    lv_sdl_window_set_title(g_sim.disp, "Bleep");
+    g_sim.disp = lv_sdl_window_create(g_sim.screen_w, g_sim.screen_h);
+    lv_sdl_window_set_title(g_sim.disp, g_sim.screen_w == 320 ? "Bleep" : "Bleep mini");
     if (zoom > 1.0f) lv_sdl_window_set_zoom(g_sim.disp, zoom);
     lv_display_set_default(g_sim.disp);
     remote_input(g_sim.disp);
@@ -183,11 +185,14 @@ int main(int argc, char **argv)
         if (!strcmp(argv[i], "--script") && i + 1 < argc) script = argv[++i];
         else if (!strcmp(argv[i], "--shots") && i + 1 < argc) shots = argv[++i];
         else if (!strcmp(argv[i], "--zoom") && i + 1 < argc) zoom = atof(argv[++i]);
+        else if (!strcmp(argv[i], "--screen") && i + 1 < argc && sim_set_screen(argv[i + 1])) i++;
         else if (!strcmp(argv[i], "--factory")) g_sim.factory = true;
         else if (!strcmp(argv[i], "--store") && i + 1 < argc) g_sim.store_path = argv[++i];
         else if (!strcmp(argv[i], "--from") && i + 1 < argc) g_sim.script_from = atoi(argv[++i]);
         else {
-            fprintf(stderr, "usage: %s [--zoom N] [--factory] [--store FILE] [--script FILE [--shots DIR] [--from LINE]]\n",
+            fprintf(stderr,
+                    "usage: %s [--screen 320x480|240x320] [--zoom N] [--factory] [--store FILE]\n"
+                    "          [--script FILE [--shots DIR] [--from LINE]]\n",
                     argv[0]);
             return 2;
         }

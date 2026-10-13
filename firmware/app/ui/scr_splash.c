@@ -71,14 +71,14 @@ static void splash_build(lv_obj_t *root, int arg)
     w_spacer(root);
 
     lv_obj_t *btn = w_button(root, "Start", NULL, BTN_PRIMARY);
-    lv_obj_set_size(btn, SCREEN_W - 2 * PAD, 52);
-    lv_obj_set_style_radius(btn, 14, 0);
+    lv_obj_set_size(btn, SCREEN_W - 2 * PAD, UI_PICK(52, 44));
+    lv_obj_set_style_radius(btn, UI_PICK(14, 12), 0);
     lv_obj_set_style_text_font(lv_obj_get_child(btn, 0), F_BODY_B, 0);
     lv_obj_add_event_cb(btn, start_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t *ver = w_label(root, F_CAPTION, T->text2, "");
     lv_label_set_text_fmt(ver, "Firmware %s · press OK or tap Start", hal_fw_version());
-    lv_obj_set_style_margin_top(ver, 12, 0);
-    lv_obj_set_style_margin_bottom(ver, 18, 0);
+    lv_obj_set_style_margin_top(ver, UI_PICK(12, 10), 0);
+    lv_obj_set_style_margin_bottom(ver, UI_PICK(18, 14), 0);
 }
 
 const page_t page_splash = {"Splash", -1, splash_build, NULL, NULL, true};

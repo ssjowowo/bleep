@@ -1,7 +1,7 @@
 # Bleep Blocks, in the Fun Zone
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 300
 click About
 wait 300
@@ -54,10 +54,10 @@ key OK
 wait 100
 shot 178_blocks_stack
 # Pause, then a tap carries on
-tap 268 438
+clickicon pause
 wait 100
 expect Paused
-tap 120 300
+tap ~120 ~300
 wait 100
 expect-no Paused
 # drop them all in the middle until it's full

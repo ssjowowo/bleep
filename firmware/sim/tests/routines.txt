@@ -47,7 +47,7 @@ expect Bedtime stopped
 expect-no Next step in
 wait 3000
 # edit Louder: change its button, Update
-hold 85 299 600
+press Louder
 wait 300
 expect STEPS
 expect 1. AV receiver · Volume + × 5
@@ -58,12 +58,12 @@ expect Presses
 expect This is the last step
 shot 108_step_editor
 # the row stepper: one tap on + and on -; tapped just outside the drawn circle,
-# inside its 44 px tap area
-tap 308 208
+# inside its tap area (44 px, 36 on the small screen)
+clickin Presses | plus 16 0
 wait 300
-tap 188 208
+clickin Presses | minus -16 0
 wait 300
-tap 188 208
+clickin Presses | minus -16 0
 wait 300
 shot 108c_presses
 click Button
@@ -71,7 +71,7 @@ wait 300
 click Mute
 wait 300
 expect Mute
-tap 20 70
+back
 wait 300
 expect 1. AV receiver · Mute × 4
 # Test runs the edited draft in the progress window; nothing is saved yet
@@ -89,19 +89,19 @@ wait 300
 expect Routine updated
 wait 2500
 # Bedtime's brightness step: the Value row's stepper goes in 5 % steps
-hold 234 201 600
+press Bedtime
 wait 300
 click 3. Floor lamp · Brightness 10 %
 wait 300
 expect 10 %
-tap 308 208
+clickin Value | plus 16 0
 wait 300
 expect 15 %
 shot 108d_value
-tap 20 70
+back
 wait 300
 expect 3. Floor lamp · Brightness 15 %
-tap 20 70
+back
 wait 300
 click Discard
 wait 300
@@ -115,7 +115,7 @@ click Press a device button
 wait 300
 expect Living room TV
 expect Power
-tap 20 70
+back
 wait 300
 click Add step
 wait 300
@@ -127,7 +127,7 @@ wait 300
 click Turn off
 wait 300
 expect Turn off
-tap 20 70
+back
 wait 300
 click Add step
 wait 300
@@ -138,7 +138,7 @@ expect Watch TV
 click Move up
 wait 300
 expect Step 2
-tap 20 70
+back
 wait 300
 expect 2. Start Watch TV
 expect 3. Ceiling light · Turn off
@@ -149,22 +149,22 @@ slide Wait after 10
 expect 5 s
 shot 108b_wait_slider
 # - / + fine-tune in half seconds: + once, - twice
-tap 289 258
+clickin Wait after | plus
 wait 300
 expect 5.5 s
-tap 207 258
+clickin Wait after | minus
 wait 300
-tap 207 258
+clickin Wait after | minus
 wait 300
 expect 4.5 s
 shot 108e_wait_buttons
-tap 20 70
+back
 wait 300
 expect 4.5 s
 click Name
 clear
 type Test routine
-tap 294 455
+kbkey enter
 wait 300
 shot 109_new_routine
 click Create

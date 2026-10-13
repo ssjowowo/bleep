@@ -24,7 +24,7 @@ click Cancel
 wait 300
 expect-no Power off?
 # Settings > Power off, and confirm
-tap 280 450
+tab Settings
 wait 1500
 click Power off
 wait 300
@@ -33,7 +33,7 @@ click Power off
 wait 500
 shot 131_off
 # off: touch, other keys and a short PWR press do nothing
-tap 160 240
+tap 50% 50%
 key OK
 keydown PWR
 wait 1000

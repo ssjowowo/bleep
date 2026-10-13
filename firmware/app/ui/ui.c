@@ -118,8 +118,8 @@ static void build(void)
     lv_obj_set_width(root, lv_pct(100));
     lv_obj_set_flex_grow(root, 1);
     lv_obj_set_flex_flow(root, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_style_pad_gap(root, 12, 0);
-    lv_obj_set_style_pad_bottom(root, 16, 0);
+    lv_obj_set_style_pad_gap(root, PAGE_GAP, 0);
+    lv_obj_set_style_pad_bottom(root, UI_PICK(16, 10), 0);
     lv_obj_set_scrollbar_mode(root, LV_SCROLLBAR_MODE_OFF);
     lv_obj_set_scroll_dir(root, LV_DIR_VER);
 
@@ -365,8 +365,11 @@ static void auto_theme_timer(lv_timer_t *t)
 void ui_init(bool resume)
 {
     static lv_theme_t *blank;
+    lv_display_t *disp = lv_display_get_default();
+    /* the panel decides the layout (widgets.h) */
+    ui_profile_init(lv_display_get_horizontal_resolution(disp), lv_display_get_vertical_resolution(disp));
     if (!blank) blank = lv_theme_create();   /* no default theme: every style comes from the tokens */
-    lv_display_set_theme(lv_display_get_default(), blank);
+    lv_display_set_theme(disp, blank);
     lv_obj_remove_style_all(lv_screen_active());   /* drop styles the default theme gave the screen */
     light_auto = app_lux() > 400;
     lv_timer_create(editing_timer, 500, NULL);

@@ -6,7 +6,7 @@ wait 3000
 wait 9000
 expect Pick up or press any key
 shot 10_lock_dim
-tap 160 240
+tap 50% 50%
 wait 200
 expect Film title
 wait 31000
@@ -20,7 +20,7 @@ usb on
 wait 300
 expect Charging
 shot 13_charging
-tap 160 240
+tap 50% 50%
 wait 200
 usb off
 battery 8

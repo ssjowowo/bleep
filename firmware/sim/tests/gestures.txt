@@ -31,7 +31,7 @@ expect-log boot: wake by double tap
 expect Or start
 shot 81_tap_wake
 # the settings
-tap 280 450
+tab Settings
 wait 300
 click Power & sleep
 wait 300

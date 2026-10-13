@@ -205,18 +205,18 @@ static void ed_build(lv_obj_t *root, int arg)
     if (!draft.n_steps) w_label(col, F_LABEL, T->text2, "No steps yet.");
     lv_obj_t *add = w_button(col, "Add step", ICON_PLUS, BTN_OUTLINE);
     lv_obj_set_width(add, lv_pct(100));
-    lv_obj_set_style_margin_top(add, 10, 0);
+    lv_obj_set_style_margin_top(add, UI_PICK(10, 8), 0);
     lv_obj_add_event_cb(add, ed_add_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t *n = w_label(col, F_CAPTION, T->text2,
                           "Tap a step to change it, its wait or its place. Each step waits the time shown before "
                           "the next one starts.");
     lv_obj_set_width(n, lv_pct(100));
-    lv_obj_set_style_pad_top(n, 8, 0);
+    lv_obj_set_style_pad_top(n, UI_PICK(8, 6), 0);
 
     if (ed >= 0) {
         lv_obj_t *del = w_button(col, "Delete routine", ICON_TRASH, BTN_OUTLINE);
         lv_obj_set_width(del, lv_pct(100));
-        lv_obj_set_style_margin_top(del, 16, 0);
+        lv_obj_set_style_margin_top(del, UI_PICK(16, 10), 0);
         lv_obj_set_style_text_color(lv_obj_get_child(del, 0), T->warning, 0);
         lv_obj_set_style_text_color(lv_obj_get_child(del, 1), T->warning, 0);
         lv_obj_add_event_cb(del, ed_delete_cb, LV_EVENT_CLICKED, NULL);
@@ -471,9 +471,9 @@ static void step_build(lv_obj_t *root, int idx)
 
     /* wait after the step: title and value, then a slider in half seconds,
      * laid out like the stepped sliders in Settings */
-    lv_obj_t *wb = w_col(col, 8);
-    lv_obj_set_style_pad_top(wb, 12, 0);
-    lv_obj_t *head = w_row(wb, 10);
+    lv_obj_t *wb = w_col(col, UI_PICK(8, 5));
+    lv_obj_set_style_pad_top(wb, UI_PICK(12, 8), 0);
+    lv_obj_t *head = w_row(wb, UI_PICK(10, 8));
     w_icon(head, ICON_TIMER, 18, T->text2);
     w_label(head, F_BODY, T->text, "Wait after");
     w_spacer(head);
@@ -482,12 +482,12 @@ static void step_build(lv_obj_t *root, int idx)
     wait_text_set();
     lv_obj_t *sl = wait_slider = w_slider(wb, s->wait, 0, RSTEP_WAIT_MAX);
     w_slider_detents(sl, 2);   /* a tick a second */
-    lv_obj_set_style_margin_left(sl, 28, 0);   /* lines up with the title; the right inset leaves room for the knob */
+    lv_obj_set_style_margin_left(sl, UI_PICK(28, 24), 0);   /* lines up with the title; the right inset leaves room for the knob */
     lv_obj_set_style_margin_right(sl, 9, 0);
-    lv_obj_set_style_margin_top(sl, 6, 0);
+    lv_obj_set_style_margin_top(sl, UI_PICK(6, 4), 0);
     lv_obj_add_event_cb(sl, wait_slider_cb, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_t *ends = w_row(wb, 0);
-    lv_obj_set_style_pad_left(ends, 26, 0);
+    lv_obj_set_style_pad_left(ends, UI_PICK(26, 22), 0);
     w_label(ends, F_CAPTION, T->text2, "0 s");
     w_spacer(ends);
     w_label(ends, F_CAPTION, T->text2, "60 s");
@@ -498,8 +498,8 @@ static void step_build(lv_obj_t *root, int idx)
     lv_obj_set_width(wn, lv_pct(100));
     lv_obj_set_style_pad_top(wn, 6, 0);
 
-    lv_obj_t *mv = w_row(col, 10);
-    lv_obj_set_style_pad_top(mv, 16, 0);
+    lv_obj_t *mv = w_row(col, UI_PICK(10, 8));
+    lv_obj_set_style_pad_top(mv, UI_PICK(16, 10), 0);
     lv_obj_t *up = w_button(mv, "Move up", ICON_CHEV_UP, sp > 0 ? BTN_DEFAULT : BTN_DISABLED);
     lv_obj_set_flex_grow(up, 1);
     if (sp > 0) lv_obj_add_event_cb(up, move_cb, LV_EVENT_CLICKED, ARG(-1));
@@ -509,7 +509,7 @@ static void step_build(lv_obj_t *root, int idx)
 
     lv_obj_t *del = w_button(col, "Delete step", ICON_TRASH, BTN_OUTLINE);
     lv_obj_set_width(del, lv_pct(100));
-    lv_obj_set_style_margin_top(del, 10, 0);
+    lv_obj_set_style_margin_top(del, UI_PICK(10, 8), 0);
     lv_obj_set_style_text_color(lv_obj_get_child(del, 0), T->warning, 0);
     lv_obj_set_style_text_color(lv_obj_get_child(del, 1), T->warning, 0);
     lv_obj_add_event_cb(del, step_delete_cb, LV_EVENT_CLICKED, NULL);

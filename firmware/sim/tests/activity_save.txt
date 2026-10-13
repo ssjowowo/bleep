@@ -7,7 +7,7 @@ wait 300
 expect Create
 expect-no Delete activity
 shot 95_new_activity
-tap 20 70
+back
 wait 300
 expect Watch TV
 # name it, then leave: asked, discarded, nothing created
@@ -16,10 +16,10 @@ wait 300
 click Name
 clear
 type Movie night
-tap 294 455
+kbkey enter
 wait 300
 expect Movie night
-tap 20 70
+back
 wait 300
 expect Discard new activity?
 shot 96_discard_new
@@ -32,9 +32,9 @@ wait 300
 click Name
 clear
 type Movie night
-tap 294 455
+kbkey enter
 wait 300
-tap 283 229
+switch Living room TV
 wait 300
 # Test sends its start steps without saving anything
 mark
@@ -50,7 +50,7 @@ expect Activity created
 expect Movie night
 shot 97_created
 # edit: Update does nothing until something changes
-hold 85 201 600
+press Watch TV
 wait 300
 expect Update
 click Update
@@ -61,7 +61,7 @@ wait 300
 click Music
 wait 300
 # back with a change: asked; Cancel keeps editing
-tap 20 70
+back
 wait 300
 expect Discard changes to this activity?
 click Cancel

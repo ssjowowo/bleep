@@ -4,16 +4,16 @@ click Start
 wait 300
 click Watch TV
 wait 3500
-tap 40 450
+tab Activities
 wait 300
 # an edit in the activity editor, then the status-bar pill: asked first
-hold 85 180 600
+press Watch TV
 wait 300
 click Icon
 wait 300
 click Music
 wait 300
-tap 98 18
+pill
 wait 300
 expect Discard changes to this activity?
 # BACK on a sheet is Cancel
@@ -31,7 +31,7 @@ click Discard
 wait 300
 expect-no START SEQUENCE
 # the physical HOME on a settings page goes to Activities
-tap 280 450
+tab Settings
 wait 300
 click Display & haptics
 wait 300
@@ -50,7 +50,7 @@ expect-log IR  >
 # nothing selected or running: BACK and HOME move around instead of a toast
 key PWR
 wait 300
-tap 280 450
+tab Settings
 wait 300
 click Display & haptics
 wait 300

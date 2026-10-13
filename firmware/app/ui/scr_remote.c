@@ -129,12 +129,12 @@ static void tp_build(lv_obj_t *root, int dev)
     tp.dev = dev;
     lv_obj_set_scrollable(root, false);   /* the pad gets every drag */
     w_header(root, g_model.devices[dev].name, "Trackpad", ui_back_cb);
-    lv_obj_t *col = w_col(root, 12);
+    lv_obj_t *col = w_col(root, UI_PICK(12, 10));
     lv_obj_set_style_pad_hor(col, PAD, 0);
 
     lv_obj_t *pad = w_box(col);
-    lv_obj_set_size(pad, lv_pct(100), 250);
-    lv_obj_set_style_radius(pad, 18, 0);
+    lv_obj_set_size(pad, lv_pct(100), UI_PICK(250, 184));   /* the Back / Home row stays in view */
+    lv_obj_set_style_radius(pad, UI_PICK(18, 14), 0);
     lv_obj_set_style_bg_opa(pad, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(pad, T->surface, 0);
     lv_obj_set_style_border_width(pad, 1, 0);

@@ -117,6 +117,7 @@ static lv_obj_t *wrap_row(lv_obj_t *root, int gap)
     lv_obj_t *r = w_row(root, gap);
     lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW_WRAP);
     lv_obj_set_style_pad_hor(r, PAD, 0);
+    if (UI->compact) lv_obj_set_style_pad_row(r, 6, 0);
     return r;
 }
 
@@ -131,12 +132,16 @@ static lv_obj_t *fn_button(lv_obj_t *parent, int dev, const char *text, const ch
     if (!has_fn(dev, fn)) return NULL;
     lv_obj_t *b = w_button(parent, text, icon, BTN_DEFAULT);
     lv_obj_set_size(b, w, h);
-    lv_obj_set_style_radius(b, 14, 0);
+    lv_obj_set_style_radius(b, UI_PICK(14, 12), 0);
     lv_obj_set_style_pad_hor(b, 4, 0);
     if (text && !icon) lv_obj_set_style_text_font(lv_obj_get_child(b, 0), strlen(text) == 1 ? F_BODY_B : F_LABEL_B, 0);
     lv_obj_add_event_cb(b, dv_send_cb, LV_EVENT_CLICKED, ARG(BTN_ARG(dev, fn)));
     return b;
 }
+
+/* Key-style buttons: 48 px for the inputs, 44 for the rest (40 and 38 on the small screen) */
+#define KEY_H_BIG UI_PICK(48, 40)
+#define KEY_H UI_PICK(44, 38)
 
 /* A section only if it has a button: its title, then a row of them */
 static lv_obj_t *fn_section(lv_obj_t *root, const char *title, int dev, const fn_t *fns, int n)
@@ -154,7 +159,7 @@ static void keyboard_cb(lv_event_t *e) { ui_type_on(ARG_INT(e)); }
 void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(void))
 {
     power_override = on_power;
-    lv_obj_set_style_pad_gap(root, 8, 0);
+    lv_obj_set_style_pad_gap(root, UI_PICK(8, 6), 0);
     const device_t *d = dev >= 0 ? &g_model.devices[dev] : NULL;
 
     /* the trackpad (any D-pad) and typing on the TV (Bluetooth) */
@@ -179,12 +184,16 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(v
     static const fn_t input_fns[] = {FN_INPUT_1, FN_INPUT_2, FN_INPUT_3, FN_INPUT_4, FN_SOURCE};
     input_row = d ? fn_section(root, "INPUT", dev, input_fns, 5) : NULL;
     if (input_row) {
+        int per_row = UI_PICK(4, 3), in_w = w_col_w(per_row, 8);   /* 66 px either way */
         for (int i = 0; d->inputs && i < d->inputs && i < 4; i++) {
-            lv_obj_t *b = fn_button(input_row, dev, fn_name(FN_INPUT_1 + i), NULL, FN_INPUT_1 + i, 66, 48);
+            lv_obj_t *b = fn_button(input_row, dev, fn_name(FN_INPUT_1 + i), NULL, FN_INPUT_1 + i, in_w, KEY_H_BIG);
             if (b && d->input == i + 1) w_button_set_kind(b, BTN_SELECTED);
         }
-        /* next to the HDMI buttons, or a row of its own when they fill one */
-        fn_button(input_row, dev, "Source", ICON_INPUT, FN_SOURCE, !d->inputs ? 140 : d->inputs < 4 ? 66 : 288, 48);
+        /* next to the HDMI buttons (one button wide; on the small screen the
+         * rest of their row), or a row of its own when they fill one */
+        int n = d->inputs < 4 ? d->inputs : 4, left = n % per_row;
+        fn_button(input_row, dev, "Source", ICON_INPUT, FN_SOURCE,
+                  !n ? w_col_w(2, 8) : !left ? CONTENT_W : UI->compact ? CONTENT_W - left * (in_w + 8) : in_w, KEY_H_BIG);
     }
 
     if (d && d->fn[FN_DIGIT_1].transport) {
@@ -194,9 +203,9 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(v
         static const fn_t fns[] = {FN_DIGIT_1, FN_DIGIT_2, FN_DIGIT_3, FN_DIGIT_4, FN_DIGIT_5, FN_DIGIT_6,
                                    FN_DIGIT_7, FN_DIGIT_8, FN_DIGIT_9, FN_GUIDE, FN_DIGIT_0, FN_MENU};
         for (int i = 0; i < 12; i++)
-            if (!fn_button(pad, dev, keys[i], NULL, fns[i], 90, 44)) {
+            if (!fn_button(pad, dev, keys[i], NULL, fns[i], w_col_w(3, 8), KEY_H)) {
                 lv_obj_t *gap = w_box(pad);   /* the digits stay where they are on a phone */
-                lv_obj_set_size(gap, 90, 44);
+                lv_obj_set_size(gap, w_col_w(3, 8), KEY_H);
             }
     } else if (d) {
         static const struct { const char *t, *i; fn_t fn; } c[] = {
@@ -207,14 +216,14 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(v
         fn_t fns[9];
         for (int i = 0; i < 9; i++) fns[i] = c[i].fn;
         lv_obj_t *pad = fn_section(root, "CONTROLS", dev, fns, 9);
-        for (int i = 0; pad && i < 9; i++) fn_button(pad, dev, c[i].t, c[i].i, c[i].fn, 90, 44);
+        for (int i = 0; pad && i < 9; i++) fn_button(pad, dev, c[i].t, c[i].i, c[i].fn, w_col_w(3, 8), KEY_H);
     }
 
     static const fn_t ch_fns[] = {FN_CH_DOWN, FN_CH_UP};
     lv_obj_t *ch = d ? fn_section(root, "CHANNEL", dev, ch_fns, 2) : NULL;
     if (ch) {
-        fn_button(ch, dev, "Channel", ICON_CHEV_DOWN, FN_CH_DOWN, 140, 44);
-        fn_button(ch, dev, "Channel", ICON_CHEV_UP, FN_CH_UP, 140, 44);
+        fn_button(ch, dev, "Channel", ICON_CHEV_DOWN, FN_CH_DOWN, w_col_w(2, 8), KEY_H);
+        fn_button(ch, dev, "Channel", ICON_CHEV_UP, FN_CH_UP, w_col_w(2, 8), KEY_H);
     }
 
     /* power is the device's, volume the activity's volume device */
@@ -223,10 +232,11 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(v
     if (any) {
         lv_obj_set_style_pad_hor(w_section(root, "POWER AND VOLUME"), PAD, 0);
         lv_obj_t *pv = wrap_row(root, 8);
-        fn_button(pv, dev, NULL, ICON_POWER, FN_POWER, 66, 44);
-        fn_button(pv, vol_dev, NULL, ICON_VOLUME_LOW, FN_VOL_DOWN, 66, 44);
-        fn_button(pv, vol_dev, NULL, ICON_MUTE, FN_MUTE, 66, 44);
-        fn_button(pv, vol_dev, NULL, ICON_VOLUME, FN_VOL_UP, 66, 44);
+        int w = w_col_w(4, 8);
+        fn_button(pv, dev, NULL, ICON_POWER, FN_POWER, w, KEY_H);
+        fn_button(pv, vol_dev, NULL, ICON_VOLUME_LOW, FN_VOL_DOWN, w, KEY_H);
+        fn_button(pv, vol_dev, NULL, ICON_MUTE, FN_MUTE, w, KEY_H);
+        fn_button(pv, vol_dev, NULL, ICON_VOLUME, FN_VOL_UP, w, KEY_H);
     }
 }
 
@@ -249,9 +259,14 @@ static void dv_build(lv_obj_t *root, int idx)
     char sub[64], tr[48];
     snprintf(sub, sizeof(sub), "Devices · %s", dev_transport_text(d, tr, sizeof(tr)));
     lv_obj_t *hdr = w_header(root, sub, d->name, ui_back_cb);
-    lv_obj_t *edit = w_icon_button(hdr, ICON_GEAR, 40, BTN_DEFAULT);   /* its settings */
-    lv_obj_set_ext_click_area(edit, 2);   /* taps: 44 px */
-    lv_obj_set_style_margin_right(edit, 10, 0);
+    lv_obj_t *edit;   /* its settings */
+    if (UI->compact) {
+        edit = w_header_action(hdr, "Edit device", ICON_GEAR, BTN_DEFAULT);
+    } else {
+        edit = w_icon_button(hdr, ICON_GEAR, 40, BTN_DEFAULT);
+        lv_obj_set_ext_click_area(edit, 2);   /* taps: 44 px */
+        lv_obj_set_style_margin_right(edit, 10, 0);
+    }
     lv_obj_add_event_cb(edit, dv_edit_cb, LV_EVENT_CLICKED, NULL);
 
     ui_device_controls(root, idx, idx, NULL);
@@ -474,11 +489,11 @@ static void option_card(lv_obj_t *col, const char *icon, const char *title, cons
     lv_obj_add_event_cb(c, add_choice_cb, LV_EVENT_CLICKED, ARG(arg));
     lv_obj_t *row = w_row(c, 12);
     lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-    w_icon_circle(row, icon, 36, false);
+    w_icon_circle(row, icon, ICON_CIRCLE, false);
     lv_obj_t *t = w_col(row, 3);
     lv_obj_set_flex_grow(t, 1);
     lv_obj_set_width(t, LV_SIZE_CONTENT);
-    w_label(t, F_BODY_B, T->text, title);
+    w_wrap(w_label(t, F_BODY_B, T->text, title));
     lv_obj_t *l = w_label(t, F_CAPTION, T->text2, text);
     lv_obj_set_width(l, lv_pct(100));
 }
@@ -596,15 +611,15 @@ static void pair_build(lv_obj_t *root, int target)
     pr.done = false;
     pr.t0 = hal_millis();
     w_header(root, target >= 0 ? g_model.devices[target].name : "Add device", "Pair over Bluetooth", ui_back_cb);
-    lv_obj_t *col = pr.col = w_col(root, 14);
+    lv_obj_t *col = pr.col = w_col(root, UI_PICK(14, 10));
     lv_obj_set_style_pad_hor(col, PAD, 0);
     lv_obj_set_flex_align(col, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    pr.ring = w_ring(col, 120, 6, 100);
+    pr.ring = w_ring(col, UI_PICK(120, 100), 6, 100);
     pr.count = w_label(pr.ring, F_TITLE, T->text, "2:00");
     lv_obj_center(pr.count);
     pr.status = w_label(col, F_BODY_B, T->accent, "Advertising as “Bleep”");
     lv_obj_t *steps = w_card(col, false, false);
-    lv_obj_set_style_pad_gap(steps, 8, 0);
+    lv_obj_set_style_pad_gap(steps, UI_PICK(8, 6), 0);
     static const char *const s[] = {"1. On the TV, open Settings", "2. Remotes & accessories", "3. Pair remote or accessory",
                                     "4. Choose “Bleep”"};
     for (int i = 0; i < 4; i++) w_label(steps, F_LABEL, T->text, s[i]);
@@ -732,12 +747,12 @@ static void detect_build(lv_obj_t *root, int target)
     LV_UNUSED(target);
     if (!dt.timer) dt.timer = lv_timer_create(detect_tick, 100, NULL);
     w_header(root, ir_target >= 0 ? g_model.devices[ir_target].name : "Add device · IR", "Find the brand", ui_back_cb);
-    lv_obj_t *col = w_col(root, 14);
+    lv_obj_t *col = w_col(root, UI_PICK(14, 10));
     lv_obj_set_style_pad_hor(col, PAD, 0);
-    lv_obj_t *mid = w_col(col, 8);
+    lv_obj_t *mid = w_col(col, UI_PICK(8, 6));
     lv_obj_set_flex_align(mid, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_ver(mid, 16, 0);
-    w_icon_circle(mid, dt.got ? (dt.match ? ICON_CHECK : ICON_X) : ICON_IR, 56, dt.got && dt.match);
+    lv_obj_set_style_pad_ver(mid, UI_PICK(16, 10), 0);
+    w_icon_circle(mid, dt.got ? (dt.match ? ICON_CHECK : ICON_X) : ICON_IR, UI_PICK(56, 48), dt.got && dt.match);
     char buf[64];
     lv_obj_t *title, *text;
     if (!dt.got) {
@@ -760,7 +775,7 @@ static void detect_build(lv_obj_t *root, int target)
     if (dt.got) {
         snprintf(buf, sizeof(buf), "%s · address 0x%02X · command 0x%02X", ir_proto_name(dt.code.proto),
                  (unsigned)dt.code.a, (unsigned)dt.code.b);
-        w_label(mid, F_CAPTION, T->text2, buf);
+        w_wrap_centred(w_label(mid, F_CAPTION, T->text2, buf));   /* two lines on the small screen */
     }
     if (!dt.got) {
         detect_button(col, "Choose the brand myself", BTN_DEFAULT, 3);
@@ -833,10 +848,12 @@ static void test_build(lv_obj_t *root, int arg)
     const ir_brand_t *b = &ir_brands[ir_brand];
     char sub[48], title[48];
     snprintf(sub, sizeof(sub), "IR · %s", b->brand);
-    if (ir_set >= b->sets) snprintf(title, sizeof(title), "No match");
+    if (UI->compact && ir_set >= b->sets) snprintf(title, sizeof(title), "%s · no match", b->brand);   /* no subtitle: the brand goes in the title */
+    else if (UI->compact) snprintf(title, sizeof(title), "%s · set %d of %d", b->brand, ir_set + 1, b->sets);
+    else if (ir_set >= b->sets) snprintf(title, sizeof(title), "No match");
     else snprintf(title, sizeof(title), "Code set %d of %d", ir_set + 1, b->sets);
     w_header(root, sub, title, ui_back_cb);
-    lv_obj_t *col = w_col(root, 14);
+    lv_obj_t *col = w_col(root, UI_PICK(14, 10));
     lv_obj_set_style_pad_hor(col, PAD, 0);
     if (ir_set >= b->sets) {
         lv_obj_t *l = w_label(col, F_BODY, T->text, "None of the code sets worked. Learn the keys from its own remote instead.");
@@ -853,7 +870,7 @@ static void test_build(lv_obj_t *root, int arg)
     lv_obj_t *wrap = w_row(col, 0);
     lv_obj_set_flex_align(wrap, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_ver(wrap, 10, 0);
-    lv_obj_t *pw = w_icon_button(wrap, ICON_POWER, 88, BTN_OUTLINE);
+    lv_obj_t *pw = w_icon_button(wrap, ICON_POWER, UI_PICK(88, 72), BTN_OUTLINE);
     lv_obj_add_event_cb(pw, test_cb, LV_EVENT_CLICKED, ARG(0));
     lv_obj_t *yes = w_button(col, "Yes, it works", ICON_CHECK, BTN_PRIMARY);
     lv_obj_set_width(yes, lv_pct(100));
@@ -1019,7 +1036,7 @@ static void learn_build(lv_obj_t *root, int target)
 {
     lr.target = target;
     w_header(root, target >= 0 ? g_model.devices[target].name : "Add device · IR", "Learn keys", ui_back_guarded_cb);
-    if (lr.capturing >= 0) lv_obj_set_style_pad_bottom(root, 16 + 150, 0);   /* scrolls clear of the panel */
+    if (lr.capturing >= 0) lv_obj_set_style_pad_bottom(root, 16 + UI_PICK(150, 170), 0);   /* scrolls clear of the panel */
     lv_obj_t *col = w_col(root, 0);
     lv_obj_set_style_pad_hor(col, PAD, 0);
     lv_obj_t *n = w_label(col, F_CAPTION, T->text2, "Tap a key to learn it. Learn at least Power and the volume keys.");
@@ -1049,6 +1066,7 @@ static void learn_build(lv_obj_t *root, int target)
     lv_obj_align(lr.panel, LV_ALIGN_BOTTOM_MID, 0, -8);
     lv_obj_set_clickable(lr.panel, true);
     lr.panel_title = w_label(lr.panel, F_BODY_B, T->text, "");
+    w_wrap(lr.panel_title);
     lr.panel_text = w_label(lr.panel, F_LABEL, T->text2, "");
     lv_obj_set_width(lr.panel_text, lv_pct(100));
     lr.panel_btns = w_row(lr.panel, 8);

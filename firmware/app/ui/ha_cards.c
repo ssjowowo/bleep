@@ -1,6 +1,7 @@
 /*
  * Home Assistant entity cards, one layout per domain, from the design's
- * "Home Assistant entity cards" section. 288 px wide, 14 px padding.
+ * "Home Assistant entity cards" section. 288 px wide, 14 px padding (220
+ * and 10 on the small screen).
  * A card is rebuilt in place when its entity changes (see scr_home.c).
  */
 #include <math.h>
@@ -23,8 +24,8 @@ static int ent_of(lv_event_t *e) { return ARG_INT(e); }
 
 static lv_obj_t *head(lv_obj_t *card, const ha_entity_t *e, bool on)
 {
-    lv_obj_t *row = w_row(card, 12);
-    w_icon_circle(row, home_card_icon(e), 36, on && !e->alert);
+    lv_obj_t *row = w_row(card, UI_PICK(12, 10));
+    w_icon_circle(row, home_card_icon(e), ICON_CIRCLE, on && !e->alert);
     if (e->alert) {
         lv_obj_t *c = lv_obj_get_child(row, 0);
         lv_obj_set_style_text_color(lv_obj_get_child(c, 0), T->warning, 0);
@@ -34,14 +35,14 @@ static lv_obj_t *head(lv_obj_t *card, const ha_entity_t *e, bool on)
     lv_obj_set_width(col, LV_SIZE_CONTENT);
     lv_obj_t *n = w_label(col, F_BODY_B, T->text, home_card_name(e));
     lv_obj_set_width(n, lv_pct(100));
-    lv_label_set_long_mode(n, LV_LABEL_LONG_MODE_DOTS);
+    w_one_line(n);
     char buf[64];
     lv_color_t sc = e->alert ? T->warning : on ? T->accent : T->text2;
     if (e->domain == HA_LIGHT && on && (e->features & LIGHT_RGB))
         sc = lv_color_hex(e->rgb);
     lv_obj_t *s = w_label(col, F_CAPTION, sc, ha_state_text(e, buf, sizeof(buf)));
     lv_obj_set_width(s, lv_pct(100));
-    lv_label_set_long_mode(s, LV_LABEL_LONG_MODE_DOTS);
+    w_one_line(s);
     return row;
 }
 
@@ -221,7 +222,7 @@ static void swatches(lv_obj_t *parent, int idx, const ha_entity_t *e, int n, boo
     }
     if (expand_btn) {
         lv_obj_t *b = w_icon_button(row, light_expanded[idx] ? ICON_X : ICON_EXPAND, 32, BTN_DEFAULT);
-        lv_obj_set_ext_click_area(b, 6);   /* taps: 44 px */
+        lv_obj_set_ext_click_area(b, UI_PICK(6, 2));   /* taps: 44 px (36) */
         lv_obj_add_event_cb(b, expand_cb, LV_EVENT_CLICKED, ARG(idx));
     }
 }
@@ -245,12 +246,12 @@ static void light_card(lv_obj_t *c, int idx, ha_entity_t *e)
             lv_obj_t *wr = w_row(c, 0);
             lv_obj_set_flex_align(wr, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
             colour_wheel(wr, idx, e->on ? T->accent_tint : T->surface);
-            swatches(c, idx, e, 6, false);
+            swatches(c, idx, e, UI_PICK(6, 5), false);
             lv_obj_t *b2 = w_button(c, "Done", NULL, BTN_DEFAULT);
             lv_obj_set_width(b2, lv_pct(100));
             lv_obj_add_event_cb(b2, expand_cb, LV_EVENT_CLICKED, ARG(idx));
         } else {
-            swatches(c, idx, e, 5, true);
+            swatches(c, idx, e, UI_PICK(5, 4), true);
         }
         return;
     }
@@ -434,7 +435,7 @@ static lv_obj_t *compact_card(lv_obj_t *parent, int idx, ha_entity_t *e)
         break;
     }
     lv_obj_t *c = w_card(parent, on, e->alert);
-    lv_obj_set_style_pad_ver(c, 10, 0);
+    lv_obj_set_style_pad_ver(c, UI_PICK(10, 8), 0);
     lv_obj_t *h = head(c, e, on);
     switch (e->domain) {
     case HA_LIGHT: case HA_SWITCH: case HA_INPUT_BOOLEAN: case HA_AUTOMATION: case HA_FAN: case HA_HUMIDIFIER:
@@ -529,7 +530,7 @@ lv_obj_t *ha_card_create(lv_obj_t *parent, int idx)
         break;
     case HA_AIR_QUALITY: {
         head(c, e, false);
-        lv_obj_t *r = w_row(c, 24);
+        lv_obj_t *r = w_row(c, UI_PICK(24, 16));
         char tmp[96];
         snprintf(tmp, sizeof(tmp), "%s", e->extra);
         char *parts[6] = {0};
@@ -624,7 +625,7 @@ lv_obj_t *ha_card_create(lv_obj_t *parent, int idx)
         break;
     case HA_CAMERA: {
         head(c, e, false);
-        lv_obj_t *art = w_artwork(c, 258, 130, 10, false);
+        lv_obj_t *art = w_artwork(c, UI_PICK(258, lv_pct(100)), UI_PICK(130, 90), 10, false);
         lv_obj_center(w_label(art, F_CAPTION, T->text2, "snapshot"));
         lv_obj_t *ts = w_label(art, F_CAPTION, T->text, "");
         int64_t t = hal_time();
@@ -645,14 +646,14 @@ lv_obj_t *ha_card_create(lv_obj_t *parent, int idx)
         lv_obj_set_width(col, LV_SIZE_CONTENT);
         lv_obj_t *t = w_label(col, F_LABEL_B, T->text, e->title[0] ? e->title : "Nothing playing");
         lv_obj_set_width(t, lv_pct(100));
-        lv_label_set_long_mode(t, LV_LABEL_LONG_MODE_DOTS);
+        w_one_line(t);
         if (e->dur) {
             snprintf(buf, sizeof(buf), "%d:%02d:%02d / %d:%02d:%02d", (int)(e->pos / 3600), (int)(e->pos / 60 % 60),
                      (int)(e->pos % 60), (int)(e->dur / 3600), (int)(e->dur / 60 % 60), (int)(e->dur % 60));
             w_label(col, F_CAPTION, T->text2, buf);
         }
         lv_obj_t *pp = action_btn(r, idx, NULL, e->on ? ICON_PAUSE : ICON_PLAY, "media_play_pause", BTN_PRIMARY);
-        lv_obj_set_size(pp, 44, 44);
+        lv_obj_set_size(pp, BTN_H, BTN_H);
         lv_obj_set_style_radius(pp, LV_RADIUS_CIRCLE, 0);
         lv_obj_set_style_pad_hor(pp, 0, 0);
         lv_obj_t *vr = w_row(c, 10);
@@ -732,7 +733,7 @@ lv_obj_t *ha_card_create(lv_obj_t *parent, int idx)
         lv_obj_set_size(p, 36, 36);
         lv_obj_t *x = action_btn(r, idx, NULL, ICON_STOP, "cancel", BTN_DEFAULT);
         lv_obj_set_size(x, 36, 36);
-        lv_obj_set_ext_click_area(p, 4), lv_obj_set_ext_click_area(x, 4);   /* taps: 44 px */
+        lv_obj_set_ext_click_area(p, UI_PICK(4, 0)), lv_obj_set_ext_click_area(x, UI_PICK(4, 0));   /* taps: 44 px (36) */
         lv_obj_set_style_pad_hor(p, 0, 0), lv_obj_set_style_pad_hor(x, 0, 0);
         lv_obj_set_style_radius(p, LV_RADIUS_CIRCLE, 0), lv_obj_set_style_radius(x, LV_RADIUS_CIRCLE, 0);
         break;
@@ -759,8 +760,8 @@ lv_obj_t *ha_card_create(lv_obj_t *parent, int idx)
         head(c, e, false);
         {
             lv_obj_t *col = w_col(c, 2);
-            w_label(col, F_BODY_B, T->text, e->title);
-            w_label(col, F_LABEL, T->text2, e->extra);
+            w_wrap(w_label(col, F_BODY_B, T->text, e->title));
+            w_wrap(w_label(col, F_LABEL, T->text2, e->extra));
         }
         break;
     case HA_TODO: {
@@ -776,7 +777,7 @@ lv_obj_t *ha_card_create(lv_obj_t *parent, int idx)
             bool done = e->todo_done & (1u << i);
             lv_obj_t *r = w_row(c, 10);
             lv_obj_set_height(r, 28);
-            lv_obj_set_ext_click_area(r, 8);   /* taps: 44 px; the rows sit 10 px apart, so they don't overlap */
+            lv_obj_set_ext_click_area(r, UI_PICK(8, 4));   /* taps: 44 px (36); the rows sit 10 px (8) apart, so they don't overlap */
             lv_obj_set_clickable(r, true);
             lv_obj_set_user_data(r, ARG(i));
             lv_obj_add_event_cb(r, todo_cb, LV_EVENT_CLICKED, ARG(idx));
@@ -818,10 +819,11 @@ lv_obj_t *ha_card_create(lv_obj_t *parent, int idx)
 lv_obj_t *ha_scene_row(lv_obj_t *parent, const int *idx, int n)
 {
     lv_obj_t *r = w_row(parent, 8);
+    lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW_WRAP);   /* more than fit: a second row */
     for (int i = 0; i < n; i++) {
         lv_obj_t *b = action_btn(r, idx[i], home_card_name(ha_get(idx[i])), NULL, "turn_on", BTN_OUTLINE);
         lv_obj_set_flex_grow(b, 1);
-        lv_obj_set_style_radius(b, 22, 0);
+        lv_obj_set_style_radius(b, BTN_H / 2, 0);
     }
     return r;
 }

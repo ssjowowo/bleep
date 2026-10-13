@@ -16,7 +16,7 @@ shot 83_nightstand
 wait 120000
 expect Thursday 8 October
 # a tap wakes the remote; unplugged, it's the normal lock screen when idle
-tap 160 240
+tap 50% 50%
 wait 300
 expect-no Thursday 8 October
 usb off
@@ -26,7 +26,7 @@ expect-no 14° · Cloudy
 # the setting
 key OK
 wait 300
-tap 280 450
+tab Settings
 wait 300
 click Display & haptics
 wait 300

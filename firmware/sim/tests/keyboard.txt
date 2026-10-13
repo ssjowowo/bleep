@@ -24,7 +24,7 @@ clear
 wait 300
 expect-log-count 8 Backspace
 type ok
-tap 294 455
+kbkey enter
 wait 300
 expect-log keyboard: Enter to Shield TV
 expect-log BLE > 0x07:0x028 Enter
@@ -33,12 +33,12 @@ click Trackpad
 wait 300
 expect Swipe to move
 mark
-drag 60 250 200 250
+swipe Tap for OK 140 0
 expect-log-count 3 BLE > 0x07:0x04F Right
 expect-haptic detent 3
-drag 160 330 160 170
+swipe Tap for OK 0 -150
 expect-log-count 4 BLE > 0x07:0x052 Up
-tap 160 250
+click Tap for OK
 expect-log BLE > 0x07:0x028 Enter
 shot 78_trackpad
 click Back

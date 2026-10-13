@@ -32,14 +32,27 @@ text font_12b 12 600
 text font_14  14 500
 text font_14b 14 600
 text font_21  21 600
+# The compact profile's (240 x 320, the Bleep minis; app/ui/widgets.h): one step
+# down, with font_11 as its label size
+text font_10  10 500
+text font_11b 11 600
+text font_13  13 500
+text font_13b 13 600
+text font_18  18 600
 
 # Digits-only display fonts: charging percentage and the lock-screen clock
-$CONV --no-compress --bpp 2 --size 44 --format lvgl --lv-include lvgl.h \
-  --font fonts/$FAMILY-600.ttf --symbols "0123456789%" -o "$OUT/font_44d.c" --lv-font-name font_44d
-$CONV --no-compress --bpp 2 --size 84 --format lvgl --lv-include lvgl.h \
-  --font fonts/$FAMILY-300.ttf --symbols "0123456789:" -o "$OUT/font_84d.c" --lv-font-name font_84d
+# (44 and 84 px; 36 and 64 for the compact profile)
+digits() { # name size weight symbols
+  $CONV --no-compress --bpp 2 --size "$2" --format lvgl --lv-include lvgl.h \
+    --font fonts/$FAMILY-$3.ttf --symbols "$4" -o "$OUT/$1.c" --lv-font-name "$1"
+}
+digits font_44d 44 600 "0123456789%"
+digits font_84d 84 300 "0123456789:"
+digits font_36d 36 600 "0123456789%"
+digits font_64d 64 300 "0123456789:"
 
-for s in 14 16 18 20 24; do
+# 12 px only for the compact profile
+for s in 12 14 16 18 20 24; do
   $CONV --no-compress --bpp 4 --size $s --format lvgl --lv-include lvgl.h \
     --font icons.otf -r 0xE000-0xE0FF -o "$OUT/icons_$s.c" --lv-font-name icons_$s
 done

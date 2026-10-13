@@ -7,35 +7,35 @@ wait 300
 expect-no Lounge
 # activities as a list, in order; Watch TV's devices and roles intact
 expect-before Watch TV | Shield TV
-hold 160 184 600
+press Watch TV
 wait 300
 expect Living room TV
 expect AV receiver
 expect AV receiver · HDMI 1
-tap 20 70
+back
 wait 300
 # routines with their steps, waits and repeats
 click Routines
 wait 300
-hold 160 184 600
+press Movie night
 wait 300
 expect 1. Ceiling light · Brightness 20 %
 expect 2. Floor lamp · Turn off
 expect 3. Start Shield TV
 expect 4. Shield TV · Home
-tap 20 70
+back
 wait 300
 # devices as a grid, Shield TV first, with its codes: its page has the Bluetooth controls
-tap 120 450
+tab Devices
 wait 300
 expect-before Shield TV | Living room TV
 click Living room TV
 wait 300
 expect HDMI 1
-tap 20 70
+back
 wait 300
 # settings
-tap 280 450
+tab Settings
 wait 300
 expect Light
 expect Home-5G

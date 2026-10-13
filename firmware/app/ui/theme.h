@@ -40,6 +40,14 @@ LV_FONT_DECLARE(font_14b)
 LV_FONT_DECLARE(font_21)
 LV_FONT_DECLARE(font_44d)
 LV_FONT_DECLARE(font_84d)
+LV_FONT_DECLARE(font_10)
+LV_FONT_DECLARE(font_11b)
+LV_FONT_DECLARE(font_13)
+LV_FONT_DECLARE(font_13b)
+LV_FONT_DECLARE(font_18)
+LV_FONT_DECLARE(font_36d)
+LV_FONT_DECLARE(font_64d)
+LV_FONT_DECLARE(icons_12)
 LV_FONT_DECLARE(icons_14)
 LV_FONT_DECLARE(icons_16)
 LV_FONT_DECLARE(icons_18)
@@ -47,13 +55,32 @@ LV_FONT_DECLARE(icons_20)
 LV_FONT_DECLARE(icons_24)
 LV_FONT_DECLARE(logo_80)
 
-#define F_CAPTION (&font_11)
-#define F_LABEL   (&font_12)
-#define F_LABEL_B (&font_12b)
-#define F_BODY    (&font_14)
-#define F_BODY_B  (&font_14b)
-#define F_TITLE   (&font_21)
-#define F_BIG     (&font_44d)
-#define F_CLOCK   (&font_84d)
+/* The type scale. It follows the display profile (widgets.h), set once at
+ * start-up by theme_fonts():
+ *                320 x 480   compact (240 x 320)
+ *   caption        11            10
+ *   label          12 (+ bold)   11 (+ bold)
+ *   body           14 (+ bold)   13 (+ bold)
+ *   title          21            18
+ *   big digits     44            36   (the charging percentage)
+ *   clock digits   84            64   (lock screen, nightstand) */
+typedef struct {
+    const lv_font_t *caption, *label, *label_b, *body, *body_b, *title, *big, *clock;
+} ui_fonts_t;
+extern ui_fonts_t ui_fonts;
+void theme_fonts(bool compact);
 
-const lv_font_t *icon_font(int px);    /* 14, 16, 18, 20 or 24 */
+#define F_CAPTION (ui_fonts.caption)
+#define F_LABEL   (ui_fonts.label)
+#define F_LABEL_B (ui_fonts.label_b)
+#define F_BODY    (ui_fonts.body)
+#define F_BODY_B  (ui_fonts.body_b)
+#define F_TITLE   (ui_fonts.title)
+#define F_BIG     (ui_fonts.big)
+#define F_CLOCK   (ui_fonts.clock)
+
+/* The icon font for an icon drawn px tall on the 320 x 480 screen (14, 16,
+ * 18, 20 or 24): the compact profile draws each one a step smaller (12 to
+ * 20), as its text is. icon_font_exact: that size on either screen. */
+const lv_font_t *icon_font(int px);
+const lv_font_t *icon_font_exact(int px);   /* 12, 14, 16, 18, 20 or 24 */

@@ -11,11 +11,54 @@
 #include "theme.h"
 #include "icons.h"
 
-#define SCREEN_W 320
-#define SCREEN_H 480
-#define PAD 16          /* screen side margin */
-#define TABBAR_H 60
-#define STATUS_H 36
+/*
+ * The display profile: the panel's size and the layout values that follow
+ * from it. One firmware for every panel: ui_init() picks the profile from the
+ * size of the display LVGL drives, which the board's display driver (the
+ * emulator: --screen) sets up for its panel.
+ *   320 x 480  Bleep v1 (3.5"): the design as drawn
+ *   240 x 320  Bleep mini (2.8" and 2.4"): compact
+ * Compact has the same colours, components and pages, a step smaller: the
+ * type scale (theme.h: 18 px titles, 13 px body, 11 px labels, 10 px
+ * captions) and icons, 36 px touch targets (6.5 mm on the 2.8", 5.5 mm on
+ * the 2.4"), 36 px buttons, 38 px list rows, a 26 px status bar, a 36 px tab
+ * bar of icons, one-line page headers (back, title, icon buttons), 10 px
+ * side margins and 8 px gaps. Text that doesn't fit wraps or ends in "…".
+ */
+typedef struct {
+    int16_t w, h;           /* screen */
+    int16_t pad;            /* screen side margin */
+    int16_t status_h;       /* status bar */
+    int16_t tabbar_h;       /* tab bar */
+    bool compact;           /* the small screen */
+} ui_profile_t;
+
+extern const ui_profile_t *UI;
+void ui_profile_init(int w, int h);   /* before anything is built (ui_init); sets the fonts too */
+
+#define SCREEN_W (UI->w)
+#define SCREEN_H (UI->h)
+#define PAD (UI->pad)
+#define TABBAR_H (UI->tabbar_h)
+#define STATUS_H (UI->status_h)
+#define CONTENT_W (SCREEN_W - 2 * PAD)   /* between the side margins */
+/* The largest screen there is, for static buffers sized by the screen */
+#define SCREEN_W_MAX 320
+#define SCREEN_H_MAX 480
+/* Pick a value by profile: UI_PICK(320 x 480, compact) */
+#define UI_PICK(big, small) (UI->compact ? (small) : (big))
+
+/* Sizes that follow the profile */
+#define TOUCH_MIN   UI_PICK(44, 36)   /* the smallest touch target */
+#define BTN_H       UI_PICK(44, 36)   /* buttons (w_button) and key-style buttons */
+#define ROW_H       UI_PICK(45, 38)   /* list rows (w_list_row) */
+#define ICON_CIRCLE UI_PICK(36, 30)   /* the icon circle on cards and list items */
+#define PAGE_GAP    UI_PICK(12, 8)    /* between a page's blocks */
+
+/* Width of one of n equal columns, gap px apart, across the content width */
+int w_col_w(int n, int gap);
+
+typedef enum { BTN_DEFAULT, BTN_PRIMARY, BTN_OUTLINE, BTN_SELECTED, BTN_DISABLED } btn_kind_t;
 
 #define ARG(x) ((void *)(intptr_t)(x))
 #define ARG_INT(e) ((int)(intptr_t)lv_event_get_user_data(e))
@@ -28,16 +71,32 @@ lv_obj_t *w_label(lv_obj_t *parent, const lv_font_t *font, lv_color_t color, con
 lv_obj_t *w_icon(lv_obj_t *parent, const char *icon, int px, lv_color_t color);
 lv_obj_t *w_spacer(lv_obj_t *parent);                    /* flex-grow filler */
 lv_obj_t *w_section(lv_obj_t *parent, const char *text); /* "INPUT", "KEYPAD" */
+/* One line, ending in "…" if it doesn't fit its width (or its parent's, if
+ * it's sized to its text) */
+void w_one_line(lv_obj_t *label);
+/* Wraps within its parent's width instead of running past it (left-aligned,
+ * or each line centred). Not a % max_width: LVGL measures a label's height
+ * without it, so wrapped lines would be cut off. */
+void w_wrap(lv_obj_t *label);
+void w_wrap_centred(lv_obj_t *label);
 void w_on_click(lv_obj_t *obj, lv_event_cb_t cb, int arg);
 /* Let children draw up to px past obj's edges (slider knobs, selection
  * rings) instead of being clipped. Not for scrolling containers. */
 void w_allow_overflow(lv_obj_t *obj, int px);
 
-/* Page header: small subtitle (NULL = none, no space kept) over a 21 px title; back arrow if back_cb */
+/* Page header: small subtitle (NULL = none, no space kept) over a 21 px title; back arrow if back_cb.
+ * Compact: one line, the back arrow and the title, without the subtitle.
+ * Children: [back box], a column with [subtitle] and the title, then what the page adds. */
 lv_obj_t *w_header(lv_obj_t *parent, const char *sub, const char *title, lv_event_cb_t back_cb);
+lv_obj_t *w_header_title(lv_obj_t *hdr);
+/* Compact: an action at the header's right end as a 36 px icon button
+ * ("End" as an x), named for what it does (w_name) */
+lv_obj_t *w_header_action(lv_obj_t *hdr, const char *name, const char *icon, btn_kind_t kind);
+/* What an icon-only control does, in words, for tests and debugging (LVGL's
+ * object name, when LV_USE_OBJ_NAME is on; nothing is drawn). */
+void w_name(lv_obj_t *obj, const char *name);
 
 /* Buttons */
-typedef enum { BTN_DEFAULT, BTN_PRIMARY, BTN_OUTLINE, BTN_SELECTED, BTN_DISABLED } btn_kind_t;
 lv_obj_t *w_button(lv_obj_t *parent, const char *text, const char *icon, btn_kind_t kind);
 void w_button_set_kind(lv_obj_t *btn, btn_kind_t kind);
 lv_obj_t *w_icon_button(lv_obj_t *parent, const char *icon, int size, btn_kind_t kind);
@@ -111,6 +170,7 @@ typedef struct {
     void (*moved)(int from, int to);
 } reorder_desc_t;
 void w_reorderable(lv_obj_t *item, const reorder_desc_t *d);
+#define REORDER_EDGE UI_PICK(48, 32)   /* finger this close to the list's top or bottom: it scrolls */
 
 /* Chrome */
 lv_obj_t *w_status_bar(lv_obj_t *parent);

@@ -15,10 +15,11 @@
 #include "ui.h"
 
 #define CELL     16
-#define COLS     (SCREEN_W / CELL)           /* 20 */
+#define COLS     (SCREEN_W / CELL)           /* 20 (15 on the small screen) */
 #define TOP      48                          /* the score strip above the board */
-#define ROWS     ((SCREEN_H - TOP) / CELL)   /* 27 */
+#define ROWS     ((SCREEN_H - TOP) / CELL)   /* 27 (17) */
 #define MAX_LEN  (COLS * ROWS)
+#define MAX_CELLS ((SCREEN_W_MAX / CELL) * ((SCREEN_H_MAX - TOP) / CELL))   /* the largest board */
 #define START_LEN 4
 #define STEP_MS(score) ((score) * 5 < 160 - 70 ? 160 - (score) * 5 : 70)   /* faster as it grows */
 #define SWIPE    24                          /* px of swipe for a turn */
@@ -31,7 +32,7 @@ static const int8_t dx[] = {0, 1, 0, -1}, dy[] = {-1, 0, 1, 0};
 
 static struct {
     sn_state_t state;
-    struct { uint8_t x, y; } body[MAX_LEN];   /* a ring: body[head] is the head, the tail len - 1 behind it */
+    struct { uint8_t x, y; } body[MAX_CELLS];   /* a ring: body[head] is the head, the tail len - 1 behind it */
     int head, len;
     dir_t dir;
     dir_t turns[3];                           /* steered faster than it moves: taken one a step */

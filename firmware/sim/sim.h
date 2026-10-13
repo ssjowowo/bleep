@@ -37,9 +37,13 @@ typedef struct {
     const char *store_path; /* --store FILE: the emulator's flash; NULL = memory (web: localStorage) */
     uint32_t idle_skip;     /* added to hal_millis() by "skip idle" */
     lv_display_t *disp;     /* the remote's display */
+    int screen_w, screen_h; /* its panel: --screen WxH, default BLEEP_SCREEN (CMake) */
 } sim_t;
 
 extern sim_t g_sim;
+
+/* "320x480" or "240x320" into g_sim.screen_w / screen_h; false if it isn't one */
+bool sim_set_screen(const char *wxh);
 
 #define SIM_LOG_LINES 14
 const char *sim_log_line(int i);      /* 0 = newest */

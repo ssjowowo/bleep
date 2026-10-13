@@ -50,10 +50,10 @@ click Edit
 wait 300
 expect Not in Home Assistant
 expect light.gone_from_ha
-drag 160 400 160 300
+drag ~160 ~400 ~160 ~300
 wait 300
 shot 185_home_missing
-tap 270 228
+clickin light.gone_from_ha | x
 wait 300
 expect-no light.gone_from_ha
 expect Porch light

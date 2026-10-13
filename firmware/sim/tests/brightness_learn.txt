@@ -1,7 +1,7 @@
 # Auto brightness learns: the slider sets the level for light like this, and it sticks
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 300
 click Display & haptics
 wait 300
@@ -18,7 +18,7 @@ shot 85_bright_learned
 # the room gets darker: the neighbouring band moved halfway too (45 % - 10)
 lux 200
 wait 1100
-tap 20 70
+back
 wait 300
 click Brightness
 wait 300
@@ -29,7 +29,7 @@ wait 3500
 reboot
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 300
 click Display & haptics
 wait 300

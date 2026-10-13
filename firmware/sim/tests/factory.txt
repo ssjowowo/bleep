@@ -5,17 +5,17 @@ click Start
 wait 300
 shot 80_factory_activities
 expect-no Watch TV
-tap 120 450
+tab Devices
 wait 300
 shot 81_factory_devices
 expect-no Living room TV
-tap 200 450
+tab Home
 wait 800
 expect Connect Home Assistant
 expect Set up Wi-Fi
 expect-no Ceiling light
 shot 82_factory_home
-tap 280 450
+tab Settings
 wait 300
 expect Not set up
 expect Not signed in
@@ -35,20 +35,20 @@ wait 2500
 click Home-5G
 wait 300
 type correcthorse
-tap 294 455
+kbkey enter
 wait 300
 click Connect
 wait 1500
 expect Connected and saved
 shot 85_factory_wifi_saved
 # the daily update check rode along on the new Wi-Fi connection
-tap 20 70
+back
 wait 1800
 expect Version 0.2.0 is available
 # Home now offers HA sign-in; signing in on the remote brings the house
-tap 20 70
+back
 wait 300
-tap 200 450
+tab Home
 wait 800
 expect Connect Home Assistant
 expect Sign in
@@ -66,9 +66,9 @@ wait 8200
 expect Signed in as
 expect Connected
 # the house arrives with the first sign-in
-tap 20 70
+back
 wait 300
-tap 200 450
+tab Home
 wait 800
 expect Ceiling light
 expect Kitchen

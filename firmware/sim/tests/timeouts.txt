@@ -1,13 +1,13 @@
 # Haptics, idle and sleep sliders; the timeouts they set
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 300
 click Display & haptics
 wait 300
 slide Haptics 3
 expect Strong
-tap 20 70
+back
 wait 300
 click Power & sleep
 wait 300

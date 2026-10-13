@@ -46,7 +46,17 @@ Screens outside the tabs:
 - **Volume overlay**: shown when the hardware VOL keys are pressed.
 - **Keyboard**: one shared `lv_keyboard` (LVGL v9) with four maps: text, name (one capital, then lower case), symbols, and a number pad. It is used for the Wi-Fi password, the HA server URL, device names and alarm codes.
 
-Rendering: ILI9488 in RGB565 (COLMOD 0x55) on the 8-bit 8080 bus, with two 1/10-screen draw buffers in internal RAM and DMA flush. Fonts are Figtree (changed from the design's Sora; the splash logo keeps the brand wordmark), converted to LVGL bitmap fonts with lv_font_conv (11, 12, 14 and 21 px at 4 bpp, plus 44 px and 84 px digits-only at 2 bpp), and an icon font, about 70 KB of flash in all. Hit targets are 44 px or more.
+Rendering: ILI9488 in RGB565 (COLMOD 0x55) on the 8-bit 8080 bus, with two 1/10-screen draw buffers in internal RAM and DMA flush. Fonts are Figtree (changed from the design's Sora; the splash logo keeps the brand wordmark), converted to LVGL bitmap fonts with lv_font_conv (11, 12, 14 and 21 px at 4 bpp, plus 44 px and 84 px digits-only at 2 bpp), and an icon font, about 70 KB of flash in all; the compact sizes below add about 30 KB (10, 11 bold, 13, 18 px, 36 and 64 px digits, 12 px icons). Hit targets are 44 px or more (36 on the compact screen).
+
+The same UI runs on the Bleep mini's 240 × 320 panels (2.8" and 2.4"; `hardware-mini/DESIGN.md`). It isn't a separate build of the UI: the layout follows the size of the display the board sets up (the display profile in `app/ui/widgets.h`). The small screen has the compact profile: the same colours, components, icons, pages, information and features, the same 2c Flat look, a step smaller:
+
+- **Type**: titles 18 px, body 13 px (+ bold), labels 11 px (+ bold), captions 10 px; the charging percentage 36 px and the clock 64 px; icons a step smaller (12 to 20 px).
+- **Bars**: a 26 px status bar with a shorter device pill; a 36 px tab bar of icons only, the active one in the accent with a short line under it.
+- **Page headers** are one line: the back arrow, the title (18 px) and the page's actions as 36 px icon buttons (End is an ×, the Home tab's Edit a pencil and Done a tick). The breadcrumb subtitle goes; where it said something that matters it moves: a running activity's name is in the accent, the IR code test's title names the brand, the Wi-Fi password's names the network. A tab's own page keeps its title ("Activities", "Devices", the Home tab's room, "Settings").
+- **Sizes**: touch targets 36 px or more (6.5 mm on the 2.8", 5.5 mm on the 2.4"), buttons 36 px (key-style 38 to 40), list rows 38 px, 10 px side margins, 8 px gaps.
+- **Activities and routines**: 54 px tiles in two columns, the icon beside the name and its line under the name, so six show at once.
+
+Text that doesn't fit ends in "…" or wraps instead of being cut; pages that don't fit scroll. Saved settings are the same on both panels.
 
 The physical keys act on the **active target**: the last thing chosen, either a device or an activity.
 
@@ -259,7 +269,7 @@ Wi-Fi fast reconnect: keep the AP's BSSID and channel in RTC memory, static IP (
 ## 12. Stack
 
 - ESP-IDF 5.x, C.
-- LVGL 9 on `esp_lcd` i80 (8-bit, ILI9488, 320 × 480, RGB565). Two partial draw buffers in internal DMA RAM.
+- LVGL 9 on `esp_lcd` i80 (8-bit, ILI9488, 320 × 480, RGB565). Two partial draw buffers in internal DMA RAM. (The minis: a 240 × 320 SPI panel; the UI lays itself out for it, section 3.)
 - NimBLE for BLE HID, ESP-IDF Wi-Fi + `esp_websocket_client`, RMT for IR.
 - Sensors: the fuel gauge and the light sensor are read once a second, never from a hot path; USB is two GPIOs, polled every tick.
 - PSRAM (2 MB, quad): the model (~45 KB with the Home tab's layout, `HAL_PSRAM` = `EXT_RAM_BSS_ATTR`, needs `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`), the setup's JSON (up to 256 KB) and its cJSON tree (`hal_big_alloc`), and caches. Internal RAM is for Wi-Fi, NimBLE and LVGL's draw buffers.

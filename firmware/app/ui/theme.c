@@ -49,11 +49,29 @@ const theme_t *T = &dark;
 void theme_apply(bool is_light) { T = is_light ? &light : &dark; }
 bool theme_is_light(void) { return T == &light; }
 
-const lv_font_t *icon_font(int px)
+static const ui_fonts_t fonts_v1 = {&font_11, &font_12, &font_12b, &font_14, &font_14b, &font_21, &font_44d, &font_84d};
+static const ui_fonts_t fonts_compact = {&font_10, &font_11, &font_11b, &font_13, &font_13b, &font_18, &font_36d, &font_64d};
+ui_fonts_t ui_fonts = {&font_11, &font_12, &font_12b, &font_14, &font_14b, &font_21, &font_44d, &font_84d};
+static bool small_icons;
+
+void theme_fonts(bool compact)
 {
+    ui_fonts = compact ? fonts_compact : fonts_v1;
+    small_icons = compact;
+}
+
+const lv_font_t *icon_font_exact(int px)
+{
+    if (px <= 12) return &icons_12;
     if (px <= 14) return &icons_14;
     if (px <= 16) return &icons_16;
     if (px <= 18) return &icons_18;
     if (px <= 20) return &icons_20;
     return &icons_24;
+}
+
+const lv_font_t *icon_font(int px)
+{
+    if (small_icons) return icon_font_exact(px <= 14 ? 12 : px <= 16 ? 14 : px <= 18 ? 16 : px <= 20 ? 18 : 20);
+    return icon_font_exact(px <= 14 ? 14 : px);
 }

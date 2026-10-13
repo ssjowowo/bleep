@@ -1,7 +1,7 @@
 # The Fun Zone, the easter egg: Firmware in Settings > About, tapped 7 times
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 300
 expect-no Fun Zone
 click About
@@ -65,9 +65,9 @@ shot 174_snake_over
 # OK plays again; a swipe steers, a tap pauses
 key OK
 expect-no New best!
-drag 160 300 160 200
+drag ~160 ~300 ~160 ~200
 wait 200
-tap 160 300
+tap ~160 ~300
 wait 100
 expect Paused
 shot 175_snake_paused
@@ -87,7 +87,7 @@ wait 2500
 reboot
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 300
 click Fun Zone
 wait 300
@@ -99,7 +99,7 @@ key HOME
 wait 300
 expect Activities
 # hidden again: gone from Settings, 7 taps bring it back
-tap 280 450
+tab Settings
 wait 300
 click Fun Zone
 wait 300

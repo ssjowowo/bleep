@@ -18,18 +18,18 @@ key MUTE
 wait 300
 expect-log-no fire_event
 # turn them on (Settings > Home Assistant)
-tap 280 450
+tab Settings
 wait 300
 click Home Assistant
 wait 600
 expect THIS REMOTE IN HOME ASSISTANT
 expect Key presses as events
 shot 84_ha_bridge
-tap 284 405
+switch Key presses as events
 wait 300
-tap 20 70
+back
 wait 300
-tap 40 450
+tab Activities
 wait 300
 click Watch TV
 wait 3000

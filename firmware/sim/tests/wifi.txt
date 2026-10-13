@@ -1,7 +1,7 @@
 # Wi-Fi: Connect tests the draft and saves only on success; Scan lists networks
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 300
 click Wi-Fi
 wait 800
@@ -11,7 +11,7 @@ shot 60_wifi_settings
 click Password
 clear
 type wrongpass
-tap 294 455
+kbkey enter
 wait 300
 expect NOT SAVED YET
 click Connect
@@ -23,7 +23,7 @@ expect Couldn't connect, nothing saved
 expect turned the password down
 shot 62_wifi_bad_password
 # leave and come back: the saved password still works
-tap 20 70
+back
 wait 300
 click Wi-Fi
 wait 300
@@ -52,7 +52,7 @@ wait 300
 expect Password
 clear
 type correcthorse
-tap 294 455
+kbkey enter
 wait 300
 click Connect
 wait 6500
@@ -62,7 +62,7 @@ expect Connected · Guest
 click Network
 clear
 type Nowhere
-tap 294 455
+kbkey enter
 wait 300
 click Connect
 wait 3200

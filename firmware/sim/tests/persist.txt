@@ -1,7 +1,7 @@
 # What the user sets survives a reboot (a real one: a new process on the same flash)
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 1500
 click Display & haptics
 wait 300
@@ -14,16 +14,16 @@ wait 300
 click List
 wait 300
 slide Haptics 3
-tap 20 70
+back
 wait 300
 click Power & sleep
 wait 300
 slide Idle after 6
 expect 1 min
 # wake on pick-up off
-tap 284 313
+switch Wake on pick-up
 wait 300
-tap 20 70
+back
 wait 300
 # Wi-Fi: another network (its password goes to the secret store, not the file)
 click Wi-Fi
@@ -35,12 +35,12 @@ wait 300
 click Connect
 wait 1500
 expect Connected and saved
-tap 20 70
+back
 wait 300
 # activities: Watch TV moved below Apple TV (list layout now)
-tap 40 450
+tab Activities
 wait 300
-holddrag 160 184 160 324
+pressdrag Watch TV | Apple TV
 wait 300
 expect-before Apple TV | Watch TV
 # a new routine
@@ -51,21 +51,21 @@ wait 300
 click Name
 clear
 type Kept
-tap 294 455
+kbkey enter
 wait 300
 click Add step
 wait 300
 click End the running activity
 wait 300
-tap 20 70
+back
 wait 300
 click Create
 wait 300
 expect Kept
 # devices: Shield TV to the top
-tap 120 450
+tab Devices
 wait 300
-holddrag 160 266 160 126
+pressdrag Shield TV | Living room TV
 wait 300
 expect-before Shield TV | Living room TV
 shot 140_before_reboot
@@ -82,10 +82,10 @@ click Routines
 wait 300
 expect Kept
 expect 1 step
-tap 120 450
+tab Devices
 wait 300
 expect-before Shield TV | Living room TV
-tap 280 450
+tab Settings
 wait 300
 expect Guest
 expect Light
@@ -94,21 +94,21 @@ wait 300
 expect Light
 expect List
 expect Strong
-tap 20 70
+back
 wait 300
 click Power & sleep
 wait 300
 expect 1 min
 expect 1.5 min
 shot 141_after_reboot
-tap 20 70
+back
 wait 300
 # the network came back (its password from the secret store)
 click Wi-Fi
 wait 800
 expect Connected · Guest
 # an unsaved change is lost by a reset (it would be saved before sleep or power off)
-tap 20 70
+back
 wait 300
 click Display & haptics
 wait 300
@@ -119,7 +119,7 @@ wait 300
 reboot
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 300
 expect Light
 # but power off saves at once
@@ -129,7 +129,7 @@ click Theme
 wait 300
 click Dark
 wait 300
-tap 20 70
+back
 wait 300
 click Power off
 wait 300
@@ -138,6 +138,6 @@ wait 300
 reboot
 click Start
 wait 300
-tap 280 450
+tab Settings
 wait 300
 expect Dark

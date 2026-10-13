@@ -4,7 +4,7 @@ click Start
 wait 300
 click Watch TV
 wait 3500
-tap 40 450
+tab Activities
 wait 300
 click Routines
 wait 300
@@ -17,11 +17,11 @@ expect Watch TV
 shot 111_after_movie_activity
 # a device selected before: still selected after a routine that only presses buttons,
 # and selected again after one that starts an activity
-tap 120 450
+tab Devices
 wait 300
 click Bedroom Google TV
 wait 500
-tap 40 450
+tab Activities
 wait 300
 expect Bedroom Google TV
 click Louder

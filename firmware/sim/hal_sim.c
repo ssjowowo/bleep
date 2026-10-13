@@ -13,7 +13,24 @@
 #include "power.h"
 #include "sim.h"
 
-sim_t g_sim = {.battery = 82, .lux = 400, .reach_wifi = true, .reach_ble = true, .clock_base = 1791495600LL};
+#ifndef BLEEP_SCREEN_W
+#define BLEEP_SCREEN_W 320
+#define BLEEP_SCREEN_H 480
+#endif
+
+sim_t g_sim = {.battery = 82, .lux = 400, .reach_wifi = true, .reach_ble = true, .clock_base = 1791495600LL,
+               .screen_w = BLEEP_SCREEN_W, .screen_h = BLEEP_SCREEN_H};
+
+/* The panels there are: Bleep v1, and the minis (2.8" and 2.4") */
+bool sim_set_screen(const char *wxh)
+{
+    int w = 0, h = 0;
+    if (!wxh || sscanf(wxh, "%dx%d", &w, &h) != 2) return false;
+    if (!((w == 320 && h == 480) || (w == 240 && h == 320))) return false;
+    g_sim.screen_w = w;
+    g_sim.screen_h = h;
+    return true;
+}
 
 /* ---- log ---- */
 

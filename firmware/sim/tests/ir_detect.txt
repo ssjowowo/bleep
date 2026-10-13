@@ -17,8 +17,8 @@ expect-log ir: receiver off
 shot 80_ir_detect_found
 click Test it
 wait 300
-expect Code set 2 of 2
+expect set 2 of 2
 click Yes, it works
-tap 294 455
+kbkey enter
 wait 300
 expect Samsung TV

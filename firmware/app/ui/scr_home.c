@@ -53,7 +53,7 @@ static bool pressed_inside(lv_obj_t *o)
 }
 
 /* Link state, short, in the title row between the room and Edit: hidden
- * while connected, and the cards don't move when it changes */
+ * while connected, and the cards don't move when it changes. */
 static lv_obj_t *link_lbl;
 
 static void update_link(void)
@@ -82,11 +82,11 @@ static void build_empty(lv_obj_t *root)
     lv_obj_t *col = w_col(root, 0);
     lv_obj_set_style_pad_hor(col, PAD, 0);
     lv_obj_t *c = w_card(col, false, false);
-    lv_obj_set_style_pad_all(c, 16, 0);
+    lv_obj_set_style_pad_all(c, UI_PICK(16, 12), 0);
     lv_obj_set_style_pad_gap(c, 8, 0);
     lv_obj_t *h = w_row(c, 8);
     w_icon(h, ICON_HOME, 18, T->text);
-    w_label(h, F_BODY_B, T->text, "Connect Home Assistant");
+    lv_obj_set_flex_grow(w_label(h, F_BODY_B, T->text, "Connect Home Assistant"), 1);   /* wraps on the small screen */
     lv_obj_t *l = w_label(c, F_LABEL, T->text2,
                           g_model.settings.wifi_ssid[0]
                               ? "Sign in to your Home Assistant to control lights, heating and more from here."
@@ -168,13 +168,13 @@ static lv_obj_t *edit_row(lv_obj_t *parent, int i)
     else if (!ha_state_text(e, sub, sizeof(sub))[0]) snprintf(sub, sizeof(sub), "%s", e->id);   /* scenes have no state */
 
     lv_obj_t *card = w_card(parent, false, false);
-    lv_obj_set_style_pad_all(card, 10, 0);
-    lv_obj_set_style_pad_left(card, 12, 0);
+    lv_obj_set_style_pad_all(card, UI_PICK(10, 6), 0);
+    lv_obj_set_style_pad_left(card, UI_PICK(12, 8), 0);
     lv_obj_set_clickable(card, true);
     lv_obj_set_style_bg_color(card, T->surface2, LV_STATE_PRESSED);
     lv_obj_add_event_cb(card, card_cb, LV_EVENT_SHORT_CLICKED, ARG(i));
-    lv_obj_t *row = w_row(card, 12);
-    lv_obj_t *ic = w_icon_circle(row, e ? home_card_icon(e) : ICON_INFO, 36, false);
+    lv_obj_t *row = w_row(card, UI_PICK(12, 10));
+    lv_obj_t *ic = w_icon_circle(row, e ? home_card_icon(e) : ICON_INFO, ICON_CIRCLE, false);
     lv_obj_t *txt = w_col(row, 2);
     lv_obj_set_flex_grow(txt, 1);
     lv_obj_set_width(txt, LV_SIZE_CONTENT);
@@ -186,7 +186,7 @@ static lv_obj_t *edit_row(lv_obj_t *parent, int i)
     lv_label_set_long_mode(sl, LV_LABEL_LONG_MODE_DOTS);
     if (c->hidden) lv_obj_set_style_opa(ic, LV_OPA_50, 0), lv_obj_set_style_opa(n, LV_OPA_50, 0);
     lv_obj_t *b = w_icon_button(row, c->own ? ICON_EYE : ICON_X, 36, c->hidden ? BTN_OUTLINE : BTN_DEFAULT);
-    lv_obj_set_ext_click_area(b, 4);   /* taps: 44 px */
+    lv_obj_set_ext_click_area(b, UI_PICK(4, 0));   /* taps: 44 px (36) */
     lv_obj_add_event_cb(b, card_hide_cb, LV_EVENT_CLICKED, ARG(i));
     return card;
 }
@@ -202,14 +202,14 @@ static void build_edit(lv_obj_t *root)
 
     int n = home_edit_cards(room, ecards, MAX_CARDS * 2);
     for (n_shown = 0; n_shown < n && !ecards[n_shown].hidden; n_shown++) {}
-    lv_obj_t *list = w_col(root, 8);
+    lv_obj_t *list = w_col(root, UI_PICK(8, 6));
     lv_obj_set_style_pad_hor(list, PAD, 0);
     if (!n_shown) w_label(list, F_LABEL, T->text2, "No cards in this room.");
     card_reorder.count = n_shown;
     for (int i = 0; i < n_shown; i++) w_reorderable(edit_row(list, i), &card_reorder);
     lv_obj_add_event_cb(w_items_add(list, "Add a card"), add_cb, LV_EVENT_CLICKED, NULL);
     if (n > n_shown) {
-        lv_obj_t *hl = w_col(root, 8);
+        lv_obj_t *hl = w_col(root, UI_PICK(8, 6));
         lv_obj_set_style_pad_hor(hl, PAD, 0);
         w_section(hl, "Hidden in this room");
         for (int i = n_shown; i < n; i++) edit_row(hl, i);
@@ -233,9 +233,9 @@ static void home_build(lv_obj_t *root, int arg)
     if (n_rooms) snprintf(room_key, sizeof(room_key), "%s", home_room_key(room));
     lv_obj_t *hdr = w_header(root, NULL, n_rooms ? home_room_name(room) : "Home Assistant", NULL);
     lv_obj_set_flex_align(hdr, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_gap(hdr, 8, 0);
+    lv_obj_set_style_pad_gap(hdr, UI_PICK(8, 6), 0);
     link_lbl = w_label(hdr, F_CAPTION, T->warning, "");
-    lv_obj_set_style_max_width(link_lbl, 96, 0);
+    lv_obj_set_style_max_width(link_lbl, UI_PICK(96, 64), 0);
     lv_label_set_long_mode(link_lbl, LV_LABEL_LONG_MODE_WRAP);
     lv_obj_set_style_text_align(link_lbl, LV_TEXT_ALIGN_RIGHT, 0);
     update_link();
@@ -243,7 +243,9 @@ static void home_build(lv_obj_t *root, int arg)
         build_empty(root);
         return;
     }
-    lv_obj_t *eb = w_chip(hdr, editing ? "Done" : "Edit", editing ? ICON_CHECK : ICON_EDIT, editing);
+    lv_obj_t *eb = UI->compact ? w_header_action(hdr, editing ? "Done" : "Edit", editing ? ICON_CHECK : ICON_EDIT,
+                                                 editing ? BTN_SELECTED : BTN_OUTLINE)
+                               : w_chip(hdr, editing ? "Done" : "Edit", editing ? ICON_CHECK : ICON_EDIT, editing);
     lv_obj_add_event_cb(eb, edit_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *chips = w_row(root, 8);
@@ -273,7 +275,7 @@ static void home_build(lv_obj_t *root, int arg)
         return;
     }
 
-    lv_obj_t *list = w_col(root, 10);
+    lv_obj_t *list = w_col(root, UI_PICK(10, 8));
     lv_obj_set_style_pad_hor(list, PAD, 0);
     int ents[MAX_CARDS];
     int n = n_rooms ? home_cards(room, ents, MAX_CARDS) : 0;
@@ -440,8 +442,8 @@ static void add_build(lv_obj_t *root, int arg)
     lv_obj_set_clickable(sr, true);
     lv_obj_add_event_cb(sr, search_cb, LV_EVENT_CLICKED, NULL);
     if (query[0]) {
-        lv_obj_t *x = w_icon_button(sr, ICON_X, 32, BTN_DEFAULT);
-        lv_obj_set_ext_click_area(x, 6);
+        lv_obj_t *x = w_icon_button(sr, ICON_X, UI_PICK(32, 30), BTN_DEFAULT);
+        lv_obj_set_ext_click_area(x, UI_PICK(6, 3));
         lv_obj_add_event_cb(x, clear_cb, LV_EVENT_CLICKED, NULL);
     }
     lv_obj_t *dr = w_list_row(col, ICON_INFO, "Settings and diagnostics", NULL, NULL);
@@ -477,7 +479,7 @@ static void add_build(lv_obj_t *root, int arg)
         for (; k > 0 && strcasecmp(name, home_card_name(ha_get(add_ents[k - 1]))) < 0; k--) add_ents[k] = add_ents[k - 1];
         add_ents[k] = i;
     }
-    lv_obj_t *list = w_col(root, 8);
+    lv_obj_t *list = w_col(root, UI_PICK(8, 6));
     lv_obj_set_style_pad_hor(list, PAD, 0);
     if (!n) w_label(list, F_LABEL, T->text2, "Nothing matches.");
     for (int i = 0; i < n; i++) {
@@ -489,15 +491,15 @@ static void add_build(lv_obj_t *root, int arg)
                  e->category == HA_CAT_DIAGNOSTIC ? " · diagnostic" : e->category == HA_CAT_CONFIG ? " · setting"
                  : e->hidden ? " · hidden in HA" : "");
         lv_obj_t *card = w_card(list, add_in[i], false);
-        lv_obj_set_style_pad_all(card, 10, 0);
-        lv_obj_set_style_pad_left(card, 12, 0);
+        lv_obj_set_style_pad_all(card, UI_PICK(10, 6), 0);
+        lv_obj_set_style_pad_left(card, UI_PICK(12, 8), 0);
         if (!add_in[i]) {
             lv_obj_set_clickable(card, true);
             lv_obj_set_style_bg_color(card, T->surface2, LV_STATE_PRESSED);
             lv_obj_add_event_cb(card, pick_cb, LV_EVENT_CLICKED, ARG(i));
         }
-        lv_obj_t *row = w_row(card, 12);
-        w_icon_circle(row, home_card_icon(e), 36, add_in[i]);
+        lv_obj_t *row = w_row(card, UI_PICK(12, 10));
+        w_icon_circle(row, home_card_icon(e), ICON_CIRCLE, add_in[i]);
         lv_obj_t *txt = w_col(row, 2);
         lv_obj_set_flex_grow(txt, 1);
         lv_obj_set_width(txt, LV_SIZE_CONTENT);
