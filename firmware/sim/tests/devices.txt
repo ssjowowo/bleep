@@ -5,10 +5,14 @@ click Devices
 click Add device
 shot 30_add_device
 click Bluetooth TV or stick
+mark
 wait 1000
 shot 31_pairing
 wait 4000
 expect Device name
+# the link that bonded stays up for the TV to finish setting up: no hang-up and reconnect
+expect-log ble: keeping the link to Google TV
+expect-log-no ble: off
 shot 32_name_entry
 type  Lounge
 kbkey enter

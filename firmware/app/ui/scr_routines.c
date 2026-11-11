@@ -106,7 +106,7 @@ static int first_ha_entity(void)
 {
     ha_op_t ops[HAOP_COUNT];
     for (int i = 0; i < ha_count(); i++)
-        if (ha_ops_for(i, ops)) return i;
+        if (!ha_get(i)->unavailable && ha_ops_for(i, ops)) return i;
     return -1;
 }
 
@@ -190,7 +190,7 @@ static void ed_build(lv_obj_t *root, int arg)
     w_on_click(w_list_row(col, activity_icons[draft.icon].glyph, "Icon", activity_icons[draft.icon].name, NULL),
                ed_icon_cb, 0);
 
-    w_section(col, "STEPS");
+    w_section(col, "Steps");
     char text[64], buf[80], w[16];
     for (int i = 0; i < draft.n_steps; i++) {
         const rstep_t *s = &draft.steps[i];
@@ -309,6 +309,7 @@ static void pick_cb(lv_event_t *e)
             if (!ha_ops_for(i, ops)) continue;
             const ha_entity_t *en = ha_get(i);
             if (strlen(en->id) >= sizeof(s->entity)) continue;   /* can't be stored whole */
+            if (en->unavailable && strcmp(en->id, s->entity)) continue;   /* unreachable: only the step's own */
             snprintf(opt_text[n], sizeof(opt_text[n]), en->area >= 0 ? "%s · %s" : "%s", home_card_name(en), ha_area_name(en->area));
             if (!strcmp(en->id, s->entity)) sel = n;
             opt_map[n++] = i;

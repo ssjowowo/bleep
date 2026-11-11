@@ -1,0 +1,27 @@
+# Overscroll past either end of a page: every frame of the drag and of the
+# bounce back is what drawing the whole screen shows
+click Start
+wait 300
+tab Settings
+wait 300
+watch-panel on
+drag 120 295 120 55
+drag 120 295 120 55
+drag 120 295 120 55
+drag 120 295 120 55
+wait 800
+drag 120 60 120 300
+drag 120 60 120 300
+drag 120 60 120 300
+wait 800
+watch-panel off
+tab Activities
+wait 300
+click New activity
+wait 600
+watch-panel on
+drag 120 295 120 55
+drag 120 295 120 55
+drag 120 295 120 55
+wait 800
+watch-panel off

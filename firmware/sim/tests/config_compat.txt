@@ -36,7 +36,7 @@ shot 142_config_compat
 tab Settings
 wait 300
 expect Light
-click Display & haptics
+click Display
 wait 300
 expect Grid
 expect List

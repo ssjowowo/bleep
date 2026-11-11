@@ -9,3 +9,7 @@ __pycache__/
 # Firmware build output and downloaded fonts
 build/
 firmware/tools/fonts/
+# ESP-IDF: generated from sdkconfig.defaults; components fetched by the component manager
+firmware/esp/sdkconfig
+firmware/esp/sdkconfig.old
+firmware/esp/managed_components/

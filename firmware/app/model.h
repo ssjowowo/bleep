@@ -127,13 +127,22 @@ typedef struct {
 
 typedef enum { THEME_DARK, THEME_LIGHT, THEME_AUTO } theme_pref_t;
 typedef enum { LAYOUT_GRID, LAYOUT_LIST } layout_t;     /* Settings > Display: tiles or rows */
+typedef enum { FEEL_CRISP, FEEL_SOFT } haptic_feel_t;   /* Settings > Haptics: clicks or bumps */
+typedef enum { MOTOR_COIN_ERM, MOTOR_COIN_LRA, MOTOR_BAR_LRA } haptic_motor_t;   /* Settings > Haptics > Motor */
+/* What a buzz is for: each can be switched off (Settings > Haptics) */
+typedef enum { BUZZ_KEYS, BUZZ_TAPS, BUZZ_SLIDERS, BUZZ_CONFIRM, BUZZ_ALERTS, BUZZ_GAMES, BUZZ_EV_COUNT } buzz_ev_t;
+#define BUZZ_ALL ((1 << BUZZ_EV_COUNT) - 1)
 
 typedef struct {
     theme_pref_t theme;
     bool auto_brightness;
     uint8_t brightness;         /* 5..100 % when not auto */
     bool wake_on_lift;
-    uint8_t haptics;            /* 0 off, 1 light, 2 medium, 3 strong */
+    uint8_t haptics;            /* 0 off, 1 light, 2 medium, 3 strong, 4 max (Settings > Haptics) */
+    uint8_t haptic_feel;        /* haptic_feel_t */
+    uint8_t haptic_events;      /* bit (1 << buzz_ev_t) set: that kind of event buzzes */
+    bool haptic_quiet_usb;      /* no buzzing while on USB (the nightstand) */
+    uint8_t haptic_motor;       /* haptic_motor_t: what's soldered to the motor pads */
     uint16_t dim_after_s;
     uint16_t sleep_after_s;     /* screen off */
     uint16_t deep_after_s;      /* warm -> deep sleep */
@@ -156,6 +165,7 @@ typedef struct {
     bool fun_zone;              /* the easter egg found: Settings has a Fun Zone (scr_fun.c) */
     uint16_t snake_best;        /* the games' best scores */
     uint32_t blocks_best;
+    uint8_t accent;             /* the colour (accent_t: theme.h), Settings > Display */
 } settings_t;
 
 /* The Home tab's layout (REQUIREMENTS.md section 8): only what the user

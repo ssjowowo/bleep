@@ -1,0 +1,24 @@
+# Bench use on USB with no battery fitted: no percentage anywhere, "USB power" instead
+click Start
+wait 300
+usb on
+nocell on
+wait 1500
+expect USB power · no battery
+expect It turns off when unplugged
+expect-no Charging · USB-C
+shot 84_nocell_charging
+tap 50% 50%
+wait 300
+tab Settings
+wait 300
+expect No battery fitted
+expect Running on USB-C power
+# idle: the nightstand says so too
+wait 9000
+expect USB power · no battery
+expect-no Charging · 82%
+# a battery fitted again: back to the real numbers
+nocell off
+wait 1500
+expect Charging · 82%

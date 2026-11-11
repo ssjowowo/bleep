@@ -28,6 +28,7 @@ void radio_set_view(bool home_tab, bool now_playing);
 
 /* Setup flows that need a radio outside the normal rules */
 void radio_hold_pairing(bool on);
+void radio_ble_paired_as(int dev);  /* pairing bonded for dev: its link is that device's (call before releasing the hold) */
 void radio_hold_ir_rx(bool on);
 void radio_hold_wifi(bool on);
 void radio_hold_nightstand(bool on);

@@ -3,7 +3,7 @@ click Start
 wait 300
 tab Settings
 wait 300
-click Display & haptics
+click Display
 wait 300
 click Brightness
 wait 300
@@ -31,7 +31,7 @@ click Start
 wait 300
 tab Settings
 wait 300
-click Display & haptics
+click Display
 wait 300
 click Brightness
 wait 300

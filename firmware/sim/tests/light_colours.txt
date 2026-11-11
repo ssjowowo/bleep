@@ -1,0 +1,22 @@
+# A colour light in a house with hundreds of entities (its index past 64):
+# a colour tapped shows as chosen, and expand opens the wheel
+bighouse
+click Start
+wait 300
+tab Home
+wait 900
+drag ~160 ~400 ~160 ~160
+wait 300
+expect LED strip
+mark
+click Colour 2
+wait 600
+shot 197_colour_chosen
+clickin LED strip | expand
+wait 600
+expect Done
+expect White
+shot 198_colour_wheel_big_house
+click Done
+wait 600
+expect-no Done

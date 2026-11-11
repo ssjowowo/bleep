@@ -128,7 +128,7 @@ wait 300
 shot s31_settings_2
 drag ~160 ~100 ~160 ~400
 wait 300
-click Display & haptics
+click Display
 wait 300
 shot s32_display
 click Brightness

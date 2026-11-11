@@ -236,7 +236,7 @@ void key_down(bleep_key_t key, bool early)
         app_notify(EV_NO_TARGET, key);
         return;
     }
-    app_buzz(HAPTIC_TICK);
+    app_buzz_ev(BUZZ_KEYS, HAPTIC_TICK);
     held[key].down = true;
     held[key].dev = dev;
     held[key].fn = fn;

@@ -12,7 +12,9 @@ static const char *const theme_names[] = {"Dark", "Light", "Auto"};
 
 /* Stepped settings. Idle dims to the lock screen; sleep turns the screen
  * off. Both count from the last touch or key, so sleep is always longer. */
-static const char *const haptic_names[] = {"Off", "Light", "Medium", "Strong"};
+static const char *const haptic_names[] = {"Off", "Light", "Medium", "Strong", "Max"};
+static const char *const feel_names[] = {"Crisp", "Soft"};
+static const char *const motor_names[] = {"Coin (ERM)", "Coin (LRA)", "Bar (LRA)"};
 static const uint16_t idle_values[] = {5, 8, 10, 15, 20, 30, 60};
 static const char *const idle_names[] = {"5 s", "8 s", "10 s", "15 s", "20 s", "30 s", "1 min"};
 static const uint16_t sleep_values[] = {15, 20, 30, 45, 60, 90, 120};
@@ -33,7 +35,7 @@ static int step_of(const uint16_t *values, int n, uint16_t v)
 static void haptics_changed(int i)
 {
     g_model.settings.haptics = i;
-    app_buzz(HAPTIC_CONFIRM);   /* feel each strength while dragging */
+    app_buzz_ev(BUZZ_EV_COUNT, HAPTIC_CONFIRM);   /* feel each strength while dragging */
 }
 
 static void idle_changed(int i)
@@ -62,7 +64,7 @@ static void sleep_changed(int i)
     hal_log("settings: idle after %d s, sleep after %d s", s->dim_after_s, s->sleep_after_s);
 }
 
-static const step_desc_t haptic_steps = {haptic_names, 4, haptics_changed};
+static const step_desc_t haptic_steps = {haptic_names, 5, haptics_changed};
 static const step_desc_t idle_steps = {idle_names, N_IDLE, idle_changed};
 static const step_desc_t sleep_steps = {sleep_names, N_SLEEP, sleep_changed};
 
@@ -93,8 +95,8 @@ static void wifi_page_open(void);
 
 /* ================= Settings ================= */
 
-/* The tab is an overview in four groups: the remote itself (Display &
- * haptics, Power & sleep, each a page of its own), connections, system, and
+/* The tab is an overview in four groups: the remote itself (Display,
+ * Haptics, Power & sleep, each a page of its own), connections, system, and
  * power & reset. The battery card stays on top. */
 
 static const char *const layout_names[] = {"Grid", "List"};
@@ -123,6 +125,7 @@ static void row_cb(lv_event_t *e)
     case 10: ov_power_off_ask(); break;
     case 11: ov_factory_reset_ask(); break;
     case 12: ui_open(&page_fun_zone, 0); break;
+    case 13: ui_open(&page_haptics, 0); break;
     }
 }
 
@@ -159,7 +162,10 @@ static lv_obj_t *page_col(lv_obj_t *root)
 static void battery_text(char *line1, int l1, char *line2, int l2)
 {
     hal_battery_t b = *app_battery();
-    if (b.charging) {
+    if (b.no_cell) {
+        snprintf(line1, l1, "No battery fitted");
+        snprintf(line2, l2, "Running on USB-C power");
+    } else if (b.charging) {
         int mins = (100 - b.percent) * 90 / 100;
         snprintf(line1, l1, "Charging");
         if (mins >= 60) snprintf(line2, l2, "Full in about %d h %02d m", mins / 60, mins % 60);
@@ -184,9 +190,10 @@ static void settings_build(lv_obj_t *root, int arg)
     lv_obj_set_style_pad_all(card, UI_PICK(16, 14), 0);
     lv_obj_set_style_margin_bottom(card, 6, 0);
     lv_obj_t *row = w_row(card, UI_PICK(14, 10));
-    lv_obj_t *ring = w_ring(row, UI_PICK(52, 46), 5, b.percent);
+    lv_obj_t *ring = w_ring(row, UI_PICK(52, 46), 5, b.no_cell ? 0 : b.percent);
     char buf[48], l2[48];
-    snprintf(buf, sizeof(buf), "%d%%", b.percent);
+    if (b.no_cell) snprintf(buf, sizeof(buf), "USB");
+    else snprintf(buf, sizeof(buf), "%d%%", b.percent);
     lv_obj_center(w_label(ring, F_LABEL_B, T->text, buf));
     lv_obj_t *txt = w_col(row, 3);
     lv_obj_set_flex_grow(txt, 1);
@@ -195,17 +202,18 @@ static void settings_build(lv_obj_t *root, int arg)
     w_wrap(w_label(txt, F_BODY_B, T->text, buf));
     w_wrap(w_label(txt, F_CAPTION, T->text2, l2));
 
-    w_section(col, "REMOTE");
-    w_on_click(w_list_row(col, theme_is_light() ? ICON_SUN : ICON_MOON, "Display & haptics", theme_names[s->theme], NULL),
+    w_section(col, "Remote");
+    w_on_click(w_list_row(col, theme_is_light() ? ICON_SUN : ICON_DARK_MODE, "Display", theme_names[s->theme], NULL),
                row_cb, 1);
     if (s->battery_saver) snprintf(buf, sizeof(buf), "Battery saver");
     else if (s->sleep_after_s >= 60) snprintf(buf, sizeof(buf), "Sleep after %d min", s->sleep_after_s / 60);
     else snprintf(buf, sizeof(buf), "Sleep after %d s", s->sleep_after_s);
+    w_on_click(w_list_row(col, ICON_TAP, "Haptics", haptic_names[s->haptics], NULL), row_cb, 13);
     lv_obj_t *pv;
     w_on_click(w_list_row(col, ICON_BATTERY, "Power & sleep", buf, &pv), row_cb, 2);
     if (s->battery_saver) lv_obj_set_style_text_color(pv, T->warning, 0);
 
-    w_section(col, "CONNECTIONS");
+    w_section(col, "Connections");
     w_on_click(w_list_row(col, ICON_WIFI, "Wi-Fi", s->wifi_ssid[0] ? s->wifi_ssid : "Not set up", NULL), row_cb, 6);
     lv_color_t dot;
     ui_ha_status(buf, sizeof(buf), &dot);
@@ -218,7 +226,7 @@ static void settings_build(lv_obj_t *root, int arg)
     w_label(ha, F_LABEL, T->text2, buf);
     w_on_click(ha, row_cb, 3);
 
-    w_section(col, "SYSTEM");
+    w_section(col, "System");
     const update_status_t *u = update_status();
     lv_obj_t *upd_value;
     bool avail = u->result == UPD_AVAILABLE && !u->busy;
@@ -230,37 +238,79 @@ static void settings_build(lv_obj_t *root, int arg)
     w_on_click(w_list_row(col, ICON_INFO, "About", NULL, NULL), row_cb, 5);
 
     if (s->fun_zone) {   /* the easter egg, once found */
-        w_section(col, "FUN ZONE");
+        w_section(col, "Fun Zone");
         w_on_click(w_list_row(col, ICON_GAMEPAD, "Fun Zone", "Snake · Bleep Blocks", NULL), row_cb, 12);
     }
 
-    w_section(col, "POWER & RESET");
+    w_section(col, "Power & reset");
     w_on_click(w_list_row(col, ICON_POWER, "Power off", NULL, NULL), row_cb, 10);
     lv_obj_t *fr = w_list_row(col, ICON_TRASH, "Reset to factory settings", NULL, NULL);
     lv_obj_set_style_text_color(lv_obj_get_child(fr, 0), T->warning, 0);
     w_on_click(fr, row_cb, 11);
 }
 
-/* ================= Display & haptics ================= */
+/* ================= Display ================= */
+
+static void accent_cb(lv_event_t *e)
+{
+    int i = ARG_INT(e);
+    if (g_model.settings.accent == i) return;
+    g_model.settings.accent = (uint8_t)i;
+    hal_log("settings: accent %s", accent_names[i]);
+    settings_changed(true);   /* the theme's colours: everything is rebuilt */
+}
+
+/* The accent: a row card, the title over a swatch for each colour, the
+ * picked one ringed */
+static void accent_row(lv_obj_t *col)
+{
+    lv_obj_t *r = w_list_row(col, ICON_PALETTE, "Colour", accent_names[g_model.settings.accent], NULL);
+    lv_obj_set_clickable(r, false);
+    lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW_WRAP);
+    lv_obj_set_height(r, LV_SIZE_CONTENT);
+    lv_obj_set_style_pad_ver(r, UI_PICK(6, 5), 0);
+    lv_obj_set_style_pad_bottom(r, UI_PICK(12, 8), 0);
+    lv_obj_t *sw = w_row(r, 0);
+    lv_obj_set_flex_align(sw, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_left(sw, UI_PICK(42, 32), 0);   /* under the title */
+    lv_obj_set_style_margin_top(sw, UI_PICK(4, 2), 0);
+    int size = UI_PICK(32, 24);
+    for (int i = 0; i < ACCENT_COUNT; i++) {
+        bool on = i == g_model.settings.accent;
+        lv_obj_t *b = w_box(sw);
+        lv_obj_set_size(b, size, size);
+        lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_border_width(b, 2, 0);
+        lv_obj_set_style_border_color(b, on ? T->text : T->surface, 0);
+        lv_obj_set_style_pad_all(b, UI_PICK(4, 3), 0);
+        lv_obj_set_ext_click_area(b, (TOUCH_MIN - size) / 4);
+        lv_obj_t *dot = w_box(b);
+        lv_obj_set_size(dot, lv_pct(100), lv_pct(100));
+        lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, 0);
+        lv_obj_set_style_bg_color(dot, theme_accent_swatch(i), 0);
+        w_name(b, accent_names[i]);
+        w_on_click(b, accent_cb, i);
+    }
+}
 
 static void display_build(lv_obj_t *root, int arg)
 {
     LV_UNUSED(arg);
     settings_t *s = &g_model.settings;
-    w_header(root, "Settings", "Display & haptics", ui_back_cb);
+    w_header(root, "Settings", "Display", ui_back_cb);
     lv_obj_t *col = page_col(root);
     char buf[16];
-    w_section(col, "SCREEN");
+    w_section(col, "Screen");
     if (s->auto_brightness) snprintf(buf, sizeof(buf), "Auto");
     else snprintf(buf, sizeof(buf), "%d%%", s->brightness);
     w_on_click(w_list_row(col, ICON_SUN, "Brightness", buf, NULL), row_cb, 0);
-    w_on_click(w_list_row(col, ICON_MOON, "Theme", theme_names[s->theme], NULL), row_cb, 4);   /* the sun is Brightness's */
+    w_on_click(w_list_row(col, ICON_DARK_MODE, "Theme", theme_names[s->theme], NULL), row_cb, 4);
+    accent_row(col);
     switch_row(col, ICON_TIMER, "Nightstand clock", s->nightstand, 4);
-    w_section(col, "LAYOUT");
+    w_section(col, "Layout");
     w_on_click(w_list_row(col, ICON_GRID, "Activities & routines", layout_names[s->layout_activities], NULL), row_cb, 8);
     w_on_click(w_list_row(col, ICON_REMOTE, "Devices", layout_names[s->layout_devices], NULL), row_cb, 9);
-    w_section(col, "FEEL");
-    w_step_slider(col, ICON_AUDIO, "Haptics", &haptic_steps, s->haptics);
 }
 
 static void sub_event(app_event_t ev, int arg)
@@ -269,7 +319,110 @@ static void sub_event(app_event_t ev, int arg)
     if (ev == EV_SETTINGS) ui_refresh();
 }
 
-const page_t page_display = {"Display & haptics", -1, display_build, sub_event, NULL};
+const page_t page_display = {"Display", -1, display_build, sub_event, NULL};
+
+/* ================= Haptics ================= */
+
+/* The strength (a step slider that buzzes at each step), the feel, a test,
+ * which events buzz, and quiet on USB. The page's own buzzes ignore the
+ * event switches and USB, so every change can be felt. */
+
+static void feel_done(int i, void *ctx)
+{
+    LV_UNUSED(ctx);
+    g_model.settings.haptic_feel = i;
+    settings_changed(false);
+    app_buzz_ev(BUZZ_EV_COUNT, HAPTIC_CONFIRM);
+}
+
+static void motor_done(int i, void *ctx)
+{
+    LV_UNUSED(ctx);
+    g_model.settings.haptic_motor = i;
+    hal_log("settings: haptic motor %s", motor_names[i]);
+    settings_changed(false);
+    app_buzz_ev(BUZZ_EV_COUNT, HAPTIC_CONFIRM);   /* a motor it hasn't seen is calibrated first */
+}
+
+static void haptic_row_cb(lv_event_t *e)
+{
+    switch (ARG_INT(e)) {
+    case 4:
+        ui_choice("Settings · Haptics", "Motor", motor_names, 3, g_model.settings.haptic_motor, motor_done, NULL);
+        break;
+    case 5:
+        ui_toast(app_haptics_calibrate() ? "Motor calibrated" : "Calibration failed: check the motor and its type");
+        break;
+    case 0:
+        ui_choice("Settings · Haptics", "Feel", feel_names, 2, g_model.settings.haptic_feel, feel_done, NULL);
+        break;
+    case 1: app_buzz_ev(BUZZ_EV_COUNT, HAPTIC_TICK); break;
+    case 2: app_buzz_ev(BUZZ_EV_COUNT, HAPTIC_CONFIRM); break;
+    case 3: app_buzz_ev(BUZZ_EV_COUNT, HAPTIC_NO); break;
+    }
+}
+
+static void haptic_switch_cb(lv_event_t *e)
+{
+    settings_t *s = &g_model.settings;
+    bool on = lv_obj_has_state(lv_event_get_target_obj(e), LV_STATE_CHECKED);
+    int which = ARG_INT(e);
+    if (which == BUZZ_EV_COUNT) s->haptic_quiet_usb = on;
+    else s->haptic_events = on ? s->haptic_events | (1 << which) : s->haptic_events & ~(1 << which);
+    hal_log("settings: haptics %d %s", which, on ? "on" : "off");
+    settings_changed(false);
+}
+
+static void haptic_switch(lv_obj_t *col, const char *icon, const char *text, bool on, int which)
+{
+    lv_obj_t *r = w_list_row(col, icon, text, NULL, NULL);
+    lv_obj_set_clickable(r, false);
+    lv_obj_add_event_cb(w_switch(r, on), haptic_switch_cb, LV_EVENT_VALUE_CHANGED, ARG(which));
+}
+
+static void haptics_build(lv_obj_t *root, int arg)
+{
+    LV_UNUSED(arg);
+    settings_t *s = &g_model.settings;
+    w_header(root, "Settings", "Haptics", ui_back_cb);
+    lv_obj_t *col = page_col(root);
+    w_step_slider(col, ICON_AUDIO, "Strength", &haptic_steps, s->haptics);
+    w_on_click(w_list_row(col, ICON_TAP, "Feel", feel_names[s->haptic_feel], NULL), haptic_row_cb, 0);
+    w_section(col, "Try it");
+    lv_obj_t *test = w_row(col, 8);
+    static const char *const tests[] = {"Tap", "OK", "Error"};
+    for (int i = 0; i < 3; i++) {
+        lv_obj_t *b = w_button(test, tests[i], NULL, BTN_TONAL);
+        lv_obj_set_flex_grow(b, 1);
+        w_on_click(b, haptic_row_cb, 1 + i);
+    }
+
+    w_section(col, "Buzz on");
+    haptic_switch(col, ICON_REMOTE, "Key presses", s->haptic_events & (1 << BUZZ_KEYS), BUZZ_KEYS);
+    haptic_switch(col, ICON_TAP, "Screen taps", s->haptic_events & (1 << BUZZ_TAPS), BUZZ_TAPS);
+    haptic_switch(col, ICON_SLIDERS, "Sliders & trackpad", s->haptic_events & (1 << BUZZ_SLIDERS), BUZZ_SLIDERS);
+    haptic_switch(col, ICON_CHECK, "Confirmations", s->haptic_events & (1 << BUZZ_CONFIRM), BUZZ_CONFIRM);
+    haptic_switch(col, ICON_NOTIFY, "Errors & alerts", s->haptic_events & (1 << BUZZ_ALERTS), BUZZ_ALERTS);
+    if (s->fun_zone)   /* the easter egg: not shown until it's found */
+        haptic_switch(col, ICON_GAMEPAD, "Games", s->haptic_events & (1 << BUZZ_GAMES), BUZZ_GAMES);
+    haptic_switch(col, ICON_BOLT, "Quiet while charging", s->haptic_quiet_usb, BUZZ_EV_COUNT);
+    lv_obj_t *n = w_label(col, F_CAPTION, T->text2,
+                          "Crisp is short clicks, Soft is rounder bumps. Quiet while charging keeps it still on "
+                          "the nightstand.");
+    lv_obj_set_width(n, lv_pct(100));
+    lv_obj_set_style_pad_ver(n, 8, 0);
+
+    w_section(col, "Motor");
+    w_on_click(w_list_row(col, ICON_ENERGY, "Motor", motor_names[s->haptic_motor], NULL), haptic_row_cb, 4);
+    w_on_click(w_list_row(col, ICON_UPDATE, "Calibrate", NULL, NULL), haptic_row_cb, 5);
+    lv_obj_t *m = w_label(col, F_CAPTION, T->text2,
+                          "Set this to the motor that's fitted. A new one is calibrated on its first buzz; "
+                          "Calibrate runs it again (it buzzes for about half a second).");
+    lv_obj_set_width(m, lv_pct(100));
+    lv_obj_set_style_pad_ver(m, 8, 0);
+}
+
+const page_t page_haptics = {"Haptics", -1, haptics_build, sub_event, NULL};
 
 /* ================= Power & sleep ================= */
 
@@ -529,7 +682,7 @@ static void wifi_ap_cb(lv_event_t *e)
     if (wf.busy) return;
     const wifi_ap_t *ap = &wf.aps[ARG_INT(e)];
     bool same = !strcmp(wf.ssid, ap->ssid);
-    snprintf(wf.ssid, sizeof(wf.ssid), "%s", ap->ssid);
+    memcpy(wf.ssid, ap->ssid, sizeof(wf.ssid));   /* both 33 bytes, terminated */
     draft_changed();
     if (!ap->secure) wf.pass[0] = 0;
     if (ap->secure && !(same && wf.pass[0])) {
@@ -554,7 +707,7 @@ static void signal_bars(lv_obj_t *parent, int rssi)
         lv_obj_set_size(b, 3, 5 + i * 3);
         lv_obj_set_style_radius(b, 1, 0);
         lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
-        lv_obj_set_style_bg_color(b, i < level ? T->text : T->surface2, 0);
+        lv_obj_set_style_bg_color(b, i < level ? T->text : T->surface_top, 0);
     }
 }
 
@@ -594,7 +747,7 @@ static void wifi_build(lv_obj_t *root, int arg)
     lv_obj_t *row = w_list_row(col, ICON_WIFI, "Status", st, NULL);
     lv_obj_set_style_text_color(lv_obj_get_child(row, 2), r->wifi == LINK_UP ? T->accent : T->text2, 0);
 
-    w_section(col, draft_saved() ? "NETWORK" : "NETWORK · NOT SAVED YET");
+    w_section(col, draft_saved() ? "Network" : "Network · not saved yet");
     w_on_click(w_list_row(col, ICON_WIFI, "Network", wf.ssid[0] ? wf.ssid : "Not set", NULL), wifi_row_cb, 0);
     w_on_click(w_list_row(col, ICON_PADLOCK, "Password", wf.pass[0] ? "••••••••" : "None (open)", NULL), wifi_row_cb, 1);
 
@@ -629,7 +782,7 @@ static void wifi_build(lv_obj_t *root, int arg)
 
     /* scan results */
     if (wf.n_aps >= 0) {
-        w_section(col, wf.n_aps ? "NETWORKS IN RANGE" : "NO NETWORKS FOUND");
+        w_section(col, wf.n_aps ? "Networks in range" : "No networks found");
         for (int i = 0; i < wf.n_aps; i++) {
             const wifi_ap_t *ap = &wf.aps[i];
             bool chosen = !strcmp(ap->ssid, wf.ssid);
@@ -754,7 +907,7 @@ static void upd_build(lv_obj_t *root, int arg)
         lv_obj_set_size(upd_bar, lv_pct(100), 6);
         lv_bar_set_value(upd_bar, u->percent, LV_ANIM_OFF);
         lv_obj_set_style_bg_opa(upd_bar, LV_OPA_COVER, 0);
-        lv_obj_set_style_bg_color(upd_bar, T->track, 0);
+        lv_obj_set_style_bg_color(upd_bar, T->surface_top, 0);
         lv_obj_set_style_bg_color(upd_bar, T->accent, LV_PART_INDICATOR);
         lv_obj_set_style_bg_opa(upd_bar, LV_OPA_COVER, LV_PART_INDICATOR);
         lv_obj_set_style_radius(upd_bar, 3, 0);
@@ -824,7 +977,7 @@ static void upd_build(lv_obj_t *root, int arg)
     lv_obj_set_style_margin_top(when, 6, 0);
     lv_obj_set_style_margin_bottom(when, 8, 0);
 
-    w_section(col, "OPTIONS");
+    w_section(col, "Options");
     lv_obj_t *r = w_list_row(col, ICON_TIMER, "Check automatically", NULL, NULL);
     lv_obj_set_clickable(r, false);
     lv_obj_t *sw = w_switch(r, s->fw_auto_check);
@@ -840,11 +993,11 @@ static void upd_build(lv_obj_t *root, int arg)
 
 static void upd_event(app_event_t ev, int arg)
 {
-    if (ev == EV_UPDATE && arg && upd_bar) {
+    if (ev == EV_UPDATE && arg == 1 && upd_bar) {
         const update_status_t *u = update_status();
         lv_bar_set_value(upd_bar, u->percent, LV_ANIM_OFF);
         lv_label_set_text_fmt(upd_pct, "%d %% · keep the remote plugged in", u->percent);
-    } else if (ev == EV_UPDATE || ev == EV_BATTERY) {
+    } else if ((ev == EV_UPDATE && arg != 2) || ev == EV_BATTERY) {
         ui_refresh();   /* USB plugged in or out changes the Install button */
     }
 }
@@ -888,7 +1041,8 @@ static void about_build(lv_obj_t *root, int arg)
     lv_obj_t *fw = w_list_row(col, NULL, "Firmware", hal_fw_version(), NULL);
     lv_obj_add_event_cb(fw, egg_cb, LV_EVENT_CLICKED, NULL);
     w_list_row(col, NULL, "Remote ID", hal_device_id(), NULL);   /* matches its entry in HA's refresh tokens */
-    snprintf(buf, sizeof(buf), "%u mV · %d%%", b.millivolts, b.percent);
+    if (b.no_cell) snprintf(buf, sizeof(buf), "None fitted (%u mV)", b.millivolts);
+    else snprintf(buf, sizeof(buf), "%u mV · %d%%", b.millivolts, b.percent);
     w_list_row(col, NULL, "Battery", buf, NULL);
     w_list_row(col, NULL, "Power state", power_state_name(power_state()), NULL);
     static const char *const ln[] = {"Off", "Connecting", "On", "Retrying"};

@@ -1,8 +1,8 @@
 /*
  * Everything drawn over the page, on lv_layer_top(): the lock / ambient
  * screen (the Dim state, open item 4), the charging screen, the volume
- * overlay, toasts, the low-battery sheet, confirm sheets and a routine's
- * progress window.
+ * overlay, toasts, the low-battery sheet, confirm sheets, a routine's
+ * progress window and an update over the USB cable.
  */
 #include <stdio.h>
 #include <string.h>
@@ -11,6 +11,7 @@
 #include "../model.h"
 #include "../radio.h"
 #include "../routine.h"
+#include "../update.h"
 #include "ui.h"
 
 static lv_obj_t *ambient;           /* lock, charging or nightstand, full screen */
@@ -117,7 +118,8 @@ static void show_lock(void)
     lv_obj_add_event_cb(ambient, ambient_click, LV_EVENT_CLICKED, NULL);
     hal_battery_t b = *app_battery();
     lv_obj_t *pct = w_label(ambient, F_CAPTION, T->text2, "");
-    lv_label_set_text_fmt(pct, "%d%%", b.percent);
+    if (b.no_cell) lv_label_set_text(pct, "USB");
+    else lv_label_set_text_fmt(pct, "%d%%", b.percent);
     lv_obj_align(pct, LV_ALIGN_TOP_RIGHT, -PAD, 12);
     /* the clock, the date and the now-playing card; higher up on the small screen */
     int top = UI_PICK(88, 40);
@@ -149,7 +151,7 @@ static void show_lock(void)
         mini_bar = lv_bar_create(c);
         lv_obj_set_size(mini_bar, lv_pct(100), 3);
         lv_obj_set_style_bg_opa(mini_bar, LV_OPA_COVER, 0);
-        lv_obj_set_style_bg_color(mini_bar, T->track, 0);
+        lv_obj_set_style_bg_color(mini_bar, T->surface_top, 0);
         lv_obj_set_style_bg_opa(mini_bar, LV_OPA_COVER, LV_PART_INDICATOR);
         lv_obj_set_style_bg_color(mini_bar, T->accent, LV_PART_INDICATOR);
         update_mini();
@@ -169,26 +171,33 @@ static void show_charging(void)
     hal_battery_t b = *app_battery();
     /* the ring, then two lines under it: a smaller ring, higher up, on the small screen */
     int ring_d = UI_PICK(180, 150), ring_y = UI_PICK(98, 46), under = ring_y + ring_d + UI_PICK(18, 14);
-    lv_obj_t *ring = w_ring(ambient, ring_d, 8, b.percent);
+    lv_obj_t *ring = w_ring(ambient, ring_d, 8, b.no_cell ? 0 : b.percent);
     lv_obj_align(ring, LV_ALIGN_TOP_MID, 0, ring_y);
     lv_obj_set_style_bg_opa(ring, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(ring, T->surface, 0);
     lv_obj_set_style_radius(ring, LV_RADIUS_CIRCLE, 0);
     lv_obj_t *bolt = w_icon(ring, ICON_BOLT, 24, T->accent);
-    lv_obj_align(bolt, LV_ALIGN_TOP_MID, 0, UI_PICK(44, 30));
-    lv_obj_t *pct = w_label(ring, F_BIG, T->text, "");
-    lv_label_set_text_fmt(pct, "%d%%", b.percent);
-    lv_obj_align(pct, LV_ALIGN_CENTER, 0, 10);
-    lv_obj_t *l1 = w_label(ambient, F_BODY_B, T->text, b.charging ? "Charging · USB-C" : "Charged · USB-C");
+    if (b.no_cell) {
+        lv_obj_center(bolt);   /* no percentage (and F_BIG has only digits) */
+    } else {
+        lv_obj_align(bolt, LV_ALIGN_TOP_MID, 0, UI_PICK(44, 30));
+        lv_obj_t *pct = w_label(ring, F_BIG, T->text, "");
+        lv_label_set_text_fmt(pct, "%d%%", b.percent);
+        lv_obj_align(pct, LV_ALIGN_CENTER, 0, 10);
+    }
+    lv_obj_t *l1 = w_label(ambient, F_BODY_B, T->text,
+                           b.no_cell ? "USB power · no battery" : b.charging ? "Charging · USB-C" : "Charged · USB-C");
     lv_obj_align(l1, LV_ALIGN_TOP_MID, 0, under);
     int mins = (100 - b.percent) * 90 / 100;
     lv_obj_t *l2 = w_label(ambient, F_LABEL, T->text2, "");
-    if (b.charging && mins >= 60) lv_label_set_text_fmt(l2, "Full in about %d h %02d m", mins / 60, mins % 60);
+    if (b.no_cell) lv_label_set_text(l2, "It turns off when unplugged");
+    else if (b.charging && mins >= 60) lv_label_set_text_fmt(l2, "Full in about %d h %02d m", mins / 60, mins % 60);
     else if (b.charging) lv_label_set_text_fmt(l2, "Full in about %d m", mins < 1 ? 1 : mins);
     else lv_label_set_text(l2, "Unplug when you like");
     lv_obj_align(l2, LV_ALIGN_TOP_MID, 0, under + 24);
     lv_obj_t *hint = w_label(ambient, F_LABEL, T->text2,
                              power_state() == PWR_OFF ? "Off · hold PWR for 2 s to turn it on"
+                             : b.no_cell              ? "Fit a battery to use it unplugged"
                                                       : "The remote stays usable while charging");
     lv_obj_align(hint, LV_ALIGN_BOTTOM_MID, 0, UI_PICK(-20, -14));
 }
@@ -198,7 +207,7 @@ static void show_charging(void)
 static ha_entity_t *weather(void)
 {
     for (int i = 0; i < ha_count(); i++)
-        if (ha_get(i)->domain == HA_WEATHER) return ha_get(i);
+        if (ha_get(i)->domain == HA_WEATHER && !ha_get(i)->unavailable) return ha_get(i);
     return NULL;
 }
 
@@ -227,7 +236,8 @@ static void night_update(void)
     lv_label_set_text(lv_obj_get_child(night_weather, 1), buf);
     lv_obj_set_hidden(night_weather, !w);
     hal_battery_t b = *app_battery();
-    lv_label_set_text_fmt(night_batt, b.charging ? "Charging · %d%%" : "Charged · %d%%", b.percent);
+    if (b.no_cell) lv_label_set_text(night_batt, "USB power · no battery");
+    else lv_label_set_text_fmt(night_batt, b.charging ? "Charging · %d%%" : "Charged · %d%%", b.percent);
 }
 
 static void show_nightstand(void)
@@ -320,9 +330,13 @@ static lv_obj_t *sheet_card(lv_color_t edge)
     sheet = full(lv_color_black());
     lv_obj_set_style_bg_opa(sheet, LV_OPA_60, 0);   /* the one translucent layer, drawn once */
     lv_obj_set_clickable(sheet, true);
+    /* a dialog: container high, the large radius; outlined only as a warning */
     lv_obj_t *c = w_card(sheet, false, false);
     lv_obj_set_width(c, SCREEN_W - 12);
     lv_obj_align(c, LV_ALIGN_BOTTOM_MID, 0, -6);
+    lv_obj_set_style_radius(c, R_ART, 0);
+    lv_obj_set_style_bg_color(c, T->surface_hi, 0);
+    lv_obj_set_style_border_width(c, lv_color_eq(edge, T->warning) ? 2 : 0, 0);
     lv_obj_set_style_border_color(c, edge, 0);
     lv_obj_set_style_pad_all(c, UI_PICK(18, 14), 0);
     lv_obj_set_style_pad_gap(c, UI_PICK(8, 6), 0);
@@ -333,7 +347,7 @@ static void sheet_buttons(lv_obj_t *c, const char *a, int aid, const char *b, in
 {
     lv_obj_t *r = w_row(c, UI_PICK(10, 8));
     lv_obj_set_style_pad_top(r, UI_PICK(10, 8), 0);
-    lv_obj_t *x = w_button(r, a, NULL, BTN_DEFAULT);
+    lv_obj_t *x = w_button(r, a, NULL, BTN_NEUTRAL);
     lv_obj_set_flex_grow(x, 1);
     lv_obj_set_height(x, UI_PICK(48, 40));
     lv_obj_add_event_cb(x, sheet_btn, LV_EVENT_CLICKED, ARG(aid));
@@ -342,7 +356,7 @@ static void sheet_buttons(lv_obj_t *c, const char *a, int aid, const char *b, in
     lv_obj_set_height(y, UI_PICK(48, 40));
     if (danger) {
         lv_obj_set_style_bg_color(y, T->warning, 0);
-        lv_obj_set_style_border_color(y, T->warning, 0);
+        lv_obj_set_style_bg_color(y, theme_pressed(T->warning, T->on_accent), LV_STATE_PRESSED);
     }
     lv_obj_add_event_cb(y, sheet_btn, LV_EVENT_CLICKED, ARG(bid));
 }
@@ -507,7 +521,7 @@ static void rp_build(void)
     lv_obj_set_size(rp.bar, lv_pct(100), 6);
     lv_bar_set_range(rp.bar, 0, r->n * RP_SCALE);
     lv_obj_set_style_bg_opa(rp.bar, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(rp.bar, T->track, 0);
+    lv_obj_set_style_bg_color(rp.bar, T->surface_top, 0);
     lv_obj_set_style_bg_color(rp.bar, T->accent, LV_PART_INDICATOR);
     lv_obj_set_style_bg_opa(rp.bar, LV_OPA_COVER, LV_PART_INDICATOR);
     lv_obj_set_style_radius(rp.bar, 3, 0);
@@ -605,7 +619,7 @@ void ov_volume(int dir)
         lv_obj_set_flex_grow(bar, 1);
         lv_bar_set_value(bar, m->value, LV_ANIM_OFF);
         lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, 0);
-        lv_obj_set_style_bg_color(bar, T->track, 0);
+        lv_obj_set_style_bg_color(bar, T->surface_top, 0);
         lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, LV_PART_INDICATOR);
         lv_obj_set_style_bg_color(bar, T->accent, LV_PART_INDICATOR);
         char b[8];
@@ -638,13 +652,12 @@ void ov_toast(const char *msg)
     toast = w_box(layer());
     lv_obj_set_style_max_width(toast, CONTENT_W, 0);
     lv_obj_set_style_bg_opa(toast, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(toast, T->surface2, 0);
-    lv_obj_set_style_border_width(toast, 1, 0);
-    lv_obj_set_style_border_color(toast, T->line, 0);
-    lv_obj_set_style_radius(toast, UI_PICK(18, 15), 0);
+    /* a snackbar: the inverse of the page */
+    lv_obj_set_style_bg_color(toast, T->text, 0);
+    lv_obj_set_style_radius(toast, UI_PICK(12, 10), 0);
     lv_obj_set_style_pad_hor(toast, UI_PICK(14, 12), 0);
     lv_obj_set_style_pad_ver(toast, UI_PICK(10, 8), 0);
-    lv_obj_t *l = w_label(toast, F_LABEL, T->text, msg);
+    lv_obj_t *l = w_label(toast, F_LABEL, T->bg, msg);
     lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_WRAP);
     lv_obj_set_style_max_width(l, CONTENT_W - UI_PICK(28, 24), 0);
     /* pages with their controls at the bottom get it at the top, under the status bar */
@@ -655,10 +668,70 @@ void ov_toast(const char *msg)
     lv_timer_reset(toast_timer);
 }
 
+/* ---- an update over the USB cable (the flash page; update.c) ---- */
+
+static lv_obj_t *usb_scr, *usb_ring, *usb_pct, *usb_l1, *usb_l2, *usb_icon;
+
+static void usb_update_show(void)
+{
+    const update_status_t *u = update_status();
+    if (u->usb == USB_FW_IDLE) {
+        if (usb_scr) lv_obj_delete(usb_scr);
+        usb_scr = NULL;
+        return;
+    }
+    if (!usb_scr) {
+        /* over everything (the charging screen, a sheet), and it takes the touches */
+        usb_scr = full(T->bg);
+        lv_obj_t *bar = w_status_bar(usb_scr);
+        lv_obj_align(bar, LV_ALIGN_TOP_MID, 0, 0);
+        int ring_d = UI_PICK(180, 150), ring_y = UI_PICK(98, 46), under = ring_y + ring_d + UI_PICK(18, 14);
+        usb_ring = w_ring(usb_scr, ring_d, 8, 0);
+        lv_obj_align(usb_ring, LV_ALIGN_TOP_MID, 0, ring_y);
+        lv_obj_set_style_bg_opa(usb_ring, LV_OPA_COVER, 0);
+        lv_obj_set_style_bg_color(usb_ring, T->surface, 0);
+        lv_obj_set_style_radius(usb_ring, LV_RADIUS_CIRCLE, 0);
+        usb_icon = w_icon(usb_ring, ICON_UPDATE, 24, T->accent);
+        lv_obj_align(usb_icon, LV_ALIGN_TOP_MID, 0, UI_PICK(44, 30));
+        usb_pct = w_label(usb_ring, F_BIG, T->text, "");
+        lv_obj_align(usb_pct, LV_ALIGN_CENTER, 0, 10);
+        usb_l1 = w_label(usb_scr, F_BODY_B, T->text, "");
+        lv_obj_align(usb_l1, LV_ALIGN_TOP_MID, 0, under);
+        usb_l2 = w_label(usb_scr, F_LABEL, T->text2, "");
+        lv_obj_set_style_text_align(usb_l2, LV_TEXT_ALIGN_CENTER, 0);
+        lv_label_set_long_mode(usb_l2, LV_LABEL_LONG_MODE_WRAP);
+        lv_obj_set_width(usb_l2, CONTENT_W - UI_PICK(28, 24));
+        lv_obj_align(usb_l2, LV_ALIGN_TOP_MID, 0, under + 24);
+    }
+    lv_obj_move_foreground(usb_scr);
+    lv_arc_set_value(usb_ring, u->usb_percent);
+    lv_label_set_text_fmt(usb_pct, "%d%%", u->usb_percent);
+    switch (u->usb) {
+    case USB_FW_RECEIVING:
+        lv_label_set_text(usb_l1, "Updating over USB");
+        lv_label_set_text(usb_l2, "Keep the cable plugged in");
+        break;
+    case USB_FW_DONE:
+        lv_label_set_text(usb_icon, ICON_CHECK);
+        lv_label_set_text(usb_l1, "Installed · restarting");
+        lv_label_set_text(usb_l2, "Your setup stays as it is");
+        break;
+    default:
+        lv_label_set_text(usb_icon, ICON_X);
+        lv_obj_set_style_text_color(usb_icon, T->warning, 0);
+        lv_obj_set_style_arc_color(usb_ring, T->warning, LV_PART_INDICATOR);
+        lv_label_set_text(usb_l1, "Update stopped");
+        lv_label_set_text(usb_l2, "Nothing changed: the remote keeps the firmware it had");
+        break;
+    }
+}
+
 /* ---- events ---- */
 
 void ov_event(app_event_t ev, int arg)
 {
+    if (ev == EV_UPDATE && arg == 2) usb_update_show();
+    else if (usb_scr && (ev == EV_POWER || ev == EV_BATTERY)) lv_obj_move_foreground(usb_scr);   /* over a new ambient screen or sheet */
     if (ev == EV_CLOCK) {
         update_clock();
         night_update();
@@ -693,6 +766,9 @@ void ov_init(void)
     volume = toast = NULL;
     rp_close();
     if (routine_busy()) rp_update();   /* new colours, same routine */
+    if (usb_scr) lv_obj_delete(usb_scr);
+    usb_scr = NULL;
+    usb_update_show();
     if (had_ambient) {
         if (was_night) show_nightstand();
         else if (was_charging) show_charging();

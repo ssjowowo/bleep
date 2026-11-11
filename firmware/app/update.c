@@ -11,6 +11,7 @@
 #define RESTART_DELAY_MS 1500       /* "Restarting…" stays up this long */
 #define AUTO_CHECK_S     (24 * 3600)
 #define AUTO_RETRY_S     3600       /* a failed automatic check waits this long */
+#define USB_FAIL_SHOW_MS 6000       /* "Update stopped" stays up this long */
 
 static update_status_t st;
 static bool silent;                 /* an automatic check: no hold, no error shown */
@@ -98,8 +99,58 @@ static void stop_install(upd_result_t why)
     set(UPD_IDLE, why);
 }
 
+/* An update over the USB cable: the HAL receives it on its own (the flash
+ * page drives it); here the screen follows it, and DONE restarts into it */
+static usb_fw_t usb_seen;
+static uint32_t usb_t0;
+
+static void usb_tick(void)
+{
+    uint8_t pct = st.usb_percent;
+    usb_fw_t u = hal_usb_fw_poll(&pct);
+    uint32_t now = hal_millis();
+    if (u != usb_seen) {
+        usb_seen = u;
+        switch (u) {
+        case USB_FW_RECEIVING:
+            hal_log("update: receiving firmware over USB");
+            power_usb_update(true);
+            break;
+        case USB_FW_DONE:
+            hal_log("update: written over USB and verified, restarting");
+            app_buzz(HAPTIC_CONFIRM);
+            pct = 100;
+            break;
+        case USB_FW_FAILED:
+            hal_log("update over USB stopped, running firmware unchanged");
+            app_buzz(HAPTIC_NO);
+            break;
+        case USB_FW_IDLE:
+            break;
+        }
+        usb_t0 = now;
+        st.usb = u;
+        st.usb_percent = pct;
+        app_notify(EV_UPDATE, 2);
+        return;
+    }
+    if (st.usb == USB_FW_RECEIVING && pct != st.usb_percent) {
+        st.usb_percent = pct;
+        app_notify(EV_UPDATE, 2);
+    } else if (st.usb == USB_FW_DONE && now - usb_t0 >= RESTART_DELAY_MS) {
+        st.usb = USB_FW_IDLE;
+        app_restart();   /* saves, keeps what's running (and Off) in RTC memory */
+    } else if (st.usb == USB_FW_FAILED && now - usb_t0 >= USB_FAIL_SHOW_MS) {
+        st.usb = USB_FW_IDLE;
+        power_usb_update(false);
+        app_notify(EV_UPDATE, 2);
+    }
+}
+
 void update_tick(void)
 {
+    usb_tick();
+
     const settings_t *s = &g_model.settings;
     bool wifi_up = radio_status()->wifi == LINK_UP;
 

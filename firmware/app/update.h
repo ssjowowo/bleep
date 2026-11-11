@@ -34,6 +34,8 @@ typedef struct {
     upd_result_t result;
     fw_release_t release;
     uint8_t percent;    /* while downloading */
+    usb_fw_t usb;       /* an update over the USB cable (the flash page): its screen shows while not IDLE */
+    uint8_t usb_percent;
 } update_status_t;
 
 void update_check(void);        /* from the Software update page */

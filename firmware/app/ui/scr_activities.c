@@ -228,7 +228,7 @@ static void wake_build(lv_obj_t *root, int arg)
             lv_bar_set_range(bar, 0, m->dur);
             lv_bar_set_value(bar, m->pos, LV_ANIM_OFF);
             lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, 0);
-            lv_obj_set_style_bg_color(bar, T->track, 0);
+            lv_obj_set_style_bg_color(bar, T->surface_top, 0);
             lv_obj_set_style_bg_color(bar, T->accent, LV_PART_INDICATOR);
             lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, LV_PART_INDICATOR);
             lv_obj_set_style_radius(bar, 2, 0);
@@ -248,12 +248,10 @@ static void wake_build(lv_obj_t *root, int arg)
         lv_obj_set_scrollable(t, false);
         lv_obj_set_size(t, w_col_w(3, 8), UI_PICK(72, 54));   /* three across */
         lv_obj_set_style_pad_all(t, UI_PICK(10, 8), 0);
-        lv_obj_set_style_radius(t, UI_PICK(14, 12), 0);
+        lv_obj_set_style_radius(t, R_CARD, 0);
         lv_obj_set_style_bg_opa(t, LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(t, T->surface, 0);
-        lv_obj_set_style_bg_color(t, T->surface2, LV_STATE_PRESSED);
-        lv_obj_set_style_border_width(t, 1, 0);
-        lv_obj_set_style_border_color(t, T->line, 0);
+        lv_obj_set_style_bg_color(t, theme_pressed(T->surface, T->text), LV_STATE_PRESSED);
         lv_obj_set_flex_flow(t, LV_FLEX_FLOW_COLUMN);
         lv_obj_set_flex_align(t, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
         w_icon(t, activity_icon(a), 16, T->text2);
@@ -394,24 +392,24 @@ static void np_update(void)
     lv_label_set_text(lv_obj_get_child(np.play, 0), m->on ? ICON_PAUSE : ICON_PLAY);
 }
 
-/* −10 and +30; nothing if the device can't */
-static lv_obj_t *round_btn(lv_obj_t *parent, const char *text, fn_t fn)
+/* −10 and +30, tonal; nothing if the device can't */
+static lv_obj_t *round_btn(lv_obj_t *parent, const char *name, const char *icon, int size, fn_t fn)
 {
     if (!np_has(fn)) return NULL;
-    lv_obj_t *b = w_button(parent, text, NULL, BTN_OUTLINE);
-    lv_obj_set_size(b, UI_PICK(48, 40), UI_PICK(48, 40));
-    lv_obj_set_style_pad_hor(b, 0, 0);
-    lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
+    lv_obj_t *b = w_icon_button(parent, icon, size, BTN_TONAL);
+    /* the numbers in these glyphs are fine: the size up */
+    lv_obj_set_style_text_font(lv_obj_get_child(b, 0), icon_font_exact(UI_PICK(32, 24)), 0);
+    w_name(b, name);
     lv_obj_add_event_cb(b, np_btn_cb, LV_EVENT_CLICKED, ARG(fn));
     return b;
 }
 
-/* Subtitles and audio track: smaller, icon only, at the ends of the row */
+/* Subtitles and audio track: smaller and outlined, at the ends of the row */
 static lv_obj_t *small_btn(lv_obj_t *parent, const char *icon, fn_t fn)
 {
     if (!np_has(fn)) return NULL;
-    lv_obj_t *b = w_icon_button(parent, icon, UI_PICK(40, 34), BTN_DEFAULT);
-    lv_obj_set_ext_click_area(b, UI_PICK(4, 2));   /* 48 px to touch (38 on the small screen) */
+    lv_obj_t *b = w_icon_button(parent, icon, UI_PICK(40, 32), BTN_OUTLINE);
+    lv_obj_set_ext_click_area(b, UI_PICK(4, 2));   /* 48 px to touch (36 on the small screen) */
     lv_obj_add_event_cb(b, np_btn_cb, LV_EVENT_CLICKED, ARG(fn));
     return b;
 }
@@ -447,20 +445,21 @@ static void np_build(lv_obj_t *root, int act)
     lv_obj_set_ext_click_area(zz, UI_PICK(8, 1));
     w_on_click(zz, sleep_cb, 0);
     if (UI->compact) {
-        /* End: an x button, as on the activity page */
-        lv_obj_t *end = w_icon_button(top, ICON_X, 32, BTN_OUTLINE);
+        /* End: a stop button, as on the activity page */
+        lv_obj_t *end = w_icon_button(top, ICON_STOP, 32, BTN_TONAL);
         w_name(end, "End");
         lv_obj_set_ext_click_area(end, 2);
         lv_obj_set_style_margin_left(end, 4, 0);
         lv_obj_add_event_cb(end, np_end_cb, LV_EVENT_CLICKED, NULL);
     } else {
-        lv_obj_t *end = w_row(top, 4);
-        lv_obj_set_width(end, LV_SIZE_CONTENT);
+        /* End: a pill, the stop icon and the word */
+        lv_obj_t *end = w_button(top, "End", ICON_STOP, BTN_TONAL);
         lv_obj_set_height(end, 32);
-        w_label(end, F_LABEL_B, T->text2, "End");
-        w_icon(end, ICON_X, 14, T->text2);
-        lv_obj_set_ext_click_area(end, 8);
-        w_on_click(end, np_end_cb, 0);
+        lv_obj_set_style_pad_left(end, 10, 0);
+        lv_obj_set_style_pad_right(end, 12, 0);
+        lv_obj_set_style_pad_gap(end, 4, 0);
+        lv_obj_set_ext_click_area(end, 6);
+        lv_obj_add_event_cb(end, np_end_cb, LV_EVENT_CLICKED, NULL);
     }
 
     lv_obj_t *info;
@@ -468,7 +467,7 @@ static void np_build(lv_obj_t *root, int act)
         lv_obj_t *art_wrap = w_col(root, 0);
         lv_obj_set_style_pad_hor(art_wrap, PAD, 0);
         lv_obj_set_style_pad_top(art_wrap, 6, 0);
-        w_artwork(art_wrap, 288, 166, 16, true);   /* fills what is left above the tab bar */
+        w_artwork(art_wrap, 288, 156, R_ART, true);
         info = w_col(root, 3);
         lv_obj_set_style_pad_hor(info, PAD, 0);
         lv_obj_set_style_pad_top(info, 10, 0);
@@ -477,7 +476,7 @@ static void np_build(lv_obj_t *root, int act)
         lv_obj_t *row = w_row(root, 12);
         lv_obj_set_style_pad_hor(row, PAD, 0);
         lv_obj_set_style_pad_top(row, 6, 0);
-        w_artwork(row, 84, 84, 12, false);
+        w_artwork(row, 84, 84, R_ART, false);
         info = w_col(row, 3);
         lv_obj_set_flex_grow(info, 1);
         lv_obj_set_width(info, LV_SIZE_CONTENT);
@@ -499,18 +498,22 @@ static void np_build(lv_obj_t *root, int act)
     w_spacer(times);
     np.dur = w_label(times, F_CAPTION, T->text2, "");
 
-    /* subtitles · −10 · play · +30 · audio, in one row; closer together when
-     * all five are on the small screen */
+    /* subtitles · −10 · play · +30 · audio, in one row: play a pill, the
+     * skips tonal; a little smaller when all five are there */
     int n_ctl = np_has(FN_SUBTITLES) + np_has(FN_REW) + np_has(FN_PLAY_PAUSE) + np_has(FN_FWD) + np_has(FN_AUDIO);
-    lv_obj_t *ctl = w_row(root, UI_PICK(12, n_ctl >= 5 ? 5 : 10));
+    bool full = n_ctl >= 5;
+    lv_obj_t *ctl = w_row(root, full ? UI_PICK(8, 4) : UI_PICK(16, 12));
     lv_obj_set_flex_align(ctl, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_top(ctl, UI_PICK(10, 14), 0);
+    int skip = full ? UI_PICK(48, 38) : UI_PICK(52, 44);
     small_btn(ctl, ICON_SUBS, FN_SUBTITLES);
-    round_btn(ctl, "−10", FN_REW);
+    round_btn(ctl, "−10", ICON_REPLAY_10, skip, FN_REW);
     np.play = w_icon_button(ctl, ICON_PAUSE, UI_PICK(60, 52), BTN_PRIMARY);
+    lv_obj_set_size(np.play, full ? UI_PICK(80, 60) : UI_PICK(88, 72), full ? UI_PICK(56, 48) : UI_PICK(60, 52));
+    lv_obj_set_style_text_font(lv_obj_get_child(np.play, 0), icon_font_exact(UI_PICK(32, 24)), 0);
     lv_obj_add_event_cb(np.play, np_btn_cb, LV_EVENT_CLICKED, ARG(FN_PLAY_PAUSE));
     lv_obj_set_hidden(np.play, !np_has(FN_PLAY_PAUSE));   /* kept: np_update sets its icon */
-    round_btn(ctl, "+30", FN_FWD);
+    round_btn(ctl, "+30", ICON_FORWARD_30, skip, FN_FWD);
     small_btn(ctl, ICON_AUDIO, FN_AUDIO);
 
     if (!m) {
@@ -559,12 +562,12 @@ static void ap_build(lv_obj_t *root, int idx)
     lv_obj_t *hdr = w_header(root, g_model.running == idx ? "Activity · running" : "Activity", a->name, ui_back_cb);
     lv_obj_t *end;
     if (UI->compact) {
-        /* no subtitle: the name in the accent says it's running; End is an x */
+        /* no subtitle: the name in the accent says it's running; End is a stop button */
         if (g_model.running == idx) lv_obj_set_style_text_color(w_header_title(hdr), T->accent, 0);
-        end = w_header_action(hdr, "End", ICON_X, BTN_OUTLINE);
+        end = w_header_action(hdr, "End", ICON_STOP, BTN_TONAL);
     } else {
         lv_obj_set_style_text_color(lv_obj_get_child(lv_obj_get_child(hdr, 1), 0), T->accent, 0);
-        end = w_button(hdr, "End", ICON_X, BTN_OUTLINE);
+        end = w_button(hdr, "End", ICON_STOP, BTN_TONAL);
         lv_obj_set_height(end, 36);
         lv_obj_set_ext_click_area(end, 4);   /* taps: 44 px */
         lv_obj_set_style_margin_right(end, 10, 0);
@@ -788,7 +791,7 @@ static void ed_build(lv_obj_t *root, int arg)
     r = w_list_row(col, activity_icon(a), "Icon", activity_icons[a->icon].name, NULL);
     w_on_click(r, ed_icon_cb, 0);
 
-    w_section(col, "DEVICES");
+    w_section(col, "Devices");
     for (int d = 0; d < g_model.n_devices; d++) {
         bool in = false;
         for (int i = 0; i < a->n_devices; i++) in |= a->devices[i] == d;
@@ -798,7 +801,7 @@ static void ed_build(lv_obj_t *root, int arg)
         lv_obj_add_event_cb(sw, ed_dev_cb, LV_EVENT_VALUE_CHANGED, ARG(d));
     }
 
-    w_section(col, "KEYS AND SCREEN");
+    w_section(col, "Keys and screen");
     const char *none = "None";
     char inbuf[40];
     snprintf(inbuf, sizeof(inbuf), "%s", none);
@@ -815,7 +818,7 @@ static void ed_build(lv_obj_t *root, int arg)
         w_on_click(row, ed_pick_cb, i);
     }
 
-    w_section(col, "START SEQUENCE");
+    w_section(col, "Start sequence");
     if (!a->n_start) w_label(col, F_LABEL, T->text2, "Add devices to build it.");
     for (int i = 0; i < a->n_start; i++) {
         char buf[64];

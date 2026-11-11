@@ -20,7 +20,7 @@ expect Running
 # hold and let go: the editor, nothing moved
 press Watch TV
 wait 300
-expect START SEQUENCE
+expect Start sequence
 expect Watch TV
 back
 wait 300
@@ -29,7 +29,7 @@ expect-before Kodi | Watch TV
 pressdrag Shield TV | Activities
 wait 300
 expect-before Shield TV | Apple TV
-expect-no START SEQUENCE
+expect-no Start sequence
 # All off stays last: dragging Sonos onto it does nothing
 pressdrag Sonos | All off
 wait 300

@@ -35,7 +35,7 @@ expect-log-no config: saved
 # 3. ...but a real change still saves, 2 s after the last change
 tab Settings
 wait 300
-click Display & haptics
+click Display
 wait 300
 mark
 click Theme

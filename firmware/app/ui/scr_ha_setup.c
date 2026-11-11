@@ -106,11 +106,11 @@ static void ha_build(lv_obj_t *root, int arg)
     lv_obj_t *st = w_list_row(col, ICON_HOME, "Status", buf, NULL);
     lv_obj_set_style_text_color(lv_obj_get_child(st, 2), c, 0);
 
-    w_section(col, "SERVER");
+    w_section(col, "Server");
     w_on_click(w_list_row(col, ICON_HOME, "Address", s->ha_url[0] ? short_url(s->ha_url) : "Not set", NULL),
                ha_server_cb, 0);
 
-    w_section(col, "ACCOUNT");
+    w_section(col, "Account");
     if (s->ha_user[0]) {
         w_list_row(col, ICON_PERSON, "Signed in as", s->ha_user, NULL);
         lv_obj_t *out = w_list_row(col, ICON_X, "Sign out", NULL, NULL);
@@ -119,7 +119,7 @@ static void ha_build(lv_obj_t *root, int arg)
         w_on_click(out, ha_sign_out_cb, 0);
 
         /* the remote itself in Home Assistant (bridge.c) */
-        w_section(col, "THIS REMOTE IN HOME ASSISTANT");
+        w_section(col, "This remote in Home Assistant");
         bridge_row(col, ICON_BATTERY, "Battery level", s->ha_battery, 0);
         bridge_row(col, ICON_AUTOMATION, "Key presses as events", s->ha_key_events, 1);
         char note[192];
@@ -246,9 +246,9 @@ static void server_build(lv_obj_t *root, int arg)
     lv_obj_t *col = w_col(root, 0);
     lv_obj_set_style_pad_hor(col, PAD, 0);
     if (n_servers < 0) {
-        w_section(col, "LOOKING ON YOUR NETWORK…");
+        w_section(col, "Looking on your network…");
     } else {
-        w_section(col, n_servers ? "FOUND ON YOUR NETWORK" : "NONE FOUND ON YOUR NETWORK");
+        w_section(col, n_servers ? "Found on your network" : "None found on your network");
         for (int i = 0; i < n_servers; i++) {
             bool cur = !strcmp(servers[i].url, g_model.settings.ha_url);
             lv_obj_t *r = w_list_row(col, ICON_HOME, servers[i].name, short_url(servers[i].url), NULL);
@@ -261,7 +261,7 @@ static void server_build(lv_obj_t *root, int arg)
         }
         wide_button(col, "Search again", NULL, BTN_DEFAULT, server_again_cb);
     }
-    w_section(col, "NOT LISTED?");
+    w_section(col, "Not listed?");
     w_on_click(w_list_row(col, ICON_EDIT, "Enter the address", NULL, NULL), server_manual_cb, 0);
     radio_hold_wifi(true);
 }
@@ -302,17 +302,21 @@ static void phone_again_cb(lv_event_t *e)
 static void phone_build(lv_obj_t *root, int arg)
 {
     LV_UNUSED(arg);
+    radio_hold_wifi(true);
     w_header(root, "Home Assistant", "Sign in with phone", ui_back_cb);
     lv_obj_t *col = w_col(root, 8);
     lv_obj_set_style_pad_hor(col, PAD, 0);
     lv_obj_set_flex_align(col, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-    bool failed = login_state == HA_LOGIN_UNREACHABLE || login_state == HA_LOGIN_DENIED || login_state == HA_LOGIN_EXPIRED;
+    bool failed = login_state == HA_LOGIN_UNREACHABLE || login_state == HA_LOGIN_DENIED || login_state == HA_LOGIN_EXPIRED ||
+                  login_state == HA_LOGIN_UNAVAILABLE;
     if (failed) {
         char msg[128];
         if (login_state == HA_LOGIN_UNREACHABLE)
-            snprintf(msg, sizeof(msg), "No answer from %s. Check the server address.", short_url(g_model.settings.ha_url));
+            snprintf(msg, sizeof(msg), "No answer from %.80s. Check the server address.", short_url(g_model.settings.ha_url));
         else if (login_state == HA_LOGIN_DENIED) snprintf(msg, sizeof(msg), "Sign-in was cancelled on the phone.");
+        else if (login_state == HA_LOGIN_UNAVAILABLE)
+            snprintf(msg, sizeof(msg), "Signing in with a phone isn't available yet. Go back and choose Sign in on the remote.");
         else snprintf(msg, sizeof(msg), "Nothing happened for 5 minutes, so the code was switched off.");
         error_card(col, "Not signed in", msg);
         wide_button(col, "Try again", NULL, BTN_PRIMARY, phone_again_cb);
@@ -357,6 +361,7 @@ static void phone_leave(void)
     login_timer = NULL;
     ha_login_cancel();   /* stops the remote's web page */
     power_keep_awake(AWAKE_HA_LOGIN, false);
+    radio_hold_wifi(false);
 }
 
 const page_t page_ha_phone = {"Sign in with phone", -1, phone_build, NULL, phone_leave};
@@ -423,6 +428,7 @@ static void pw_sign_in_cb(lv_event_t *e)
 static void password_build(lv_obj_t *root, int arg)
 {
     LV_UNUSED(arg);
+    radio_hold_wifi(true);   /* signing in talks to HA: Wi-Fi mustn't time out under it */
     w_header(root, "Home Assistant", "Sign in", ui_back_cb);
     lv_obj_t *col = w_col(root, 0);
     lv_obj_set_style_pad_hor(col, PAD, 0);
@@ -441,7 +447,7 @@ static void password_build(lv_obj_t *root, int arg)
         error_card(col, "Not signed in", "That code didn't match. Codes change every 30 seconds; try the current one.");
     else if (login_state == HA_LOGIN_UNREACHABLE) {
         char msg[128];
-        snprintf(msg, sizeof(msg), "No answer from %s. Check the server address.", short_url(g_model.settings.ha_url));
+        snprintf(msg, sizeof(msg), "No answer from %.80s. Check the server address.", short_url(g_model.settings.ha_url));
         error_card(col, "Not signed in", msg);
     }
 
@@ -455,11 +461,12 @@ static void password_leave(void)
 {
     if (to_keyboard) {
         to_keyboard = false;
-        return;
+        return;   /* the keyboard: the sign-in (and its Wi-Fi) goes on */
     }
     if (login_timer) lv_timer_delete(login_timer);
     login_timer = NULL;
     ha_login_cancel();
+    radio_hold_wifi(false);
 }
 
 const page_t page_ha_password = {"Sign in", -1, password_build, NULL, password_leave};

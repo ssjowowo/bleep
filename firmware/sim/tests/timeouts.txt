@@ -3,9 +3,9 @@ click Start
 wait 300
 tab Settings
 wait 300
-click Display & haptics
+click Haptics
 wait 300
-slide Haptics 3
+slide Strength 3
 expect Strong
 back
 wait 300

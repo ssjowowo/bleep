@@ -32,12 +32,26 @@ const char *hal_key_name(bleep_key_t key);
 
 /* Display */
 void hal_backlight_set(uint8_t percent);    /* 0 = off */
+
+/* The panel's own vertical scrolling (ILI9488 VSCRDEF / VSCRSADD), driven by
+ * ui/hwscroll.c: screen rows [top, top + height) show frame-memory rows
+ * rotated by start (hws_row()), and the display driver writes each row
+ * where it shows. scroll_area returns false if the display can't (the
+ * emulator's window); height 0 turns it off. */
+bool hal_lcd_scroll_area(int top, int height);
+void hal_lcd_scroll_start(int start);
 void hal_lcd_sleep(bool sleep);             /* ILI9488 Sleep In / Sleep Out; GRAM is kept */
 
-/* Haptics (DRV2605L, ERM library). DETENT is the faintest: a slider passing
- * a step (effect 26, Sharp Tick 3 - 40 %, ~10 ms) */
+/* Haptics (DRV2605L, closed loop). DETENT is the faintest: a slider passing
+ * a step. hal_haptic_config sets the strength (1 light, 2 medium, 3 strong,
+ * 4 max), the feel (0 crisp clicks, 1 soft bumps) and the motor (0 the coin
+ * ERM, 1 a coin LRA, 2 a bar LRA); a motor it has no calibration for is calibrated first
+ * (~0.5 s of buzzing, kept). hal_haptic_calibrate runs it again: false if it
+ * failed and the motor runs open loop. */
 typedef enum { HAPTIC_TICK, HAPTIC_CONFIRM, HAPTIC_NO, HAPTIC_ALERT, HAPTIC_DETENT } haptic_t;
 void hal_haptic(haptic_t pattern);
+void hal_haptic_config(int level, int feel, int motor);
+bool hal_haptic_calibrate(void);
 
 /* Radios. The radio policy (app/radio.c) decides what's on; the HAL switches
  * and reports how the link is doing. Links are polled (radio_tick, every
@@ -139,6 +153,16 @@ void hal_fw_install_abort(void);
 void hal_fw_boot_ok(void);
 void hal_restart(void);                         /* esp_restart(); doesn't return */
 
+/* Updates over the USB cable, from the flash page (firmware/flasher/): the
+ * page sends the app image through the running firmware (esp/main/usb_update.c),
+ * which writes it to the other OTA slot like an update from bleepremote.com,
+ * checks its SHA-256 and makes it the boot slot. The app shows the progress
+ * and restarts on DONE; FAILED leaves the running firmware as it is. A remote
+ * without working firmware doesn't answer, and the page installs the classic
+ * way (the ROM's download mode) instead. */
+typedef enum { USB_FW_IDLE, USB_FW_RECEIVING, USB_FW_DONE, USB_FW_FAILED } usb_fw_t;
+usb_fw_t hal_usb_fw_poll(uint8_t *percent);
+
 /* Setup flows. Each returns true once, when something happened. */
 bool hal_ir_receive(uint8_t *protocol, uint32_t *address, uint32_t *command);   /* learning */
 bool hal_ble_paired(char *host, int len);                                        /* pairing: its address */
@@ -162,6 +186,7 @@ typedef struct {
     uint16_t millivolts;
     bool usb;                               /* USB-C connected */
     bool charging;                          /* TP4056 CHRG low */
+    bool no_cell;                           /* on USB with no battery fitted: percent and charging mean nothing */
 } hal_battery_t;
 void hal_battery(hal_battery_t *out);       /* MAX17048 + the charger pins */
 bool hal_usb(void);                         /* the charger pins only */

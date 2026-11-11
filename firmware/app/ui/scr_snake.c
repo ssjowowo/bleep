@@ -164,7 +164,7 @@ static void step(void)
             sn.new_best = true;
         }
         hal_log("snake: game over, score %d, best %d", sn.score, g_model.settings.snake_best);
-        app_buzz(HAPTIC_NO);
+        app_buzz_ev(BUZZ_GAMES, HAPTIC_NO);
         set_state(SN_OVER);
         return;
     }
@@ -173,7 +173,7 @@ static void step(void)
     if (eat) {
         sn.len++;
         sn.score++;
-        app_buzz(HAPTIC_TICK);
+        app_buzz_ev(BUZZ_GAMES, HAPTIC_TICK);
         if (sn.len == MAX_LEN) {
             set_state(SN_OVER);   /* the whole board: nowhere left to go */
             return;

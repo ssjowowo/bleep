@@ -20,17 +20,30 @@ static uint8_t level;
 static unsigned awake_reasons;
 static bool on_pending;                 /* Off, PWR down: waiting for the 2 s hold */
 static uint32_t on_t0;
-static bool off_charging;               /* Off on USB: the charging screen is up */
+static bool off_charging;               /* Off on USB: showing it's charging (the screen may be dark) */
+static bool off_dark;                   /* ...and its screen has gone dark again */
+static uint32_t off_shown_at;
+#define CHARGE_SCREEN_MS 10000          /* Off on USB: the charging screen this long, then dark */
 static bool off_slept;                  /* hal_deep_sleep() called (the emulator returns from it) */
 
 bool power_off_charging(void) { return state == PWR_OFF && off_charging; }
 
 static uint8_t active_level(void);
 
+/* Dim (and the nightstand clock on USB): a quarter of the active level, and
+ * in a dark room the lowest whatever the setting, so the clock doesn't light
+ * the bedroom. It follows the light sensor while dim (power_tick). */
+#define DIM_DARK 2              /* % below 5 lux */
+#define DIM_LOW_LIGHT 6         /* % at most below 50 lux */
+
 static uint8_t dim_level(void)
 {
     uint8_t a = active_level();
-    return a / 4 < 3 ? 3 : a / 4 > 20 ? 20 : a / 4;
+    uint8_t d = a / 4 < 3 ? 3 : a / 4 > 20 ? 20 : a / 4;
+    int band = power_light_band();
+    if (band == 0) return DIM_DARK;
+    if (band == 1 && d > DIM_LOW_LIGHT) return DIM_LOW_LIGHT;
+    return d;
 }
 
 void power_keep_awake(unsigned reason, bool on)
@@ -177,7 +190,7 @@ static void set_state(pwr_state_t s)
     }
     hal_backlight_set(level);
     if (s == PWR_WARM || (s == PWR_OFF && old < PWR_WARM)) hal_lcd_sleep(true);
-    hal_log("power: %s -> %s", power_state_name(old), power_state_name(s));
+    hal_log("power: %s -> %s, backlight %u%%", power_state_name(old), power_state_name(s), level);
     app_notify(EV_POWER, s);
     if (s == PWR_DEEP) sleep_now(false);
 }
@@ -244,9 +257,42 @@ void power_apply_backlight(void)
     }
 }
 
+void power_usb_update(bool on)
+{
+    power_keep_awake(AWAKE_USB_UPDATE, on);
+    if (state == PWR_OFF) {
+        /* Off on USB: light the charging screen's place for the update; it
+         * goes dark CHARGE_SCREEN_MS after the update ends */
+        if (!off_charging || off_dark) hal_lcd_sleep(false);
+        off_charging = true;
+        off_dark = false;
+        off_shown_at = hal_millis();
+        if (on) {
+            level = active_level();
+            hal_backlight_set(level);
+        }
+        return;
+    }
+    if (on && state != PWR_ACTIVE) {
+        last_input = hal_millis();
+        set_state(PWR_ACTIVE);
+    }
+}
+
 bool power_input(wake_cause_t cause)
 {
-    if (state == PWR_OFF) return true;   /* swallowed: only a PWR hold turns it on */
+    if (state == PWR_OFF) {
+        /* swallowed: only a PWR hold turns it on. On the charger, it shows the charging screen again. */
+        if (off_charging && off_dark && (cause == WAKE_KEY || cause == WAKE_TOUCH)) {
+            off_dark = false;
+            off_shown_at = hal_millis();
+            hal_lcd_sleep(false);
+            level = dim_level();
+            hal_backlight_set(level);
+            hal_log("power: off, charging screen");
+        }
+        return true;
+    }
     if (cause == WAKE_LIFT && !g_model.settings.wake_on_lift) return false;
     if (cause == WAKE_LIFT && g_model.settings.battery_saver) return false;
     if (cause == WAKE_TAP && !g_model.settings.wake_on_tap) return false;
@@ -282,8 +328,17 @@ void power_tick(void)
         }
         break;
     case PWR_DIM:
-        /* on USB the ambient screen stays up (open item 4) */
-        if (!b.usb && idle >= off_ms) set_state(PWR_WARM);
+        /* on USB too the screen goes off when idle (nobody watches it charge),
+         * unless the nightstand clock is wanted (open item 4) */
+        if (idle >= off_ms && (!b.usb || !s->nightstand)) set_state(PWR_WARM);
+        else {
+            uint8_t want = dim_level();   /* the lights went off (or on) */
+            if (want != level) {
+                level = want;
+                hal_backlight_set(level);
+                hal_log("power: dim backlight %u%%", level);
+            }
+        }
         break;
     case PWR_WARM:
         /* woken by the sleep timer: back to sleep once its sends have gone out */
@@ -313,14 +368,23 @@ void power_tick(void)
             }
         }
         if (b.usb && !off_charging) {
-            /* plugged in while off: the charging screen, dimmed; still off */
+            /* plugged in while off: the charging screen, dimmed, for a moment; still off */
             off_charging = true;
+            off_dark = false;
+            off_shown_at = hal_millis();
             off_slept = false;
             hal_lcd_sleep(false);
             level = dim_level();
             hal_backlight_set(level);
             hal_log("power: off, charging screen");
             app_notify(EV_POWER, PWR_OFF);
+        } else if (off_charging && !off_dark && !(awake_reasons & AWAKE_USB_UPDATE) &&
+                   hal_millis() - off_shown_at >= CHARGE_SCREEN_MS) {
+            off_dark = true;   /* still charging, still off: a key or a tap shows it again */
+            level = 0;
+            hal_backlight_set(0);
+            hal_lcd_sleep(true);
+            hal_log("power: off, charging, screen dark");
         } else if (!b.usb && off_charging) {
             off_charging = false;
             level = 0;

@@ -23,7 +23,7 @@ key VOL-
 tab Settings
 # let Home Assistant connect and the update check finish: each refreshes the page
 wait 1500
-click Display & haptics
+click Display
 wait 300
 click Brightness
 wait 200

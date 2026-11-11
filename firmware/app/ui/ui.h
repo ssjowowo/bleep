@@ -72,7 +72,7 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(v
 extern const page_t page_devices, page_device, page_device_edit, page_add_device;
 extern const page_t page_pair_ble, page_ir_brands, page_ir_detect, page_ir_test, page_ir_learn;
 extern const page_t page_home;
-extern const page_t page_settings, page_display, page_power, page_brightness, page_wifi_settings, page_ha_settings,
+extern const page_t page_settings, page_display, page_haptics, page_power, page_brightness, page_wifi_settings, page_ha_settings,
     page_about, page_update;
 extern const page_t page_ha_server, page_ha_phone, page_ha_password;
 void ui_ha_status(char *buf, int len, lv_color_t *color);

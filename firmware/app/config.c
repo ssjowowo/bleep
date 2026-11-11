@@ -58,7 +58,13 @@ static const char *const proto_ids[IR_PROTO_COUNT] = {"nec", "necext", "samsung3
 static const char *const step_ids[] = {"device", "ha", "activity_start", "activity_end"};
 static const char *const op_ids[HAOP_COUNT] = {"on", "off", "toggle", "set", "run", "open", "close", "lock"};
 static const char *const theme_ids[] = {"dark", "light", "auto"};
+static const char *const accent_ids[] = {"cyan", "blue", "violet", "pink", "orange", "amber", "green"};   /* accent_t */
 static const char *const layout_ids[] = {"grid", "list"};
+static const char *const feel_ids[] = {"crisp", "soft"};   /* haptic_feel_t */
+static const char *const motor_ids[] = {"erm", "lra", "lra_bar"};     /* haptic_motor_t */
+/* settings.haptic_<event>: one bool each, in buzz_ev_t order */
+static const char *const buzz_keys[BUZZ_EV_COUNT] = {"haptic_keys", "haptic_taps", "haptic_sliders",
+                                                     "haptic_confirm", "haptic_alerts", "haptic_games"};
 static const char *const size_ids[] = {"full", "compact"};
 #define N(a) ((int)(sizeof(a) / sizeof((a)[0])))
 
@@ -105,6 +111,7 @@ char *config_to_json(const model_t *m)
     const settings_t *s = &m->settings;
     cJSON *js = cJSON_AddObjectToObject(root, "settings");
     cJSON_AddStringToObject(js, "theme", theme_ids[s->theme < N(theme_ids) ? s->theme : 0]);
+    cJSON_AddStringToObject(js, "accent", accent_ids[s->accent < N(accent_ids) ? s->accent : 0]);
     cJSON_AddBoolToObject(js, "auto_brightness", s->auto_brightness);
     cJSON_AddNumberToObject(js, "brightness", s->brightness);
     cJSON_AddBoolToObject(js, "wake_on_lift", s->wake_on_lift);
@@ -119,6 +126,11 @@ char *config_to_json(const model_t *m)
     cJSON_AddNumberToObject(js, "snake_best", s->snake_best);
     cJSON_AddNumberToObject(js, "blocks_best", s->blocks_best);
     cJSON_AddNumberToObject(js, "haptics", s->haptics);
+    cJSON_AddStringToObject(js, "haptic_feel", feel_ids[s->haptic_feel < N(feel_ids) ? s->haptic_feel : 0]);
+    for (int i = 0; i < BUZZ_EV_COUNT; i++)
+        cJSON_AddBoolToObject(js, buzz_keys[i], s->haptic_events & (1 << i));
+    cJSON_AddBoolToObject(js, "haptic_quiet_usb", s->haptic_quiet_usb);
+    cJSON_AddStringToObject(js, "haptic_motor", motor_ids[s->haptic_motor < N(motor_ids) ? s->haptic_motor : 0]);
     cJSON_AddNumberToObject(js, "dim_after_s", s->dim_after_s);
     cJSON_AddNumberToObject(js, "sleep_after_s", s->sleep_after_s);
     cJSON_AddNumberToObject(js, "deep_after_s", s->deep_after_s);
@@ -281,6 +293,7 @@ static void read_settings(const cJSON *js, settings_t *s)
 {
     if (!cJSON_IsObject(js)) return;
     s->theme = id_of(theme_ids, N(theme_ids), get_id(js, "theme"), s->theme);
+    s->accent = id_of(accent_ids, N(accent_ids), get_id(js, "accent"), s->accent);
     s->auto_brightness = get_bool(js, "auto_brightness", s->auto_brightness);
     s->brightness = get_int(js, "brightness", 5, 100, s->brightness);
     s->wake_on_lift = get_bool(js, "wake_on_lift", s->wake_on_lift);
@@ -297,7 +310,14 @@ static void read_settings(const cJSON *js, settings_t *s)
     s->fun_zone = get_bool(js, "fun_zone", s->fun_zone);
     s->snake_best = get_int(js, "snake_best", 0, 9999, s->snake_best);
     s->blocks_best = get_int(js, "blocks_best", 0, 9999999, s->blocks_best);
-    s->haptics = get_int(js, "haptics", 0, 3, s->haptics);
+    s->haptics = get_int(js, "haptics", 0, 4, s->haptics);   /* 0-3 before Max was added: the same steps */
+    s->haptic_feel = id_of(feel_ids, N(feel_ids), get_id(js, "haptic_feel"), s->haptic_feel);
+    for (int i = 0; i < BUZZ_EV_COUNT; i++) {
+        bool on = get_bool(js, buzz_keys[i], s->haptic_events & (1 << i));
+        s->haptic_events = on ? s->haptic_events | (1 << i) : s->haptic_events & ~(1 << i);
+    }
+    s->haptic_quiet_usb = get_bool(js, "haptic_quiet_usb", s->haptic_quiet_usb);
+    s->haptic_motor = id_of(motor_ids, N(motor_ids), get_id(js, "haptic_motor"), s->haptic_motor);
     s->dim_after_s = get_int(js, "dim_after_s", 1, 3600, s->dim_after_s);
     s->sleep_after_s = get_int(js, "sleep_after_s", 1, 3600, s->sleep_after_s);
     s->deep_after_s = get_int(js, "deep_after_s", 10, 3600, s->deep_after_s);

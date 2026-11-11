@@ -42,10 +42,15 @@ uint8_t power_backlight(void);          /* current backlight % */
  * no screen off, no deep sleep. Each flow has its own bit. */
 enum { AWAKE_PAIRING = 1, AWAKE_IR_LEARN = 2, AWAKE_HA_LOGIN = 4, AWAKE_UPDATE = 8, AWAKE_ROUTINE = 16,
        AWAKE_EDITING = 32 /* typing or unsaved changes: ui.c, for EDIT_AWAKE_MS after the last touch */,
-       AWAKE_GAME = 64 /* a game of Snake is on (scr_snake.c) */ };
+       AWAKE_GAME = 64 /* a game of Snake is on (scr_snake.c) */,
+       AWAKE_USB_UPDATE = 128 /* an update over the USB cable: power_usb_update() */ };
 #define EDIT_AWAKE_MS 120000
 void power_keep_awake(unsigned reason, bool on);
-void power_apply_backlight(void);       /* re-read settings and set the backlight */
+void power_apply_backlight(void);
+/* An update over the USB cable (update.c): on lights the screen and keeps it
+ * lit, even when the remote is Off (it stays Off, showing the update);
+ * off lets it dim and sleep as usual again. */
+void power_usb_update(bool on);       /* re-read settings and set the backlight */
 
 /* Auto brightness that learns. The light sensor picks one of five bands
  * (under 5, 50, 300, 1000 lux, and brighter); each has a level, the default

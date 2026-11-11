@@ -40,9 +40,9 @@ wait 300
 expect Light
 expect Home-5G
 expect Sleep after 1 min
-click Display & haptics
+expect Strong
+click Display
 wait 300
 expect List
 expect Grid
-expect Strong
 shot 160_config_v1

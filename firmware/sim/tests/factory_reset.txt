@@ -3,7 +3,7 @@ click Start
 wait 300
 tab Settings
 wait 1500
-expect POWER & RESET
+expect Power & reset
 expect Power off
 drag ~160 ~400 ~160 ~100
 shot 150_power_reset_group

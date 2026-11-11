@@ -72,7 +72,6 @@ static void splash_build(lv_obj_t *root, int arg)
 
     lv_obj_t *btn = w_button(root, "Start", NULL, BTN_PRIMARY);
     lv_obj_set_size(btn, SCREEN_W - 2 * PAD, UI_PICK(52, 44));
-    lv_obj_set_style_radius(btn, UI_PICK(14, 12), 0);
     lv_obj_set_style_text_font(lv_obj_get_child(btn, 0), F_BODY_B, 0);
     lv_obj_add_event_cb(btn, start_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t *ver = w_label(root, F_CAPTION, T->text2, "");

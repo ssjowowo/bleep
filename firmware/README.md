@@ -1,15 +1,17 @@
 # Bleep firmware
 
-The spec is [REQUIREMENTS.md](REQUIREMENTS.md). Right now the firmware runs in a **PC emulator**. The ESP32-S3 build comes once the board arrives.
+The spec is [REQUIREMENTS.md](REQUIREMENTS.md). The firmware runs in a **PC emulator**, and builds for the remote's ESP32-S3 with ESP-IDF ([esp/](esp/README.md)): it runs on the first board. Its Home Assistant client is the portable core in [ha/](ha/) (tested on a PC against a live Home Assistant, `ha/test/run.sh`) over ESP-IDF's WebSocket and HTTP clients.
 
 ## Layout
 
 | Path | What |
 |---|---|
+| `flasher/` | The web flasher: a page that installs or updates the firmware from Chrome or Edge over USB-C, with a serial console ([flasher/README.md](flasher/README.md)) |
+| `esp/` | The ESP32-S3 build (ESP-IDF 5.5): the board's HAL in `esp/main/`, the partition table and sdkconfig defaults ([esp/README.md](esp/README.md)) |
 | `hal/hal.h` | Hardware interface: keys, backlight, LCD sleep, haptics, radio links (Wi-Fi, directed Bluetooth), IR start/stop and Bluetooth key down/up, battery, light sensor, deep sleep with a wake mask, wake cause, RTC memory, PSRAM buffers |
 | `app/` | Hardware-independent firmware: devices, activities and routines (`model.c`, factory defaults), key routing and activity sequences (`control.c`), running routines (`routine.c`), the Home tab's rooms and cards (`home.c`), radio policy (`radio.c`), power states (`power.c`), firmware updates (`update.c`), and the interfaces for the saved setup (`config.h`) and Home Assistant (`ha.h`) |
-| `app/ui/` | LVGL 9 UI from the "Bleep Remote UI" design (2c Flat): tabs, pages, HA cards, keyboard, overlays. Lays itself out for the panel it runs on (see [Screens](#screens)) |
-| `app/ui/fonts/` | Figtree, icon and logo fonts, generated (see below) |
+| `app/ui/` | LVGL 9 UI from the "Bleep Material UI" design (Material 3 Expressive, on the layouts of "Bleep Remote UI"): tabs, pages, HA cards, keyboard, overlays. Lays itself out for the panel it runs on (see [Screens](#screens)) |
+| `app/ui/fonts/` | Roboto Flex, Material Symbols and logo fonts, generated (see below) |
 | `sim/` | PC emulator: SDL window and control panel, browser build (`web.c`, `web/index.html`), headless script runner |
 | `sim/demo.c` | The demo house (Wi-Fi "Home-5G", HA user Sam, 7 devices, 6 activities, 3 routines, and a Home tab layout that puts every card in the design in one of the areas): what the emulator's flash holds before anything is saved. |
 | `sim/store.c` | The emulator's flash: the saved setup and the secret store. The browser's localStorage in the web build; `--store FILE` (and `FILE.secrets`) natively; memory only without it. |
@@ -34,18 +36,22 @@ Compact is the same design a step smaller: the same colours, components, icons, 
 
 | | 320 × 480 | compact (240 × 320) |
 |---|---|---|
-| Type (Figtree) | title 21, body 14 (+ bold), label 12 (+ bold), caption 11 | title 18, body 13 (+ bold), label 11 (+ bold), caption 10 |
+| Type (Roboto Flex) | title 21, body 14 (+ bold), label and caption 12 (+ bold) | title 18, body 13 (+ bold), label 11 (+ bold), caption 10 |
 | Big digits | charging 44, clock 84 | charging 36, clock 64 |
-| Icons | 14–24 px | a step smaller, 12–20 px (`icon_font()`) |
+| Icons (Material Symbols) | 16, 20, 24 px; 32 for play and pause | a step smaller, 14–24 px (`icon_font()`) |
 | Status bar | 36 px | 26 px, a shorter device pill |
-| Tab bar | 60 px, icons and labels | 36 px, icons only; the active one in the accent with a line under it |
-| Page header | subtitle (breadcrumb) over the title, actions as buttons | one line, 40 px: back arrow, title, actions as 36 px icon buttons (End is an ×, Edit a pencil); a tab's own page keeps its title (32 px) |
+| Nav bar | a 56 px pill floating 12 px above the bottom, 24 px in from the sides; icons only, the active one a 64 × 40 primary pill | a 44 px pill, 8 and 16 px in; 48 × 32 items |
+| Page header | subtitle (breadcrumb) over the title, actions as buttons | one line, 40 px: back arrow, title, actions as 36 px icon buttons (End a stop button, Edit a pencil); a tab's own page keeps its title (32 px) |
 | Touch targets | 44 px | 36 px (6.5 mm on the 2.8", 5.5 mm on the 2.4") |
 | Buttons, list rows | 44, 45 px | 36 (key-style 38–40), 38 px |
 | Side margin, gaps | 16, 12 px | 10, 8 px |
-| Activity and routine tiles | 88 px, the icon over the name | 54 px, the icon beside the name and its line: six in view |
+| Activity and routine tiles | 88 px, the icon beside the name, its line under them | 54 px, the icon beside the name and its line: six in view |
 
-The subtitle line goes, so what it said is kept elsewhere where it matters: a running activity's name is in the accent, the IR test's title has the brand ("Samsung · set 1 of 2"), the Wi-Fi password's the network. Button rows go to three across, Now playing puts the artwork beside the title, and the keyboard is lower. Text that doesn't fit ends in "…" or wraps; pages taller than the screen scroll. Layout code reads `SCREEN_W`, `CONTENT_W`, `PAD`, `BTN_H`, `ROW_H`, `TOUCH_MIN`, `w_col_w()` and `UI_PICK(v1, compact)` instead of fixed sizes, and the fonts through `F_TITLE`, `F_BODY`, … (`theme.h`), which `ui_init()` points at the profile's sizes. The 320 × 480 layout is exactly as drawn: every 320 × 480 screenshot of the test suite is byte-for-byte the same as before the compact profile was redesigned. Saved settings are the same on both.
+The subtitle line goes, so what it said is kept elsewhere where it matters: a running activity's name is in the accent, the IR test's title has the brand ("Samsung · set 1 of 2"), the Wi-Fi password's the network. Button rows go to three across, Now playing puts the artwork beside the title, and the keyboard is lower. Text that doesn't fit ends in "…" or wraps; pages taller than the screen scroll. Layout code reads `SCREEN_W`, `CONTENT_W`, `PAD`, `BTN_H`, `ROW_H`, `TOUCH_MIN`, `w_col_w()` and `UI_PICK(v1, compact)` instead of fixed sizes, the radii through `R_CHIP` … `R_ART` (`widgets.h`), and the fonts through `F_TITLE`, `F_BODY`, … (`theme.h`), which `ui_init()` points at the profile's sizes. Pages scroll under the floating nav bar: a tab's page leaves `TABBAR_H` free at the bottom so its last row scrolls clear of it. Saved settings are the same on both.
+
+### The look
+
+From the "Bleep Material UI" design: Material 3 Expressive, limited to what stock LVGL draws at full speed. Pure black (white) backgrounds with accent-tinted surface containers; solid fills, borders and text only (no shadows, gradients or opacity); one radius per object from a fixed scale (8 chips, 12/16 keys and rows, 20 cards, 24 tiles, 28 artwork and dialogs, pills for buttons, the nav bar and switches). The tokens are M3 colour roles (`theme_t` in `theme.h`): primary and its container, secondary container (tonal), three surface containers, outline and outline variant, on-surface and its variant. Seven accent palettes (Cyan, Blue, Violet, Pink, Orange, Amber, Green), each with a dark and a light set, set the primary, the containers and the tinted surfaces; the neutrals stay fixed. Settings > Display > Colour picks one (saved as `accent`); a change rebuilds the UI once. Components: tonal, filled and outlined pill buttons, keys in container high (the selected one of a row a full primary pill), filter chips with a tick, the M3 switch, sliders with a 4 px bar knob, separate rounded list rows 4 px apart, the running activity's tile solid primary with a "Running" badge.
 
 Icon-only controls carry their name for the test scripts (`w_name()`, LVGL's object name: `LV_USE_OBJ_NAME`), so `click End`, `tab Home` and `expect Settings` find them on either panel.
 
@@ -162,6 +168,7 @@ The script runs every scenario in `sim/tests/*.txt` headlessly with simulated ti
 
 `app/ui/fonts/*.c` and `app/ui/icons.h` are generated and checked in:
 
-- `tools/icons.json`: the design's 24 px stroke icons
-- `tools/make_icon_font.py`: builds `icons.otf` and `icons.h` (needs `pip install fonttools picosvg`, or the Docker image)
-- `tools/gen_fonts.sh`: downloads the UI font (Figtree; change `FAMILY` to switch) from Google Fonts and runs `lv_font_conv` through `npx`. It makes both profiles' sizes; the files are reproducible (running it again changes nothing). Without Node: `docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD/firmware:/fw" -w /fw emscripten/emsdk:latest bash tools/gen_fonts.sh`
+- `tools/icons.json`: each icon's name in the firmware (`ICON_*`), the Material Symbol it is and its style: outlined, filled, or both (`ICON_X` and `ICON_X_FILL`: the tab icons, a light that's on)
+- `tools/make_icon_font.py`: cuts Material Symbols Outlined (weight 400, grade 0, an optical size per pixel size) into one small font per size, outlined and filled glyphs merged, and writes `icons.h`
+- `tools/make_text_fonts.py`: static instances of Roboto Flex at each size and weight, with the optical size set to the pixel size
+- `tools/gen_fonts.sh`: downloads both variable fonts (pinned to commits) into `tools/fonts/`, runs the two scripts and then `lv_font_conv` through `npx`. It makes both profiles' sizes; the files are reproducible (running it again changes nothing). The scripts need Python with fontTools (`pip install fonttools`); `PYTHON=...` can point at another one, such as the emulator's Docker image: `PYTHON="docker run --rm -u $(id -u):$(id -g) -v $PWD/firmware:/fw -w /fw/tools bleep-build python3" firmware/tools/gen_fonts.sh`

@@ -1,0 +1,25 @@
+# On the charger, the screen goes off when idle like on battery, unless the
+# nightstand clock is on (its own test: nightstand.txt)
+click Start
+wait 300
+tab Settings
+wait 300
+click Display
+wait 300
+switch Nightstand clock
+wait 300
+back
+wait 300
+mark
+usb on
+wait 300
+expect Charging · USB-C
+# idle: dim (the charging screen), then off; it stays awake on USB (no deep sleep)
+wait 40000
+expect-log power: Dim -> Warm (screen off)
+expect-log-no power: Warm (screen off) -> Deep sleep
+# a tap brings it back
+mark
+tap 50% 50%
+wait 300
+expect-log power: Warm (screen off) -> Active

@@ -1,0 +1,28 @@
+# Entities Home Assistant can't reach (state "unavailable") don't show: not
+# as a card, not in Add a card; one that comes back shows again at once
+click Start
+wait 300
+click Home
+wait 800
+expect Floor lamp
+unavailable light.floor_lamp on
+wait 300
+expect-no Floor lamp
+expect Ceiling light
+shot 196_home_unavailable
+unavailable light.floor_lamp off
+wait 300
+expect Floor lamp
+# Add a card: not offered while unavailable (even with settings and diagnostics)
+unavailable light.floor_lamp on
+wait 300
+click Edit
+wait 300
+click Add a card
+wait 300
+switch Settings and diagnostics
+wait 300
+type lamp
+wait 300
+expect-no Floor lamp
+expect-no Old hall light

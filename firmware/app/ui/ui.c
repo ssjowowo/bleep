@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "hwscroll.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -105,7 +106,7 @@ static void build(void)
 {
     const page_t *p = ui_current();
     lv_obj_t *scr = lv_screen_active();
-    theme_apply(want_light());
+    theme_apply(want_light(), g_model.settings.accent);
     int32_t keep_y = root && last_page == p && last_arg == stack[depth - 1].arg ? lv_obj_get_scroll_y(root) : 0;
     lv_obj_clean(scr);
     lv_obj_set_style_bg_color(scr, T->bg, 0);
@@ -119,21 +120,52 @@ static void build(void)
     lv_obj_set_flex_grow(root, 1);
     lv_obj_set_flex_flow(root, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_style_pad_gap(root, PAGE_GAP, 0);
+    /* a tab's nav bar is docked under the page (w_tabbar): the page ends above it */
     lv_obj_set_style_pad_bottom(root, UI_PICK(16, 10), 0);
     lv_obj_set_scrollbar_mode(root, LV_SCROLLBAR_MODE_OFF);
     lv_obj_set_scroll_dir(root, LV_DIR_VER);
+    /* no pulling past either end and bouncing back: the panel scrolls the
+     * page itself (hwscroll.h) with no tearing signal to time it by, and a
+     * bounce (big steps a frame, then the other way) showed half-drawn rows
+     * at the edge it came in from */
+    lv_obj_set_scroll_elastic(root, false);
 
     radio_set_view(p == &page_home, p == &page_now_playing);
 
     p->build(root, stack[depth - 1].arg);
-    if (p->tab >= 0) w_tabbar(scr, p->tab, tab_cb);
+    lv_obj_t *tabbar = p->tab >= 0 ? w_tabbar(scr, p->tab, tab_cb) : NULL;
     built = p;
+    /* a page that turns a radio on as it builds (pairing, Wi-Fi setup) fired
+     * EV_RADIO before built was set: the bar shows it now */
+    if (status_bar) w_status_bar_update(status_bar);
     last_page = p;
     last_arg = stack[depth - 1].arg;
     if (keep_y) {
         lv_obj_update_layout(root);
         lv_obj_scroll_to_y(root, keep_y, LV_ANIM_OFF);
     }
+    /* the page scrolls in the panel: the band from under the status bar to the
+     * tab bar (around it, the page shows: those rows are drawn as usual) */
+    lv_obj_update_layout(scr);
+    lv_area_t rc;
+    lv_obj_get_coords(root, &rc);
+    int band_bottom = rc.y2 + 1;
+    if (tabbar) {
+        lv_area_t tc;
+        lv_obj_get_coords(tabbar, &tc);
+        band_bottom = tc.y1;
+    }
+    /* a bar floating at the page's bottom (a save bar) stays put while the
+     * page scrolls: the band ends at its top, or it would be rotated into the
+     * page and the rows coming into view above it never drawn */
+    for (uint32_t i = 0; i < lv_obj_get_child_count(root); i++) {
+        lv_obj_t *c = lv_obj_get_child(root, i);
+        if (!lv_obj_is_floating(c) || lv_obj_is_hidden(c)) continue;
+        lv_area_t fc;
+        lv_obj_get_coords(c, &fc);
+        if (fc.y2 >= rc.y2 && fc.y1 < band_bottom) band_bottom = fc.y1;
+    }
+    hws_attach(root, rc.y1, band_bottom > SCREEN_H ? SCREEN_H : band_bottom);
 }
 
 bool ui_touch_active(void)
@@ -244,7 +276,7 @@ void ui_refresh(void)
 
 void ui_rebuild(void)
 {
-    theme_apply(want_light());
+    theme_apply(want_light(), g_model.settings.accent);
     request_build();
     ov_init();
 }

@@ -2,11 +2,11 @@
 click Start
 wait 300
 click Settings
-click Display & haptics
+click Display
 click Theme
 click Light
 wait 300
-expect Display & haptics
+expect Display
 shot 80_light_settings
 back
 wait 300
@@ -22,7 +22,7 @@ click Devices
 click Living room TV
 shot 83_light_device
 click Settings
-click Display & haptics
+click Display
 click Theme
 click Auto
 wait 300

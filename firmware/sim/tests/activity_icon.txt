@@ -13,7 +13,7 @@ expect Morning
 shot 91_icon_picker
 click Night
 wait 300
-expect START SEQUENCE
+expect Start sequence
 expect Night
 shot 92_editor_icon_night
 click Update
@@ -28,5 +28,5 @@ shot 94_icon_picker_night
 # tapping the round button itself picks once (one step back, to the editor)
 clickin Scene | scene
 wait 300
-expect START SEQUENCE
+expect Start sequence
 expect Scene

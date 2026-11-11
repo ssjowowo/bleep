@@ -119,6 +119,22 @@ static void apply_dimmer(void)
     lv_obj_set_style_bg_opa(dimmer, opa, 0);
 }
 
+/* The panel's own scrolling: only the script runner's panel model has it
+ * (script.c); the window draws LVGL's buffer as it is */
+bool hal_lcd_scroll_area(int top, int height)
+{
+    if (!g_sim.panel) return false;
+    g_sim.lcd_map.top = top;
+    g_sim.lcd_map.height = height;
+    g_sim.lcd_map.start = 0;
+    return true;
+}
+
+void hal_lcd_scroll_start(int start)
+{
+    if (g_sim.panel) g_sim.lcd_map.start = start;
+}
+
 void hal_backlight_set(uint8_t percent)
 {
     g_sim.backlight = percent;
@@ -165,6 +181,9 @@ void hal_haptic(haptic_t p)
     g_sim.haptic_at = hal_millis();
     g_sim.haptics[p]++;
 }
+
+void hal_haptic_config(int level, int feel, int motor) { (void)level; (void)feel; (void)motor; }
+bool hal_haptic_calibrate(void) { return true; }
 
 /* Wi-Fi: joins in ~450 ms (the fast reconnect) if the router answers and
  * the network is one of the emulated ones in range; gives up after 3 s */
@@ -366,6 +385,10 @@ bool hal_ble_paired(char *host, int len)
     last = 0;
     snprintf(host, len, "A4:C1:38:9F:22:E0");
     hal_log("ble: emulated TV accepted pairing");
+    /* as on the remote: the link that bonded stays up */
+    ble_mode = BLE_CONNECT;
+    ble_t0 = hal_millis() - 400;
+    ble_was_up = true;
     return true;
 }
 
@@ -483,6 +506,12 @@ void hal_fw_install_start(void)
     hal_log("ota: writing bleep-%s.bin to ota_1", fw_latest.version);
 }
 
+usb_fw_t hal_usb_fw_poll(uint8_t *percent)
+{
+    if (percent) *percent = (uint8_t)g_sim.usb_fw_pct;
+    return (usb_fw_t)g_sim.usb_fw;
+}
+
 fw_install_t hal_fw_install_poll(uint8_t *percent)
 {
     if (!g_sim.wifi) return FW_INSTALL_FAILED;
@@ -530,6 +559,8 @@ void hal_battery(hal_battery_t *out)
     out->millivolts = 3300 + g_sim.battery * 9;
     out->usb = g_sim.usb;
     out->charging = g_sim.usb && g_sim.battery < 100;
+    out->no_cell = g_sim.usb && g_sim.no_cell;
+    if (out->no_cell) out->charging = false;
 }
 
 uint16_t hal_light_lux(void) { return g_sim.lux; }

@@ -40,11 +40,19 @@ wait 1000
 keyup PWR
 wait 1000
 shot 132_still_off
-# USB while off: the charging screen, still off
+# USB while off: the charging screen for a moment, still off; then dark (nobody
+# watches it charge); a tap shows it again
+mark
 usb on
 wait 500
 expect Off · hold PWR for 2 s to turn it on
 shot 133_off_charging
+wait 10000
+expect-log power: off, charging, screen dark
+tap 50% 50%
+wait 300
+expect-log-count 2 power: off, charging screen
+expect Off · hold PWR for 2 s to turn it on
 usb off
 wait 500
 expect-no Off · hold PWR

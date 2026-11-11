@@ -1,6 +1,8 @@
 /* Emulator state shared by the HAL stand-in, the control panel and the script runner */
 #pragma once
 
+#include "ui/hwscroll.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include "lvgl.h"
@@ -10,6 +12,9 @@ typedef struct {
     /* inputs the panel / script can change */
     int battery;            /* % */
     bool usb;
+    bool no_cell;           /* no battery fitted (only matters on USB) */
+    int usb_fw;             /* usb_fw_t: an update over the USB cable, as the flash page would drive it */
+    int usb_fw_pct;
     uint16_t lux;
     bool reach_wifi;        /* the router is on (Wi-Fi links come up) */
     bool reach_ble;         /* the TVs answer over Bluetooth (on and in range) */
@@ -33,11 +38,14 @@ typedef struct {
     int argc;               /* for re-running itself (the SDL build's reboot) */
     char **argv;
     bool factory;           /* boot with nothing saved, as a new remote: wipes the store (sim/store.c) */
+    bool big_house;         /* HA has 80 more entities, before the demo house's (ha_mock.c) */
     int script_from;        /* --from LINE: a script resumed after its "reboot" */
     const char *store_path; /* --store FILE: the emulator's flash; NULL = memory (web: localStorage) */
     uint32_t idle_skip;     /* added to hal_millis() by "skip idle" */
     lv_display_t *disp;     /* the remote's display */
     int screen_w, screen_h; /* its panel: --screen WxH, default BLEEP_SCREEN (CMake) */
+    bool panel;             /* scripts: the display is a model of the ILI9488, rotation included */
+    hws_map_t lcd_map;      /* its vertical scrolling (hal_lcd_scroll_*) */
 } sim_t;
 
 extern sim_t g_sim;

@@ -108,7 +108,7 @@ static void dv_send_cb(lv_event_t *e)
     }
     if (fn >= FN_INPUT_1 && fn <= FN_INPUT_4) {
         for (uint32_t i = 0; i < lv_obj_get_child_count(input_row); i++)
-            w_button_set_kind(lv_obj_get_child(input_row, i), (int)i == (int)fn - FN_INPUT_1 ? BTN_SELECTED : BTN_DEFAULT);
+            w_button_set_kind(lv_obj_get_child(input_row, i), (int)i == (int)fn - FN_INPUT_1 ? BTN_SELECTED : BTN_KEY);
     }
 }
 
@@ -130,9 +130,8 @@ static bool has_fn(int dev, fn_t fn)
 static lv_obj_t *fn_button(lv_obj_t *parent, int dev, const char *text, const char *icon, fn_t fn, int w, int h)
 {
     if (!has_fn(dev, fn)) return NULL;
-    lv_obj_t *b = w_button(parent, text, icon, BTN_DEFAULT);
+    lv_obj_t *b = w_button(parent, text, icon, BTN_KEY);
     lv_obj_set_size(b, w, h);
-    lv_obj_set_style_radius(b, UI_PICK(14, 12), 0);
     lv_obj_set_style_pad_hor(b, 4, 0);
     if (text && !icon) lv_obj_set_style_text_font(lv_obj_get_child(b, 0), strlen(text) == 1 ? F_BODY_B : F_LABEL_B, 0);
     lv_obj_add_event_cb(b, dv_send_cb, LV_EVENT_CLICKED, ARG(BTN_ARG(dev, fn)));
@@ -168,12 +167,12 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(v
         lv_obj_t *r = w_row(root, 8);
         lv_obj_set_style_pad_hor(r, PAD, 0);
         if (pad) {
-            lv_obj_t *b = w_button(r, "Trackpad", ICON_TOUCHPAD, BTN_DEFAULT);
+            lv_obj_t *b = w_button(r, "Trackpad", ICON_TOUCHPAD, BTN_KEY);
             lv_obj_set_flex_grow(b, 1);
             lv_obj_add_event_cb(b, trackpad_cb, LV_EVENT_CLICKED, ARG(dev));
         }
         if (kb) {
-            lv_obj_t *b = w_button(r, "Type", ICON_KEYBOARD, BTN_DEFAULT);
+            lv_obj_t *b = w_button(r, "Type", ICON_KEYBOARD, BTN_KEY);
             lv_obj_set_flex_grow(b, 1);
             lv_obj_add_event_cb(b, keyboard_cb, LV_EVENT_CLICKED, ARG(dev));
         }
@@ -182,7 +181,7 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(v
     /* Only what the device can do: a button it hasn't got isn't shown, and a
      * section with none isn't either */
     static const fn_t input_fns[] = {FN_INPUT_1, FN_INPUT_2, FN_INPUT_3, FN_INPUT_4, FN_SOURCE};
-    input_row = d ? fn_section(root, "INPUT", dev, input_fns, 5) : NULL;
+    input_row = d ? fn_section(root, "Input", dev, input_fns, 5) : NULL;
     if (input_row) {
         int per_row = UI_PICK(4, 3), in_w = w_col_w(per_row, 8);   /* 66 px either way */
         for (int i = 0; d->inputs && i < d->inputs && i < 4; i++) {
@@ -197,7 +196,7 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(v
     }
 
     if (d && d->fn[FN_DIGIT_1].transport) {
-        lv_obj_set_style_pad_hor(w_section(root, "KEYPAD"), PAD, 0);
+        lv_obj_set_style_pad_hor(w_section(root, "Keypad"), PAD, 0);
         lv_obj_t *pad = wrap_row(root, 8);
         static const char *const keys[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "Guide", "0", "Menu"};
         static const fn_t fns[] = {FN_DIGIT_1, FN_DIGIT_2, FN_DIGIT_3, FN_DIGIT_4, FN_DIGIT_5, FN_DIGIT_6,
@@ -215,12 +214,12 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(v
         };
         fn_t fns[9];
         for (int i = 0; i < 9; i++) fns[i] = c[i].fn;
-        lv_obj_t *pad = fn_section(root, "CONTROLS", dev, fns, 9);
+        lv_obj_t *pad = fn_section(root, "Controls", dev, fns, 9);
         for (int i = 0; pad && i < 9; i++) fn_button(pad, dev, c[i].t, c[i].i, c[i].fn, w_col_w(3, 8), KEY_H);
     }
 
     static const fn_t ch_fns[] = {FN_CH_DOWN, FN_CH_UP};
-    lv_obj_t *ch = d ? fn_section(root, "CHANNEL", dev, ch_fns, 2) : NULL;
+    lv_obj_t *ch = d ? fn_section(root, "Channel", dev, ch_fns, 2) : NULL;
     if (ch) {
         fn_button(ch, dev, "Channel", ICON_CHEV_DOWN, FN_CH_DOWN, w_col_w(2, 8), KEY_H);
         fn_button(ch, dev, "Channel", ICON_CHEV_UP, FN_CH_UP, w_col_w(2, 8), KEY_H);
@@ -230,7 +229,7 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(v
     bool any = has_fn(dev, FN_POWER) || has_fn(vol_dev, FN_VOL_DOWN) || has_fn(vol_dev, FN_MUTE) ||
                has_fn(vol_dev, FN_VOL_UP);
     if (any) {
-        lv_obj_set_style_pad_hor(w_section(root, "POWER AND VOLUME"), PAD, 0);
+        lv_obj_set_style_pad_hor(w_section(root, "Power and volume"), PAD, 0);
         lv_obj_t *pv = wrap_row(root, 8);
         int w = w_col_w(4, 8);
         fn_button(pv, dev, NULL, ICON_POWER, FN_POWER, w, KEY_H);
@@ -379,7 +378,7 @@ static void de_build(lv_obj_t *root, int idx)
     w_on_click(w_list_row(col, ICON_EDIT, "Name", d->name, NULL), de_name_cb, 0);
     w_on_click(w_list_row(col, dev_kind_icon(d->kind), "Type", kinds[d->kind], NULL), de_kind_cb, 0);
 
-    w_section(col, "BLUETOOTH");
+    w_section(col, "Bluetooth");
     if (d->transports & TR_BLE) {
         w_list_row(col, ICON_BLUETOOTH, "Paired", d->ble_host, NULL);
         w_on_click(w_list_row(col, ICON_X, "Forget this TV", NULL, NULL), de_action_cb, 1);
@@ -387,14 +386,14 @@ static void de_build(lv_obj_t *root, int idx)
         w_on_click(w_list_row(col, ICON_BLUETOOTH, "Pair a Google TV or Android TV", NULL, NULL), de_action_cb, 0);
     }
 
-    w_section(col, "INFRARED");
+    w_section(col, "Infrared");
     if (d->transports & TR_IR) w_list_row(col, ICON_IR, "Codes", d->ir_source, NULL);
     w_on_click(w_list_row(col, ICON_TV, (d->transports & TR_IR) ? "Change code set" : "Add codes from the library",
                           NULL, NULL), de_action_cb, 2);
     w_on_click(w_list_row(col, ICON_INPUT, "Learn keys from its remote", NULL, NULL), de_action_cb, 3);
 
     if (d->ha_entity[0]) {
-        w_section(col, "HOME ASSISTANT");
+        w_section(col, "Home Assistant");
         w_list_row(col, ICON_HOME, d->transports & TR_HA ? "Controlled by" : "Now playing", d->ha_entity, NULL);
     }
 
@@ -405,7 +404,7 @@ static void de_build(lv_obj_t *root, int idx)
     for (unsigned i = 0; i < sizeof(shown) / sizeof(shown[0]); i++) {
         uint8_t t = d->fn[shown[i]].transport;
         if (!t) continue;
-        if (!section) w_section(col, "KEY MAP"), section = true;
+        if (!section) w_section(col, "Key map"), section = true;
         const char *how = t == TR_BLE ? "Bluetooth" : t == TR_IR ? "IR" : "Home Assistant";
         w_list_row(col, NULL, shown[i] == FN_UP ? "D-pad" : fn_name(shown[i]), how, NULL);
     }
@@ -449,7 +448,7 @@ static void add_choice_cb(lv_event_t *e)
         int n = 0;
         for (int i = 0; i < ha_count() && n < 16; i++) {
             ha_entity_t *ent = ha_get(i);
-            if (ent->domain != HA_MEDIA || strlen(ent->id) >= sizeof(((device_t *)0)->ha_entity)) continue;
+            if (ent->domain != HA_MEDIA || ent->unavailable || strlen(ent->id) >= sizeof(((device_t *)0)->ha_entity)) continue;
             snprintf(names[n], sizeof(names[n]), ent->area >= 0 ? "%s · %s" : "%s", home_card_name(ent), ha_area_name(ent->area));
             opts[n] = names[n];
             ha_pick_map[n++] = i;
@@ -485,7 +484,7 @@ static void option_card(lv_obj_t *col, const char *icon, const char *title, cons
 {
     lv_obj_t *c = w_card(col, false, false);
     lv_obj_set_clickable(c, true);
-    lv_obj_set_style_bg_color(c, T->surface2, LV_STATE_PRESSED);
+    lv_obj_set_style_bg_color(c, theme_pressed(T->surface, T->text), LV_STATE_PRESSED);
     lv_obj_add_event_cb(c, add_choice_cb, LV_EVENT_CLICKED, ARG(arg));
     lv_obj_t *row = w_row(c, 12);
     lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
@@ -547,6 +546,7 @@ static void pair_finish(void)
     if (pr.target >= 0) {
         device_t *d = &g_model.devices[pr.target];
         model_set_ble(d, pr.host);
+        radio_ble_paired_as(pr.target);
         app_notify(EV_DEVICES, 0);
         ui_toast("Paired with %s", d->name);
         ui_back();
@@ -559,6 +559,7 @@ static void pair_finish(void)
         }
         model_set_ble(d, pr.host);
         pr_new = (int)(d - g_model.devices);
+        radio_ble_paired_as(pr_new);
         app_notify(EV_DEVICES, 0);
         ui_back();   /* off the pairing page: backing out of the name won't pair again */
         ui_text_entry("Add device · Bluetooth", "Device name", "Name", "Google TV", "Shown on activities and the Devices tab",
@@ -584,8 +585,7 @@ static void pair_tick(lv_timer_t *t)
         hal_log("ble: bonded with %s", pr.host);
         app_buzz(HAPTIC_CONFIRM);
         lv_label_set_text(pr.status, "Paired");
-        radio_hold_pairing(false);
-        pair_finish();
+        pair_finish();   /* the link goes to the device; leaving the page lets go of pairing */
         return;
     }
     if (left <= 0) {
@@ -670,7 +670,7 @@ static void brands_build(lv_obj_t *root, int target)
     for (int i = 0; i < ir_brand_count; i++) {
         const ir_brand_t *b = &ir_brands[i];
         if (!i || b->kind != ir_brands[i - 1].kind)
-            w_section(col, b->kind == DEV_TV ? "TVS" : b->kind == DEV_SPEAKER ? "SOUNDBARS" : "AV RECEIVERS");
+            w_section(col, b->kind == DEV_TV ? "TVs" : b->kind == DEV_SPEAKER ? "Soundbars" : "AV receivers");
         char v[24];
         snprintf(v, sizeof(v), "%d code set%s", b->sets, b->sets > 1 ? "s" : "");
         lv_obj_t *r = w_list_row(col, b->kind == DEV_TV ? ICON_TV : b->kind == DEV_SPEAKER ? ICON_SPEAKER : ICON_VOLUME,
@@ -752,7 +752,8 @@ static void detect_build(lv_obj_t *root, int target)
     lv_obj_t *mid = w_col(col, UI_PICK(8, 6));
     lv_obj_set_flex_align(mid, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_ver(mid, UI_PICK(16, 10), 0);
-    w_icon_circle(mid, dt.got ? (dt.match ? ICON_CHECK : ICON_X) : ICON_IR, UI_PICK(56, 48), dt.got && dt.match);
+    lv_obj_t *ic = w_icon_circle(mid, dt.got ? (dt.match ? ICON_CHECK : ICON_X) : ICON_IR, UI_PICK(56, 48), true);
+    if (dt.got && !dt.match) w_icon_circle_off(ic);   /* no match: grey */
     char buf[64];
     lv_obj_t *title, *text;
     if (!dt.got) {

@@ -1,0 +1,38 @@
+# The accent colour: Settings > Display, saved like any other setting
+click Start
+wait 300
+tab Settings
+wait 300
+click Display
+wait 300
+expect Colour
+expect Cyan
+shot 84_accent_cyan
+mark
+click Violet
+wait 300
+expect-log accent Violet
+expect Violet
+shot 85_accent_violet
+back
+wait 300
+tab Activities
+wait 300
+shot 86_accent_violet_activities
+click Settings
+click Display
+click Theme
+click Light
+wait 300
+shot 87_accent_violet_light
+# saved: still violet after a power cycle
+wait 2500
+reboot
+click Start
+wait 300
+tab Settings
+wait 300
+click Display
+wait 300
+expect Violet
+expect Light

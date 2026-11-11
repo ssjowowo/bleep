@@ -62,6 +62,7 @@ void bridge_tick(void)
     if (n_pending) flush();
     if (!g_model.settings.ha_battery) return;
     hal_battery_t b = *app_battery();
+    if (b.no_cell) return;   /* the gauge's numbers mean nothing: keep HA's last real ones */
     if (reported && b.percent == last.percent && b.charging == last.charging && b.usb == last.usb) return;
     reported = true;
     last = b;

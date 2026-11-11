@@ -15,7 +15,9 @@ labels = true;          // engrave key labels on the caps
 $fn = 48;
 
 EF = 2.0;               // front edge round-over
-EB = 1.0;               // back edge round-over
+EB = 4.0;               // back edge round-over (2026-11-10: 1.0 felt sharp in the hand, then 3.0 -> 4.0)
+EB_CHAMFER = 45;        // below this the back round-over turns into a 45 deg chamfer, so the
+                        // plate (printed back down) has no overhang steeper than 45 deg
 EPS = 0.01;
 
 function S(p) = [p[0], -p[1]];
@@ -36,8 +38,12 @@ module solid() {
         for (i = [0:n]) {
             a = 90 * i / n;
             translate([0, 0, H - EF + EF * sin(a) - EPS]) linear_extrude(EPS) outline2d(-EF + EF * cos(a));
-            translate([0, 0, EB - EB * sin(a)]) linear_extrude(EPS) outline2d(-EB + EB * cos(a));
+            ab = EB_CHAMFER * i / n;      // 0 = vertical side, EB_CHAMFER = where the chamfer takes over
+            translate([0, 0, EB - EB * sin(ab)]) linear_extrude(EPS) outline2d(-EB + EB * cos(ab));
         }
+        // straight 45 deg chamfer from the end of the arc down to the back face
+        zc = EB - EB * sin(EB_CHAMFER);
+        linear_extrude(EPS) outline2d(-EB + EB * cos(EB_CHAMFER) - zc);
     }
 }
 
@@ -99,57 +105,51 @@ module flange_mask2d(k) {
     else translate(S(k[2])) square(60, center = true);
 }
 
-// Key icons, about 4.5 mm across (ICON_F x the 6 mm drawings below), centred
-// on the origin. Line strokes stay 0.65 mm whatever the scale and every gap
-// stays >= 0.5 mm, so the inlays still print with a 0.4 mm nozzle.
-ICON_F = 0.75;
+// Key icons, about 5.4 mm across (ICON_F x the 6 mm drawings below), centred
+// on the origin. Strokes are 0.9-0.95 mm and every gap is >= 0.8 mm: the first
+// print (0.65 mm strokes, 0.5 mm gaps) ran together, since the caps print face
+// down and the squashed first layer closes small gaps. So the shapes are solid
+// where they can be: a house without a door, a bare play triangle.
+ICON_F = 0.9;
 module icon2d(name) {
     f = ICON_F;
-    s = 0.65;  // stroke
+    s = 0.95;  // stroke
     if (name == "@back") {
         // return arrow: U-turn on the right, arrowhead pointing left at the top
-        r = 2.0 * f;
-        translate([0, -0.4 * f]) {
-            translate([0.7 * f, 0]) intersection() {
+        r = 1.9 * f;
+        translate([0, -0.3 * f]) {
+            translate([0.6 * f, 0]) intersection() {
                 annulus2d(r - s / 2, r + s / 2);
                 translate([0, -5]) square(10);
             }
-            translate([-1.0 * f, r - s / 2]) square([1.7 * f, s]);          // top stem
-            translate([-1.6 * f, -r - s / 2]) square([2.3 * f, s]);         // bottom stem
-            polygon([[-2.9 * f, r], [-1.0 * f, r + 1.3 * f], [-1.0 * f, r - 1.3 * f]]);   // arrowhead
+            translate([-0.9 * f, r - s / 2]) square([1.5 * f, s]);          // top stem
+            translate([-1.4 * f, -r - s / 2]) square([2.0 * f, s]);         // bottom stem
+            polygon([[-3.0 * f, r], [-0.9 * f, r + 1.5 * f], [-0.9 * f, r - 1.5 * f]]);   // arrowhead
         }
     } else if (name == "@home") {
-        scale(f) difference() {
-            union() {
-                polygon([[-3.1, 0.3], [3.1, 0.3], [0, 3.2]]);         // roof
-                translate([-2.1, -2.9]) square([4.2, 3.3]);            // body
-            }
-            translate([-0.6, -2.95]) square([1.2, 1.9]);               // door
+        scale(f) union() {
+            polygon([[-3.0, 0.2], [3.0, 0.2], [0, 3.1]]);             // roof
+            translate([-2.0, -2.8]) square([4.0, 3.1]);                // body
         }
     } else if (name == "@mute") {
-        translate([-0.6 * f, 0]) {
-            scale(f) {
-                translate([-2.5, -1.0]) square([1.1, 2.0]);            // speaker body
-                polygon([[-1.4, -1.0], [-1.4, 1.0], [0.4, 2.4], [0.4, -2.4]]);   // cone
-            }
-            for (a = [45, -45]) translate([2.3 * f, 0]) rotate(a) square([3.0 * f, s], center = true);   // X
+        // speaker and a bold X, 0.8 mm apart
+        translate([-0.9 * f, 0]) scale(f) {
+            translate([-2.4, -1.1]) square([1.2, 2.2]);                // speaker body
+            polygon([[-1.2, -1.1], [-1.2, 1.1], [0.6, 2.6], [0.6, -2.6]]);   // cone
         }
+        for (a = [45, -45]) translate([1.8 * f, 0]) rotate(a) square([3.0 * f, 0.9], center = true);   // X
     } else if (name == "@youtube") {
-        // play button: rounded rectangle with the triangle left in the cap colour
-        scale(f) difference() {
-            offset(r = 1.2) square([4.4, 2.2], center = true);
-            polygon([[-0.8, -1.15], [-0.8, 1.15], [1.25, 0]]);
-        }
+        scale(f) polygon([[-1.7, -2.1], [-1.7, 2.1], [2.2, 0]]);      // play triangle
     } else if (name == "@netflix") {
         // bold N
         scale(f) {
-            translate([-1.7, -2.5]) square([0.95, 5.0]);
-            translate([0.75, -2.5]) square([0.95, 5.0]);
-            polygon([[-1.7, 2.5], [-0.75, 2.5], [1.7, -2.5], [0.75, -2.5]]);
+            translate([-1.8, -2.5]) square([1.15, 5.0]);
+            translate([0.65, -2.5]) square([1.15, 5.0]);
+            polygon([[-1.8, 2.5], [-0.65, 2.5], [1.8, -2.5], [0.65, -2.5]]);
         }
     } else if (name == "@plex") {
         // chevron
-        scale(f) polygon([[-1.5, 2.6], [0.1, 2.6], [2.0, 0], [0.1, -2.6], [-1.5, -2.6], [0.4, 0]]);
+        scale(f) polygon([[-1.6, 2.6], [0.2, 2.6], [2.1, 0], [0.2, -2.6], [-1.6, -2.6], [0.3, 0]]);
     }
 }
 
@@ -192,7 +192,79 @@ module cap_label(k) {     // the inlay that fills the recess, flush with the top
 // Generic cap: body through the wall, 45-degree seat that sits in a matching
 // countersink on the inside of the wall, flange plate, stem onto the switch.
 // Printed top-down, so the seat is the only overhang and it is 45 degrees.
-module cap_generic(shape_children_k, stems) {
+// Socket over a key switch's metal body (TS-1187A: 5.1 mm square, legs out of
+// its left and right sides at y +-1.875). A round cap on a round plunger is
+// free to turn (first print, 2026-10-17); the socket stops that and keeps the
+// cap centred. Walls hug the two leg-free sides; on the leg sides only short
+// tabs between the legs. The walls end SOCK_FLOOR above the board, which leaves
+// room for the 0.25 mm key travel and still overlaps any body >= 0.6 mm tall.
+SOCK_CLR = 0.2;        // per side, round the 5.1 mm body
+SOCK_WALL = 0.8;
+SOCK_FLOOR = 0.45;     // wall bottoms above the board top
+SOCK_TAB = 1.8;        // tab length on the leg sides (legs at |y| >= 1.5)
+module switch_socket(p, z_top) {
+    s = SW_BODY / 2 + SOCK_CLR;
+    z0 = Z_BP_TOP + SOCK_FLOOR;
+    translate([p[0], -p[1], z0]) linear_extrude(z_top - z0 + EPS) {
+        for (sy = [-1, 1]) translate([-(s + SOCK_WALL), sy > 0 ? s : -s - SOCK_WALL]) square([2 * (s + SOCK_WALL), SOCK_WALL]);
+        for (sx = [-1, 1]) translate([sx > 0 ? s : -s - SOCK_WALL, -SOCK_TAB / 2]) square([SOCK_WALL, SOCK_TAB]);
+    }
+    translate([p[0], -p[1], Z_ACTUATOR - EPS]) cylinder(d = 3.4, h = z_top - Z_ACTUATOR + 2 * EPS);   // presses the plunger
+}
+
+// Soft keys (test, 2026-10-17): the PETG stem pressed the switch directly, so
+// every key felt and sounded like the bare dome. Instead the stem becomes a
+// housing that holds a TPU insert: a beam clamped at both ends of a small
+// frame, with a nub under its middle resting on the plunger. The beam bends
+// before the dome trips (160 gf), so the key travels further and lands softer.
+// Hard stop: the housing and frame land on the switch's cover (<= 1.2 mm above
+// the board) after SPR_NUB_H + 0.3 mm of travel, so a too-soft beam can't push
+// the switch past its stop. SPRING_VARIANTS sweeps the beam's stiffness.
+SPR_RING = [6.4, 4.2];  // insert outline, beam along x
+SPR_WALL = 0.8;         // frame wall
+SPR_H = 2.8;            // insert height (frame, beam at its bottom)
+SPR_NUB_D = 1.8;        // the plunger is 2.0
+SPR_NUB_H = 1.2;        // beam bottom above the plunger top
+SPR_PRELOAD = 0.1;      // nub reaches this far below the plunger top at rest: no rattle
+SPR_FIT = 0.05;         // per side, pocket smaller than the insert: press fit
+SPR_HOUSE_WALL = 1.0;
+SPR_NOTCH = [0.6, 0.4]; // id notches on the frame's top edge (hidden in the pocket)
+// [beam thickness, beam width]; rough deflection at 160 gf (clamped beam,
+// E = 26 MPa): 0.12, 0.26, 0.41, 0.68, 0.97 mm. Variant i has i + 1 notches.
+SPRING_VARIANTS = [[1.2, 2.0], [1.0, 1.6], [0.8, 2.0], [0.8, 1.2], [0.6, 2.0]];
+soft = false;           // -D soft=true: the pill caps get spring housings
+SPR_Z = Z_ACTUATOR + SPR_NUB_H;   // beam bottom = housing bottom
+function spr_pocket() = [SPR_RING[0] - 2 * SPR_FIT, SPR_RING[1] - 2 * SPR_FIT];
+
+module spring_housing(p, z_top) {
+    o = spr_pocket() + [2, 2] * SPR_HOUSE_WALL;
+    translate([p[0] - o[0] / 2, -p[1] - o[1] / 2, SPR_Z]) cube([o[0], o[1], z_top - SPR_Z + EPS]);
+}
+module spring_pocket(p) {
+    q = spr_pocket();
+    translate([p[0] - q[0] / 2, -p[1] - q[1] / 2, SPR_Z - EPS]) cube([q[0], q[1], SPR_H + EPS]);
+}
+// The insert at the origin, beam bottom at z = 0, as it sits in the cap.
+module spring_insert(v) {
+    t = SPRING_VARIANTS[v][0]; b = SPRING_VARIANTS[v][1];
+    in = SPR_RING - [2, 2] * SPR_WALL;
+    difference() {
+        translate([-SPR_RING[0] / 2, -SPR_RING[1] / 2, 0]) cube([SPR_RING[0], SPR_RING[1], SPR_H]);
+        translate([-in[0] / 2, -in[1] / 2, -1]) cube([in[0], in[1], SPR_H + 2]);
+        for (i = [0:v]) translate([-SPR_RING[0] / 2 + 1.0 + i * 1.1, SPR_RING[1] / 2 - SPR_WALL - 1, SPR_H - SPR_NOTCH[1]])
+            cube([SPR_NOTCH[0], SPR_WALL + 2, 1]);
+    }
+    translate([-in[0] / 2 - EPS, -b / 2, 0]) cube([in[0] + 2 * EPS, b, t]);
+    translate([0, 0, -SPR_NUB_H - SPR_PRELOAD]) cylinder(d = SPR_NUB_D, h = SPR_NUB_H + SPR_PRELOAD + EPS, $fn = 32);
+}
+// Print: frame's top edge on the bed, beam bridging across, nub on top.
+// One row per variant, `copies` of each.
+module spring_plate(copies = 3) {
+    for (v = [0:len(SPRING_VARIANTS) - 1], c = [0:copies - 1])
+        translate([c * (SPR_RING[0] + 4), -v * (SPR_RING[1] + 4), SPR_H]) rotate([180, 0, 0]) spring_insert(v);
+}
+
+module cap_generic(shape_children_k, stems, sockets = [], springs = []) {
     k = shape_children_k;
     nz = 4;
     difference() {
@@ -212,23 +284,60 @@ module cap_generic(shape_children_k, stems) {
             // stem(s) onto the switch actuator
             for (s = stems) translate([s[0], -s[1], Z_ACTUATOR - EPS])
                 cylinder(d = 3.4, h = Z_FRONT_IN - CAP_FLANGE - Z_ACTUATOR + 2 * EPS);
+            // or a socket over the switch body (round caps)
+            for (s = sockets) switch_socket(s, Z_FRONT_IN - CAP_FLANGE);
+            // or a housing for a TPU spring insert
+            for (s = springs) spring_housing(s, Z_FRONT_IN - CAP_FLANGE);
+            if (k[1] == "ring") ring_fork();
         }
         cap_engrave(k);
+        for (s = springs) spring_pocket(s);
         // soften the top edge a little
     }
 }
 
 // The OK button: no wall to seat on (it shares the ring's hole), so its flange
 // sits DPAD_OK_DROP under the ring's inner edge, overlapping it by DPAD_OK_LIP.
+// A socket over its switch keeps it centred, so it can't roll.
 module ok_cap(k) {
     fl_top = Z_FRONT_IN - CAP_FLANGE - DPAD_OK_DROP;
     difference() {
         union() {
             translate([0, 0, fl_top]) linear_extrude(H + CAP_PROTRUDE - fl_top) cap2d(k);
             translate([DPAD_C[0], -DPAD_C[1], fl_top - CAP_FLANGE]) cylinder(r = DPAD_R_IN + DPAD_OK_LIP, h = CAP_FLANGE + EPS, $fn = 96);
-            translate([DPAD_C[0], -DPAD_C[1], Z_ACTUATOR - EPS]) cylinder(d = 3.4, h = fl_top - CAP_FLANGE - Z_ACTUATOR + 2 * EPS);
+            switch_socket(DPAD_C, fl_top - CAP_FLANGE);
         }
         cap_engrave(k);
+    }
+}
+
+// The ring turned freely too (first print): an arm off its flange ends in an
+// eye round the screw post to its right, which stops the turning. The arm runs
+// FORK_DROP below the wall, so the ring still rocks onto every switch; inside
+// the flange's outline it's as thick as the flange, so the joint is solid.
+FORK_POST = KEY_HOLES[1];
+FORK_CLR = 0.3;       // round the post, per side
+FORK_W = 1.0;         // eye wall
+FORK_T = 0.8;         // arm thickness under the flange
+FORK_DROP = 0.4;      // clear of the wall's underside
+module ring_fork() {
+    c = S(DPAD_C); p = S(FORK_POST);
+    u = (p - c) / norm(p - c);
+    r_eye = POST_D / 2 + FORK_CLR;
+    z0 = Z_FRONT_IN - CAP_FLANGE - FORK_T;
+    module arm2d() hull() { translate(c + u * (DPAD_R_OUT - 1.5)) circle(r = 1.6); translate(p - u * r_eye) circle(r = 1.6); }
+    difference() {
+        union() {
+            // root, under and in the flange
+            translate([0, 0, z0]) linear_extrude(Z_FRONT_IN - z0) intersection() {
+                arm2d(); translate(c) circle(r = DPAD_R_OUT + CAP_FLANGE - 0.05, $fn = 96);
+            }
+            // arm and eye, below the wall
+            translate([0, 0, z0]) linear_extrude(Z_FRONT_IN - FORK_DROP - z0) union() {
+                arm2d(); translate(p) circle(r = r_eye + FORK_W, $fn = 48);
+            }
+        }
+        translate([p[0], p[1], 0]) cylinder(r = r_eye, h = H, $fn = 48);
     }
 }
 
@@ -237,6 +346,8 @@ module ok_cap(k) {
 module cap(k) {
     if (k[1] == "ring") { if (k[0] == "UP") cap_generic(k, [for (kk = KEYS) if (kk[1] == "ring") kk[2]]); }
     else if (k[1] == "ok") ok_cap(k);
+    else if (k[1] == "round") cap_generic(k, [], [k[2]]);
+    else if (soft && k[1] == "pill") cap_generic(k, [], [], [k[2]]);
     else cap_generic(k, [k[2]]);
 }
 
@@ -261,7 +372,7 @@ module pwr_cap() {
 module front_cuts() {
     // glass pocket (the panel stack sits in the cavity below it)
     translate([0, 0, Z_FRONT_IN - 1]) linear_extrude(Z_LENS_TOP - Z_FRONT_IN + 1)
-        rrect([LENS[0] + 2 * CLEAR, LENS[1] + 2 * CLEAR], LENS[2] + CLEAR, LENS_C);
+        rrect([LENS[0] + 2 * CLEAR, LENS[1] + 2 * CLEAR], LENS[2], LENS_C);   // square corners, like the glass
     // screen window: the frame overlaps the glass by LIP_OVER, chamfered outside
     win = [LENS[0] - 2 * LIP_OVER, LENS[1] - 2 * LIP_OVER];
     hull() {
@@ -285,13 +396,15 @@ module front_cuts() {
     translate([USB_X, -L - 1, USB_Z]) rotate([-90, 0, 0]) linear_extrude(WALL + 2)
         offset(r = USB_OPEN[1] / 2 - 0.01) square([USB_OPEN[0] - USB_OPEN[1], 0.02], center = true);
     translate([USB_X - 7.0, -(L - USB_WALL_T), BACK_T - 1]) cube([14.0, WALL - USB_WALL_T + 1, min(USB_Z + 4.0, Z_FRONT_IN) - BACK_T + 1]);
-    // sensor window under the screen: a pill recess for the clear window, and a
-    // hole through it over the IR receiver (learning) and the light sensor
-    translate([0, 0, H - WIN_DEPTH]) linear_extrude(1) sensor_win2d();
-    for (h = SENSOR_HOLES) translate([h[0], -h[1], Z_FRONT_IN - 1]) cylinder(d = h[2], h = H, $fn = 40);
-    // grooves in the top wall for the back plate's snap fingers
-    for (t = TOP_TABS) translate([t[0] - t[1] / 2 - 0.3, -(WALL + SNAP_GAP), SNAP_Z])
-        rotate([0, 90, 0]) linear_extrude(t[1] + 0.6) polygon([[0.75, 0], [-0.75, 0], [0, SNAP_BUMP + 0.1]]);
+    // sensor window under the screen: one pill slot through the front wall over
+    // the IR receiver (learning) and the light sensor, with a recess round it on
+    // the inside for the clear window's flange
+    translate([0, 0, Z_FRONT_IN - 1]) linear_extrude(H) sensor_win2d();
+    translate([0, 0, Z_FRONT_IN - 1]) linear_extrude(1 + SENSOR_FLANGE[1]) offset(r = SENSOR_FLANGE[0]) sensor_win2d();
+    // pockets in the top wall for the back plate's hooks, and in the side walls
+    // for its tabs (with the entry notches)
+    top_pockets();
+    side_pockets();
     // heat-set insert holes (from the backplane side)
     for (p = concat(KEY_HOLES, TOP_BOSSES, BOT_BOSSES)) translate([p[0], -p[1], Z_BP_TOP - EPS]) cylinder(d = INSERT_HOLE_D, h = INSERT_HOLE_DEPTH);
 }
@@ -309,6 +422,7 @@ module front_adds() {
     // posts that land on the backplane (key area) and corner bosses; all take inserts
     for (p = KEY_HOLES) translate([p[0], -p[1], Z_BP_TOP]) cylinder(d = POST_D, h = Z_FRONT_IN - Z_BP_TOP + EPS);
     for (p = concat(TOP_BOSSES, BOT_BOSSES)) translate([p[0], -p[1], Z_BP_TOP]) cylinder(d = BOSS_D, h = Z_FRONT_IN - Z_BP_TOP + EPS);
+    side_blocks();   // wall thickening at the back plate's side tabs
 }
 
 module front_shell() {
@@ -319,27 +433,68 @@ module front_shell() {
         }
         front_cuts();
     }
+    glass_keepers();   // after the cuts: the glass pocket cut would take them
+}
+
+// Glass keepers (the panel moved about in its pocket during assembly, before the
+// board holds it):
+//  - clip tabs on the long walls, just behind the glass, overlap its edge by
+//    CLIP_OVER. Hook one side of the glass under its tabs, press the other side
+//    in past its ramps. They clear the LCD, which is ~1 mm narrower than the glass.
+//  - end stops: small flat-faced blocks at both ends of the glass take up the
+//    pocket's CLEAR along the length. At the top end they reach from the top wall
+//    over the whole glass edge (the pocket is only the front wall deep there); at
+//    the FPC end they sit in the corners, against the long walls, and hang
+//    STOP_BOT[1] below the front wall, clear of the fold.
+CLIP_OVER = 0.2;              // tab over the glass edge, per side
+CLIP_L = 4;                   // tab length along the wall
+CLIP_RAMP = 1.0;              // ramp height (the lead-in from the back)
+CLIP_GAP = 0.05;              // tab to the glass's back face
+CLIP_Y = [LENS_C[1] - 25, LENS_C[1] + 25];
+STOP_W = 6;                   // top stops' width across the glass
+STOP_X = [LENS_C[0] - 18, LENS_C[0] + 18];
+STOP_GRIP = 0;                // stop face past the glass end (+ = tighter)
+STOP_BOT = [1.5, 0.35, 4];    // FPC end: block length outward, depth below the front wall, width
+STOP_CH = 0.3;                // lead-in chamfer on the back edge of the face
+module glass_keepers() {
+    z_glass = Z_LENS_TOP - CTP_T;                       // the glass's back face
+    p = CLEAR + CLIP_OVER;
+    for (s = [-1, 1], y = CLIP_Y) {
+        x0 = s < 0 ? WALL : W - WALL;                   // inner face of the long wall
+        zt = z_glass - CLIP_GAP;
+        translate([x0, -y + CLIP_L / 2, 0]) rotate([90, 0, 0]) linear_extrude(CLIP_L)
+            polygon([[s * 0.3, zt], [-s * p, zt], [0, zt - CLIP_RAMP], [s * 0.3, zt - CLIP_RAMP]]);
+    }
+    y_top = LENS_C[1] - LENS[1] / 2 + STOP_GRIP;        // glass ends
+    y_bot = LENS_C[1] + LENS[1] / 2 - STOP_GRIP;
+    for (x = STOP_X) end_stop(x, STOP_W, WALL - 0.3, y_top, z_glass, 1);
+    for (x = [WALL - 0.3 + STOP_BOT[2] / 2, W - WALL + 0.3 - STOP_BOT[2] / 2])
+        end_stop(x, STOP_BOT[2], y_bot, y_bot + STOP_BOT[0], Z_FRONT_IN - STOP_BOT[1], -1);
+}
+// block w wide at x, over y0..y1 (shell coords), z0 up to the glass's front; its face
+// toward the glass (at y1 for face = 1, y0 for face = -1) is chamfered at the back edge
+module end_stop(x, w, y0, y1, z0, face) {
+    hull() {
+        translate([x - w / 2, -y1, z0 + STOP_CH]) cube([w, y1 - y0, Z_LENS_TOP - z0 - STOP_CH]);
+        translate([x - w / 2, -(face > 0 ? y1 - STOP_CH : y1), z0])
+            cube([w, y1 - y0 - STOP_CH, EPS]);
+    }
 }
 
 // Windows: two small parts printed separately in translucent PETG and fitted by hand
 // (a drop of clear glue holds each one).
-//  - sensor window: goes in from the front. The pill sits flush in its recess
-//    in the front face, with a peg down through each hole; the light sensor's
-//    peg runs on to just above the sensor as a light pipe (the IR receiver's
-//    lens sits right under the wall anyway). Printed pill face down.
+//  - sensor window: goes in from the inside, before the board, like the IR
+//    window. A pill plug fills the slot in the front wall, flush outside, and
+//    its flange sits flush in the recess on the inside. Printed flange down.
+//    (Until 2026-11-10: a pill from the front with a peg through each of two holes.)
 //  - IR window: goes in from the inside, before the board. A plug fills the
 //    slot in the top wall, flush outside, and its flange sits in the recess on
 //    the inside, so it can't be pushed out. Printed flange down.
-WIN_DEPTH = 0.6;
 WIN_CLR = 0.1;          // per side, between a window and the shell (press-in fit)
 module sensor_win2d() { translate(S(SENSOR_WIN)) pill2d(SENSOR_WIN[2], SENSOR_WIN[3]); }
 module sensor_window() {
-    translate([0, 0, H - WIN_DEPTH]) linear_extrude(WIN_DEPTH) offset(delta = -WIN_CLR) sensor_win2d();
-    for (i = [0:len(SENSOR_HOLES) - 1]) {
-        h = SENSOR_HOLES[i];
-        z0 = i == 1 ? ALS_PIPE_Z0 : Z_FRONT_IN;          // [1] is the light sensor's hole
-        translate([h[0], -h[1], z0]) cylinder(d = h[2] - 2 * WIN_CLR, h = H - WIN_DEPTH - z0 + EPS, $fn = 40);
-    }
+    translate([0, 0, Z_FRONT_IN]) linear_extrude(SENSOR_FLANGE[1]) offset(r = SENSOR_FLANGE[0] - WIN_CLR) sensor_win2d();
+    translate([0, 0, Z_FRONT_IN]) linear_extrude(H - Z_FRONT_IN) offset(delta = -WIN_CLR) sensor_win2d();
 }
 module ir_window() {
     x0 = IR_WINDOW[0] - IR_WINDOW[1] / 2; z0 = IR_WINDOW[3] - IR_WINDOW[2] / 2;
@@ -365,21 +520,54 @@ module fence_corners(c, size, h, t = 1.0, arm = 6) {
     }
 }
 
-// Snap fingers: there is no room for screw bosses at the top end (the glass
-// runs up to it), so two fingers on the back plate's top edge click into
-// grooves in the top wall. Their bump is a ridge sloped on both faces, so the
-// plate snaps in and, once the screws are out, pulls off again.
-SNAP_T = 1.0;                       // finger thickness (y)
-SNAP_GAP = 0.15;                    // finger to wall
-SNAP_TOP = BACK_T + 4.4;            // finger tip height
-SNAP_BUMP = 0.4;                    // how far the ridge stands out (0.25 into the wall)
-SNAP_Z = SNAP_TOP - 0.9;            // ridge height
-module snap_fingers() {
-    for (t = TOP_TABS) translate([t[0] - t[1] / 2, -(WALL + SNAP_GAP) - SNAP_T, BACK_T - EPS]) {
-        cube([t[1], SNAP_T, SNAP_TOP - BACK_T]);
-        // the ridge on the outer (wall) face, a triangle in y-z
-        translate([0, SNAP_T, SNAP_Z - BACK_T]) rotate([0, 90, 0]) linear_extrude(t[1])
-            polygon([[0.6, 0], [-0.6, 0], [0, SNAP_BUMP]]);
+// Top hooks: there is no room for screw bosses at the top end (the glass runs up
+// to it). The first print's snap fingers (a 0.4 mm ridge on a 1 mm finger) held
+// too little, so now two stiff hooks on the back plate's top edge reach into
+// pockets in the top wall, like a battery door: tilt the plate, hook the top end
+// in, swing the bottom shut and fit the two screws. Nothing has to flex; the
+// screws keep the hooks from backing out. The hooks' lower faces and the pockets'
+// lower lips are chamfered, so they steer in and print without supports (plate
+// flat, shell face down). Profiles in shell coords [y, z], swept across each
+// TOP_TABS width.
+HOOK_PROFILE = [[3.15, BACK_T - EPS], [3.15, 4.4], [1.15, 4.4], [1.15, 3.8], [1.95, 3.0], [1.95, BACK_T - EPS]];
+POCKET_PROFILE = [[WALL + 0.3, 2.7], [WALL + 0.3, 4.5], [0.95, 4.5], [0.95, 3.75], [WALL, 2.7]];
+module top_profile(pts, extra = 0) {
+    for (t = TOP_TABS) translate([t[0] - t[1] / 2 - extra, 0, 0]) rotate([90, 0, 90]) linear_extrude(t[1] + 2 * extra)
+        polygon([for (q = pts) [-q[0], q[1]]]);
+}
+module top_hooks() { top_profile(HOOK_PROFILE); }
+module top_pockets() { top_profile(POCKET_PROFILE, 0.3); }
+
+// Side tabs (drop-and-slide, 2026-11-10): the same profile as the top hooks,
+// [inward distance from the outer face, z], swept along each long wall. The
+// plate goes in SLIDE towards the key end, each tab dropping through a notch in
+// the wall just below its ledge, then slides to the top end: the hooks go into
+// their pockets and the tabs under the ledges. The two bottom screws stop it
+// sliding back. Both slide directions print like the hooks (chamfered faces).
+// With the 4 mm back round-over the wall is only ~0.9 mm thick at the plate,
+// too thin beside a notch, so at each tab the wall is thickened TAB_IN inwards
+// (a block BLOCK_Z high) and the tab, ledge and notch move in by the same amount.
+NOTCH_D = 1.0;                // notch depth: wall thickness left beside it, from the outside (before TAB_IN)
+TAB_IN = 0.6;
+BLOCK_Z = 5.3;                // top of the wall blocks (the pockets reach z 4.5)
+BLOCK_PAD = 1.5;              // block length past the groove + notch at each end
+module side_profile(pts, y0, len) {
+    for (side = [0, 1]) translate([side ? W : 0, -y0, 0]) mirror([side, 0, 0]) translate([TAB_IN, 0, 0]) rotate([90, 0, 0])
+        linear_extrude(len) polygon(pts);
+}
+function block_y(y) = [y - 0.3 - BLOCK_PAD, y + TAB_L + SLIDE + 0.3 + BLOCK_PAD];   // shell y range of a wall block
+module side_blocks() {
+    for (y = SIDE_TABS) { r = block_y(y);
+        side_profile([[WALL - TAB_IN - 0.01, BACK_T], [WALL, BACK_T], [WALL, BLOCK_Z - TAB_IN], [WALL - TAB_IN - 0.01, BLOCK_Z]], r[0], r[1] - r[0]); }
+}
+module side_tabs() { for (y = SIDE_TABS) side_profile(HOOK_PROFILE, y, TAB_L); }
+module side_pockets() {
+    for (y = SIDE_TABS) {
+        // the ledge's groove: the tab at home plus the whole slide, 0.3 mm spare at each end
+        side_profile(POCKET_PROFILE, y - 0.3, TAB_L + SLIDE + 0.6);
+        // entry notch where the tab drops in, open to the wall's back edge
+        side_profile([[NOTCH_D, BACK_T - 1], [WALL + 0.3, BACK_T - 1], [WALL + 0.3, 4.5], [NOTCH_D, 4.5]],
+                     y + SLIDE - 0.3, TAB_L + 0.6);
     }
 }
 
@@ -387,10 +575,13 @@ module snap_fingers() {
 // lip and only the board's supports on it -- rails under the board's side edges
 // (under the screen), a standoff round each of its two screws and a pillar
 // under each key switch. The board is screwed to the front shell on its own,
-// so the plate takes only the two bottom screws; snap fingers hold its top end.
+// so the plate takes only the two bottom screws; hooks hold its top end.
 // Everything else between the plate and the board is open: the flat cell under
 // the screen, the ESP32 module, the motor, the board screws' heads and the
 // battery / motor / USB-C solder joints.
+// Everything inside the walls must stay inside them over the whole slide too:
+// clipped to the cavity and to the cavity moved SLIDE towards the top end.
+module slide_room2d(off) { intersection() { outline2d(off); translate([0, SLIDE]) outline2d(off); } }
 module back_plate() {
     lip_h = 1.5;
     sup_h = Z_BP_BOT - BACK_T + EPS;
@@ -399,27 +590,32 @@ module back_plate() {
             slab(0, BACK_T);
             difference() {
                 translate([0, 0, BACK_T - EPS]) linear_extrude(lip_h) difference() {
-                    outline2d(-WALL - 0.25);
+                    slide_room2d(-WALL - 0.25);
                     outline2d(-BP_LIP_IN);
                 }
                 for (p = concat(TOP_BOSSES, BOT_BOSSES)) translate([p[0], -p[1], 0]) cylinder(d = BOSS_D + 1.5, h = 10);
+                // room for the wall blocks at the side tabs, over the whole slide
+                for (y = SIDE_TABS) { r = block_y(y);
+                    translate([-1, -(r[1] + 0.3), 0]) cube([WALL + TAB_IN + 0.3 + 1, r[1] - r[0] + SLIDE + 0.6, 10]);
+                    translate([W - WALL - TAB_IN - 0.3, -(r[1] + 0.3), 0]) cube([WALL + TAB_IN + 0.3 + 1, r[1] - r[0] + SLIDE + 0.6, 10]); }
                 translate([USB_X - 7.5, -L - 1, 0]) cube([15, WALL + 12, 10]);
             }
             translate([0, 0, BACK_T - EPS]) linear_extrude(sup_h) intersection() {
-                outline2d(-WALL - 0.25);
+                slide_room2d(-WALL - 0.25);
                 union() {
                     for (r = RAILS) translate([r[0], -r[3]]) square([r[2] - r[0], r[3] - r[1]]);
                     for (p = STANDOFFS) translate(S(p)) circle(d = p[2]);
                     for (p = PILLARS) translate(S(p)) circle(d = p[2], $fn = 32);
                 }
             }
-            fence_corners(BATT_C, [BATT[0] + 0.6, BATT[1] + 0.6], 1.5, t = 0.6);
-            snap_fingers();
+            top_hooks();
+            side_tabs();
         }
+        // the cell's pocket (it locates the cell, so no corner guides)
+        translate([0, 0, BACK_T - BATT_POCKET]) linear_extrude(BATT_POCKET + 1)
+            rrect([BATT[0] + 2 * BATT_POCKET_CLR, BATT[1] + 2 * BATT_POCKET_CLR], 1.0, BATT_C);
         for (p = PLATE_SCREWS) counterbored_hole(p);
-        // slot to the EN/GND reset pads on the board's underside
-        translate([EN_SLOT[0], -EN_SLOT[1], -1]) linear_extrude(BACK_T + 2)
-            hull() for (s = [-1, 1]) translate([s * (EN_SLOT[2] - EN_SLOT[3]) / 2, 0]) circle(d = EN_SLOT[3], $fn = 24);
+        // (the slot to the EN/GND reset pads was removed 2026-11-10: not needed)
     }
 }
 
@@ -432,21 +628,24 @@ module cap_on_bed(k, ox, oy, c) {
 }
 
 // mode "body": the caps; mode "labels": just their inlays, in the same spots.
-// Load both STLs as ONE object with two parts in the slicer (Bambu/Orca/Prusa:
+// stl/caps.3mf (build_3mf.py) has them ready for Bambu Studio; otherwise load both
+// STLs as ONE object with two parts in the slicer (Bambu/Orca/Prusa:
 // add the labels file as a part) and give the labels the second filament.
+module cap_print_one(k, mode, ox, oy) {
+    c = (k[1] == "ring" || k[1] == "ok") ? DPAD_C :
+        (k[1] == "volL") ? [VOL_C[0] - VOL_BAR[0] / 4, VOL_C[1]] :
+        (k[1] == "volR") ? [VOL_C[0] + VOL_BAR[0] / 4, VOL_C[1]] : k[2];
+    if (mode == "body") cap_on_bed(k, ox, oy, c) cap(k);
+    else cap_on_bed(k, ox, oy, c) cap_label(k);
+}
 module caps_print(mode = "body") {
-    for (i = [0:len(KEYS) - 1]) {
-        k = KEYS[i];
-        c = (k[1] == "ring" || k[1] == "ok") ? DPAD_C :
-            (k[1] == "volL") ? [VOL_C[0] - VOL_BAR[0] / 4, VOL_C[1]] :
-            (k[1] == "volR") ? [VOL_C[0] + VOL_BAR[0] / 4, VOL_C[1]] : k[2];
-        ox = (i % 5) * 36;
-        oy = -floor(i / 5) * 36;
-        if (mode == "body") cap_on_bed(k, ox, oy, c) cap(k);
-        else cap_on_bed(k, ox, oy, c) cap_label(k);
-    }
+    for (i = [0:len(KEYS) - 1]) cap_print_one(KEYS[i], mode, (i % 5) * 36, -floor(i / 5) * 36);
     if (mode == "body") cap_on_bed(PWR_K, 5 * 36, 0, PWR_KEY) pwr_cap();
 }
+// One cap (cap_key: a KEYS name or "PWR"), body or label, on the bed at the
+// origin: build_3mf.py packs these into the multicolour 3MF.
+cap_key = "";
+cap_mode = "body";
 
 // ---------------------------------------------------------------- stand-ins for checking
 module panel() {       // LCD (backlight outline) + touch glass
@@ -462,7 +661,7 @@ module panel_fpc() {   // the 50-pin FPC folded under the LCD into the ZIF, part
     translate([FPC[6], -(LENS_Y1 + bend), Z_BP_TOP + 0.6]) cube([FPC[7], bend, Z_LCD_BOT + LCD_T - Z_BP_TOP - 0.7]);
 }
 module battery() {
-    translate([BATT_C[0] - BATT[0] / 2, -BATT_C[1] - BATT[1] / 2, BACK_T]) cube(BATT);
+    translate([BATT_C[0] - BATT[0] / 2, -BATT_C[1] - BATT[1] / 2, BACK_T - BATT_POCKET]) cube(BATT);
 }
 module bp2d() {
     difference() {
@@ -536,12 +735,20 @@ else if (part == "front") front_print();
 else if (part == "front_inplace") front_shell();
 else if (part == "ir_window")       // on the bed flange down, outer face up
     translate([-IR_WINDOW[0], IR_WINDOW[3], WALL]) rotate([90, 0, 0]) ir_window();
-else if (part == "sensor_window")   // on the bed pill face down, pegs up
-    translate([-SENSOR_WIN[0], -SENSOR_WIN[1], H]) rotate([180, 0, 0]) sensor_window();
+else if (part == "sensor_window")   // on the bed flange down, outer face up
+    translate([-SENSOR_WIN[0], SENSOR_WIN[1], -Z_FRONT_IN]) sensor_window();
 else if (part == "windows_inplace") windows();
 else if (part == "back") back_plate();
 else if (part == "caps") caps_print("body");
 else if (part == "caps_labels") caps_print("labels");
+else if (part == "cap_one") {
+    if (cap_key == "PWR") { if (cap_mode == "body") cap_on_bed(PWR_K, 0, 0, PWR_KEY) pwr_cap(); }
+    else for (k = KEYS) if (k[0] == cap_key) cap_print_one(k, cap_mode, 0, 0);
+}
+else if (part == "soft_springs") spring_plate();
+else if (part == "soft_inplace") {   // the soft pill caps with their inserts (the stiffest), at rest
+    for (k = KEYS) if (k[1] == "pill") { cap(k); translate([k[2][0], -k[2][1], SPR_Z]) spring_insert(0); }
+}
 else if (part == "labels_inplace") { for (k = KEYS) cap_label(k); }
 else if (part == "caps_inplace") { for (k = KEYS) cap(k); pwr_cap(); }
 else if (part == "assembly") assembly();
@@ -553,13 +760,57 @@ else if (part == "fit_test") {
         translate([-1, -L - 1, -1]) cube([W + 2, L - PWR_KEY[1] + 5, H + 2]);
     }
 }
+else if (part == "fit_test_top") {
+    // Try the screen and the top hooks before printing the whole shell: the front
+    // of the screen end (glass pocket, clip tabs, end stops) joined to the top
+    // 12 mm of the shell at full height (hook pockets), printed face down; beside
+    // it, the top 12 mm of the back plate with its hooks.
+    translate([0, 0, H]) rotate([180, 0, 0]) intersection() {
+        front_shell();
+        union() {
+            translate([-1, -(LENS_Y1 + 2), Z_LENS_TOP - CTP_T - CLIP_RAMP - 0.5]) cube([W + 2, LENS_Y1 + 3, H]);
+            translate([-1, -12, -1]) cube([W + 2, 13, H + 2]);
+        }
+    }
+    translate([0, -4, 0]) intersection() { back_plate(); translate([-1, -12, -1]) cube([W + 2, 13, H + 2]); }
+}
+else if (part == "fit_test_slide") {
+    // Try the drop-and-slide before printing the whole shell: a 20 mm band of the
+    // shell round the first side tabs (both walls, full height, tied together by
+    // a bar across the front so it stays square), printed face down; beside it
+    // the matching band of the back plate. Drop the plate band in SLIDE towards
+    // the key end (tabs through the notches) and slide it home.
+    y0 = SIDE_TABS[0] - 5; y1 = SIDE_TABS[0] + TAB_L + SLIDE + 6.5;
+    translate([0, 0, H]) rotate([180, 0, 0]) {
+        intersection() { front_shell(); translate([-1, -y1, -1]) cube([W + 2, y1 - y0, H + 2]); }
+        intersection() {
+            translate([0, -y1, H - 1.2]) cube([W, y1 - y0, 1.2]);
+            linear_extrude(H) outline2d(-0.5);
+        }
+    }
+    translate([0, -(y1 - y0) - 6, 0]) translate([0, 0, 0]) intersection() { back_plate(); translate([-1, -y1, -1]) cube([W + 2, y1 - y0, H + 2]); }
+}
 else if (part == "interference") {
     // everything here should be empty (zero-thickness contacts are fine)
     intersection() { union() { front_shell(); back_plate(); } union() { board_envelope(); battery(); backplane_envelope(); } }
 }
+else if (part == "slide_check") {
+    // the back plate along its slide (start at SLIDE towards the key end) against the
+    // front shell and the board's parts: should be empty, apart from zero-thickness
+    // contacts (pillars and rails on the board, the plate on the walls' back edge)
+    intersection() {
+        union() { for (t = [0:0.75:SLIDE]) translate([0, -t, 0]) back_plate(); translate([0, -SLIDE, 0]) back_plate(); }
+        union() { front_shell(); bp_module(); bp_lra(); bp_screw_heads(); }
+    }
+}
 else if (part == "windows_vs_parts") {
     // the windows (and the light pipe) against everything inside: should be empty
     intersection() { windows(); union() { back_plate(); board_envelope(); backplane_envelope(); battery(); for (k = KEYS) cap(k); pwr_cap(); } }
+}
+else if (part == "caps_vs_parts") {
+    // caps (sockets, the ring's fork) against the board's parts, the panel and the cell;
+    // the stems' 0.01 mm overlap onto the switch tops is intended
+    intersection() { union() { for (k = KEYS) cap(k); pwr_cap(); } union() { backplane_envelope(); board_envelope(); battery(); } }
 }
 else if (part == "cap_interference") {
     intersection() { front_shell(); union() { for (k = KEYS) cap(k); pwr_cap(); } }
@@ -571,4 +822,13 @@ else if (part == "board_vs_bp") {
 else if (part == "cap_vs_parts") {
     // caps and their long stems against the backplane parts: should be empty
     intersection() { union() { for (k = KEYS) cap(k); pwr_cap(); } union() { backplane_envelope(); board_envelope(); } }
+}
+else if (part == "soft_check_rest") {     // inserts at rest vs everything but the switches: should be empty
+    intersection() { for (k = KEYS) if (k[1] == "pill") translate([k[2][0], -k[2][1], SPR_Z]) spring_insert(0);
+        union() { front_shell(); bp_pcb(); bp_irleds(); bp_usbc(); bp_module(); bp_lra(); bp_zif(); bp_ics(); bp_screw_heads(); board_envelope(); battery(); } }
+}
+else if (part == "soft_check_pressed") {  // caps + inserts at the hard stop vs the board's parts except the switches:
+    // only the nubs show (they sit on the plungers; the beam bends, which this rigid check can't)
+    intersection() { translate([0, 0, -(SPR_NUB_H + 0.3)]) for (k = KEYS) if (k[1] == "pill") { cap(k); translate([k[2][0], -k[2][1], SPR_Z]) spring_insert(0); }
+        union() { front_shell(); bp_pcb(); bp_irleds(); bp_usbc(); bp_module(); bp_lra(); bp_zif(); bp_ics(); bp_screw_heads(); board_envelope(); battery(); } }
 }

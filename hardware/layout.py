@@ -41,7 +41,7 @@ import os
 # Panel coords: origin at the touch glass's top-left corner seen from the
 # front, FPC edge at the bottom.  VERIFY THE FPC FOLD ON THE REAL PANEL.
 # ---------------------------------------------------------------------------
-LENS_W, LENS_H, LENS_R = 56.54, 84.96, 0.3      # touch glass (CTP O.D.)
+LENS_W, LENS_H, LENS_R = 56.54, 84.96, 0        # touch glass (CTP O.D.), square corners
 LCD_W, LCD_H = 54.56, 82.84                      # LCD / backlight outline (BL O.D.)
 LCD_X0, LCD_Y0 = 0.99, 1.54                      # glass corner -> LCD corner (the FPC end has 0.58)
 LCD_T = 2.1                                      # LCD alone
@@ -86,10 +86,15 @@ LIP = 0.8            # front frame over the glass
 LIP_OVER = 1.2       # how far the frame overlaps the glass edge
 BACK_T = 1.5         # back plate thickness
 SWELL = 0.5          # Li-Po swell gap
-# Flat cell under the SCREEN, on the flat back plate, pushed to the top end
-# (away from the antenna). Any cell up to BATT_BAY fits; set its size here
-# (corner guides on the plate locate it; its thickness drives H).
-BATT = (50.0, 85.0, 4.0)   # (x, y, z): a 405085, 4 x 50 x 85 mm
+# Flat cell under the SCREEN, in a pocket in the back plate, pushed to the top
+# end (away from the antenna). Any cell up to BATT_BAY fits; set its size here
+# (the pocket locates it; its thickness drives H).
+# 2026-11-10: the cell bought is an EEMB 524261 (1500 mAh), sold as 5.2 x 42 x 61
+# but measured 5.5-6.0 mm thick, which lifted the 13.0 mm shell's back plate.
+# Sized for 6.0 mm: the shell grew 1 mm and the cell sinks BATT_POCKET into the plate.
+BATT = (42.0, 61.0, 6.0)   # (x, y, z): a 524261 at its measured worst thickness
+BATT_POCKET = 1.0          # cell pocket depth in the back plate (leaves BACK_T - this as its floor)
+BATT_POCKET_CLR = 0.5      # pocket clearance round the cell, per side
 BP_T = 0.8                 # main board thickness
 
 LENS_TOP = 4.8       # outer top edge -> glass top edge (keeps the LCD 0.7 mm clear of the IR LEDs' backs)
@@ -101,7 +106,7 @@ KEYS_W, KEYS_H = 61.0, 70.0                      # key grid extent
 W = LENS_W + 2 * CLEAR + 2 * WALL                # the glass sets the width: wall + clearance each side
 
 # z stack (from the outer back face)
-Z_BP_BOT = BACK_T + SWELL + BATT[2]
+Z_BP_BOT = BACK_T + SWELL + BATT[2] - BATT_POCKET
 Z_BP_TOP = Z_BP_BOT + BP_T
 Z_LCD_BOT = Z_BP_TOP + FOAM_T
 Z_LCD_TOP = Z_LCD_BOT + LCD_T
@@ -153,9 +158,11 @@ DPAD_R_OUT = 15.5
 # its flange under the front shell; the OK's flange sits DPAD_OK_DROP below the
 # ring's inner edge, so the ring holds the OK in without pressing it when it tilts.
 DPAD_R_IN = 8.6
-DPAD_OK_R = 7.4
+# (2026-10-17, after the first print: OK 7.4 -> 8.1, lip 0.4 -> 1.0. The 1.2 mm
+# gap let the OK slide until its lip slipped from under the ring, so it rolled.)
+DPAD_OK_R = 8.1
 DPAD_OK_DROP = 0.6
-DPAD_OK_LIP = 0.4
+DPAD_OK_LIP = 1.0
 DPAD_ISLAND = (5.45, 7.45)
 DPAD_BRIDGE_W = 1.2
 ROW2_Y, APPS_Y, VOL_Y = 42.0, 54.0, 64.0
@@ -226,7 +233,7 @@ I2C_ADDR = {"FT6236": 0x38, "DRV2605L": 0x5A, "MMA8452Q": 0x1C}
 # screws from its underside, before the back plate goes on. The back plate is
 # held by just the two bottom screws (BOT_BOSSES, through the board into the
 # bottom bosses) and, at the top end, where there is no room for bosses beside
-# or above the glass, by two snap fingers under the top wall (TOP_TABS). The
+# or above the glass, by two hooks into pockets in the top wall (TOP_TABS). The
 # upper right post keeps clear of the antenna.
 POST_X = 6.3
 KEY_HOLES = [(POST_X, KEYS_Y0 + 4.0), (W - POST_X, KEYS_Y0 + 22.2),
@@ -234,7 +241,17 @@ KEY_HOLES = [(POST_X, KEYS_Y0 + 4.0), (W - POST_X, KEYS_Y0 + 22.2),
 POST_D = 5.5
 TOP_BOSSES = []
 BOT_BOSSES = [(11.5, L - 8.5), (W - 11.5, L - 8.5)]
-TOP_TABS = [(W / 2 - 14.0, 8.0), (W / 2 + 14.0, 8.0)]   # back-plate hooks: centre x, width
+TOP_TABS = [(W / 2 - 14.0, 10.0), (W / 2 + 14.0, 10.0)]   # back-plate hooks: centre x, width
+# Drop-and-slide back plate (2026-11-10, after the first plate lifted between
+# the screws): the plate goes in SLIDE mm towards the key end, then slides
+# towards the top end. The top hooks go into their pockets and SIDE_TABS tabs on
+# each long edge go under ledges in the side walls (same profile as the hooks),
+# so the plate is held down along its whole length; the two bottom screws stop
+# it sliding back. Tabs: shell y of each tab's top end (home position), on both
+# walls, TAB_L long; the wall has an entry notch just below each ledge.
+SLIDE = 4.5
+TAB_L = 4.0
+SIDE_TABS = [25.0, 75.0, 140.0]
 BOSS_D = 6.0
 INSERT_HOLE_D = 3.0
 INSERT_HOLE_DEPTH = 4.0
@@ -268,12 +285,13 @@ SENSOR_WIN = (KEYS_X0 + COLS[0], ROW_Y, 11.0, 4.0)          # centre x, y, w, h
 IRRX_LENS = (SENSOR_WIN[0] + 2.6, ROW_Y)
 IRRX_POS = (IRRX_LENS[0], IRRX_LENS[1] + 0.76)
 ALS_POS = (SENSOR_WIN[0] - 3.2, ROW_Y)
-SENSOR_HOLES = [(IRRX_LENS[0], IRRX_LENS[1], 3.0), (ALS_POS[0], ALS_POS[1], 1.6)]   # x, y, diameter
 ALS_H = 0.7
-# Both windows are printed in translucent PETG. The plug in the light sensor's hole
-# runs on down as a light pipe and ends this high, 0.5 mm above the sensor
-# (through the bare 1.6 mm hole alone it would see only about +-8 deg).
-ALS_PIPE_Z0 = Z_BP_TOP + ALS_H + 0.5
+# Both windows are printed in translucent PETG. The sensor window (2026-11-10,
+# was a front pill with a peg through each of two holes) is one pill-shaped slot
+# through the front wall over both sensors, filled by a plug glued in from
+# inside; its flange (overhang, thickness) sits in a recess in the wall's inner
+# face, so nothing hangs down towards the IR receiver.
+SENSOR_FLANGE = (1.0, 0.6)
 FG_POS = (9.2, KEYS_Y0 + 41.0)
 # EN + GND pads on the underside (short them to reset the ESP32), reached
 # through a slot in the back plate: EN just below the module's EN pin, GND
@@ -323,12 +341,12 @@ BAT_PADS = [(12.0, 92.46), (16.0, 92.46)]
 # run down to the pads.
 BATT_BAY = (BP_LIP_IN + RAIL_W, BP_LIP_IN, W - BP_LIP_IN - RAIL_W, BAT_PADS[0][1] - 2.3)
 BATT_C = ((BATT_BAY[0] + BATT_BAY[2]) / 2, BATT_BAY[1] + 0.4 + BATT[1] / 2)
-RAILS = [(BP_LIP_IN, BP_LIP_IN, BATT_BAY[0], BATT_BAY[3]),                 # left
-         (BATT_BAY[2], BP_LIP_IN, W - BP_LIP_IN, BATT_BAY[3])]             # right
 # Room the parts on the board's underside need (x0, y0, x1, y1, height below
 # the board): nothing on the back plate may reach into these
 MOD_POCKET = (MOD_C[0] - MOD_L / 2 - 0.6, MOD_TOP - 0.6, W - BP_INSET + 0.2,
               MOD_TOP + MOD_W + 0.6, MOD_T + 0.4)
+RAILS = [(BP_LIP_IN, BP_LIP_IN, BATT_BAY[0], BATT_BAY[3]),                 # left
+         (BATT_BAY[2], BP_LIP_IN, W - BP_LIP_IN, min(BATT_BAY[3], MOD_POCKET[1] - SLIDE - 0.3))]  # right: its slide misses the module
 UNDERSIDE_ZONES = [
     MOD_POCKET,
     (MOTOR_C[0] - MOTOR_D / 2 - 0.4, MOTOR_C[1] - MOTOR_D / 2 - 0.4,
@@ -355,9 +373,11 @@ def _pillars():
     r = PILLAR_D / 2 + 0.5
 
     def clear(x, y):
-        box = (x - r, y - r, x + r, y + r)
+        box = (x - r, y - r, x + r, y + r + SLIDE)       # swept over the plate's slide
         return (not any(_overlap(box, b) for b in blocked)
-                and all(math.hypot(x - sx, y - sy) > d / 2 + r for sx, sy, d in STANDOFFS + HEAD_ROOM))
+                and all(min(math.hypot(x - sx, y + t - sy) for t in (0, SLIDE / 2, SLIDE)) > d / 2 + r
+                        for sx, sy, d in HEAD_ROOM)
+                and all(math.hypot(x - sx, y - sy) > d / 2 + r for sx, sy, d in STANDOFFS))
 
     nudges = sorted({(dx * 0.1, dy * 0.1) for dx in range(-15, 16) for dy in range(-15, 16)
                      if math.hypot(dx, dy) <= 15}, key=lambda d: math.hypot(*d))
@@ -472,6 +492,8 @@ def check():
     if not (LENS_X0 + LCD_X0 < zx0 and zx1 < LENS_X0 + LCD_X0 + LCD_W and LENS_Y0 + LCD_Y0 < zy0 and zy1 < LENS_Y1 - 0.58):
         problems.append("ZIF connector not fully under the LCD")
     # battery
+    if BATT_POCKET > BACK_T - 0.45:
+        problems.append("battery pocket floor thinner than 0.45 mm")
     bw, bh = BATT_BAY[2] - BATT_BAY[0] - 0.8, BATT_BAY[3] - BATT_BAY[1] - 0.8
     if BATT[0] > bw or BATT[1] > bh:
         problems.append(f"battery {BATT[0]}x{BATT[1]} doesn't fit the {bw:.1f}x{bh:.1f} bay")
@@ -489,6 +511,22 @@ def check():
         for z in UNDERSIDE_ZONES:
             if _overlap((x - d / 2, y - d / 2, x + d / 2, y + d / 2), z[:4]):
                 problems.append(f"board screw head at {x:.1f},{y:.1f} runs into the underside part room at {z[:4]}")
+    # drop-and-slide: everything on the plate under the board sweeps SLIDE towards
+    # the key end; the sweep must miss the underside parts and the board screws' heads
+    sweep = [(r[0], r[1], r[2], r[3] + SLIDE) for r in RAILS]
+    sweep += [(x - d / 2, y - d / 2, x + d / 2, y + d / 2 + SLIDE) for x, y, d in STANDOFFS + PILLARS]
+    for a in sweep:
+        for z in UNDERSIDE_ZONES:
+            if _overlap(a, z[:4]):
+                problems.append(f"plate support {a} sweeps into the underside part room at {z[:4]}")
+        for x, y, d in HEAD_ROOM:
+            if _overlap(a, (x - d / 2 + 0.5, y - d / 2 + 0.5, x + d / 2 - 0.5, y + d / 2 - 0.5)):
+                problems.append(f"plate support {a} sweeps into the board screw head at {x:.1f},{y:.1f}")
+    for y in SIDE_TABS:
+        if not (R_TOP + 1 < y and y + TAB_L + SLIDE + 1 < L - R_BOT):
+            problems.append(f"side tab at y {y} off the straight part of the walls")
+        if y < MOD_POCKET[3] + 0.5 and y + TAB_L + SLIDE > MOD_POCKET[1] - 0.5:
+            problems.append(f"right side tab at y {y} beside the ESP32 module")
     # flat back: every key switch has a pillar under it, or the module carries it
     for name in PILLARS_SKIPPED:
         problems.append(f"no room for a pillar under the {name} switch")
@@ -554,8 +592,9 @@ def write_scad(path):
         PWR_KEY=list(PWR_KEY), PWR_PILL=list(PWR_PILL),
         MOD=[MOD_C[0], MOD_C[1], MOD_L, MOD_W, MOD_T], ANT_KEEPOUT=list(ANT_KEEPOUT),
         MOTOR_C=list(MOTOR_C), MOTOR_D=MOTOR_D, MOTOR_T=MOTOR_T,
-        SENSOR_HOLES=[list(h) for h in SENSOR_HOLES], SENSOR_WIN=list(SENSOR_WIN), ALS_PIPE_Z0=ALS_PIPE_Z0, EN_SLOT=list(EN_SLOT),
-        TOP_TABS=[list(t) for t in TOP_TABS],
+        SENSOR_WIN=list(SENSOR_WIN), SENSOR_FLANGE=list(SENSOR_FLANGE), EN_SLOT=list(EN_SLOT),
+        TOP_TABS=[list(t) for t in TOP_TABS], SLIDE=SLIDE, TAB_L=TAB_L, SIDE_TABS=SIDE_TABS,
+        BATT_POCKET=BATT_POCKET, BATT_POCKET_CLR=BATT_POCKET_CLR,
         PARTS=[[DRV_POS[0], DRV_POS[1], 3.0, 3.0, 1.1], [ACC_POS[0], ACC_POS[1], 3.0, 3.0, 1.0],
                [IRRX_POS[0], IRRX_POS[1], 7.4, 5.0, 4.0], [ALS_POS[0], ALS_POS[1], 2.0, 2.0, ALS_H],
                [FG_POS[0], FG_POS[1], 2.0, 2.0, 0.8],
@@ -614,7 +653,7 @@ if __name__ == "__main__":
     print(f"FPC: folds {FPC_FOLD_END:.1f} mm back under the panel (end at y {FPC_END_Y:.2f}); "
           f"ZIF at {ZIF_C[0]:.2f},{ZIF_C[1]:.2f}; parts area to y {FPC_PARTS_Y:.1f}")
     print(f"battery bay {BATT_BAY[2] - BATT_BAY[0]:.1f} x {BATT_BAY[3] - BATT_BAY[1]:.1f} mm "
-          f"(cells up to {BATT_BAY[2] - BATT_BAY[0] - 0.8:.1f} x {BATT_BAY[3] - BATT_BAY[1] - 0.8:.1f} x 4.0); "
+          f"(cells up to {BATT_BAY[2] - BATT_BAY[0] - 0.8:.1f} x {BATT_BAY[3] - BATT_BAY[1] - 0.8:.1f} x {BATT[2]:g}); "
           f"cell {BATT[0]:g} x {BATT[1]:g} x {BATT[2]:g}")
     print(f"flat back: {len(PLATE_SCREWS)} screws in the plate ({len(BOARD_SCREWS)} more hold the board), "
           f"{len(STANDOFFS)} screw standoffs, {len(PILLARS)} switch pillars, "

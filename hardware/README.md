@@ -4,10 +4,10 @@
 
 | | |
 |---|---|
-| Size | 60.7 × 182.2 × **13.0 mm** |
+| Size | 60.7 × 182.2 × **14.0 mm** |
 | Display | BuyDisplay ER-TFT035IPS-6 (ILI9488) + ER-TPC035-6 touch (FT6236), 3.75 mm, one 50-pin FPC |
 | ESP32 | ESP32-S3-WROOM-1-N8R2 module (8 MB flash, 2 MB PSRAM) |
-| Battery | flat Li-Po up to 4.0 mm thick and 50.8 × 86.1 mm (sized for a 405085), under the screen |
+| Battery | flat Li-Po up to 6.0 mm thick and 50.8 × 86.1 mm, under the screen, sunk 1 mm into the back plate (set for the EEMB 524261, 1500 mAh, measured 5.5–6.0 mm thick) |
 | You solder | ESP32 module, battery, vibration motor (the display just plugs in) |
 
 Everything is generated from [`layout.py`](layout.py):
@@ -20,18 +20,18 @@ Everything is generated from [`layout.py`](layout.py):
 
 It needs Python 3 (no extra packages) and OpenSCAD 2021.01+, found on the PATH or set with `OPENSCAD=`. The PNG renders in `docs/` need a display, so on a headless Linux box they're skipped.
 
-## Stack (from the back face, 4 mm cell)
+## Stack (from the back face, 6 mm cell)
 
 | z (mm) | |
 |---|---|
-| 0 – 1.5 | back plate |
-| 1.5 – 6.0 | open space: battery (+0.5 swell gap) under the screen; ESP32 module, vibration motor and the heads of the 4 board screws under the keys. The back plate is flat; the board rests on rails along its edges under the screen, a standoff at each of the plate's 2 screws and a 3 mm pillar under each key switch |
-| 6.0 – 6.8 | main board, 0.8 mm |
-| 6.8 – 8.4 | under the LCD: the 50-pin ZIF connector (1.5 mm), the folded display FPC and its parts area, foam pads at the top end |
-| 8.4 – 12.15 | LCD (2.1) + touch glass (1.65) |
-| 12.15 – 12.95 | front frame over the glass edge |
+| 0 – 1.5 | back plate (0.5 mm under the cell: it sits in a 1 mm pocket); its back edges are rounded 4 mm, turning into a 45° chamfer at the print bed |
+| 1.5 – 7.0 | open space: battery (+0.5 swell gap) under the screen; ESP32 module, vibration motor and the heads of the 4 board screws under the keys. The back plate is flat; the board rests on rails along its edges under the screen, a standoff at each of the plate's 2 screws and a 3 mm pillar under each key switch |
+| 7.0 – 7.8 | main board, 0.8 mm |
+| 7.8 – 9.4 | under the LCD: the 50-pin ZIF connector (1.5 mm), the folded display FPC and its parts area, foam pads at the top end |
+| 9.4 – 13.15 | LCD (2.1) + touch glass (1.65) |
+| 13.15 – 13.95 | front frame over the glass edge |
 
-The cell thickness sets H: 3 mm → 12.0, 4 mm → 13.0, 5 mm → 14.0 mm. Change `BATT` in `layout.py` and rebuild.
+The cell thickness sets H (with the 1 mm pocket, `BATT_POCKET`): 5 mm → 13.0, 6 mm → 14.0 mm. Change `BATT` in `layout.py` and rebuild.
 
 ## Main board
 
@@ -55,11 +55,11 @@ Routing: [Freerouting](https://github.com/freerouting/freerouting) 2.5 does it, 
 | Backlight driver | top, right strip | LED+ from VSYS via 2 × 22 Ω (1206, they see up to ≈ 0.12 W each on USB), cathodes switched by an AO3400A on GPIO46 (PWM) |
 | 50-pin 0.5 mm ZIF connector (XUNPU FPC-05F-50PH15) | top, under the panel, JLCPCB | bottom contact, flip lid; the display FPC folds under and plugs in |
 | ESP32-S3-WROOM-1-N8R2 | **underside**, across the board just below the screen | **you solder**. It must be the **N8R2**: the N8R8 (octal PSRAM) uses GPIO35–37, which are LCD D0–D2 here; antenna at the **right edge**, beside the D-pad, with no copper on either layer around it (3.5 mm past the module's sides). It can't go under the screen: the panel would detune it. |
-| IR receiver (Everlight IRM-H638T, 38 kHz) | in the row under the screen, left, under the sensor window (3.0 mm hole) | for **learning** codes from existing remotes; output on GPIO42. Powered from GPIO1 through 220 Ω + 10 µF, so it's only on while learning (it draws 0.4 mA) |
-| Ambient light sensor (LTR-303ALS-01) | beside the IR receiver, same window (1.6 mm hole, with a translucent PETG light pipe down to it) | auto-brightness; I²C `0x29` |
+| IR receiver (Everlight IRM-H638T, 38 kHz) | in the row under the screen, left, under the sensor window | for **learning** codes from existing remotes; output on GPIO42. Powered from GPIO1 through 220 Ω + 10 µF, so it's only on while learning (it draws 0.4 mA) |
+| Ambient light sensor (LTR-303ALS-01) | beside the IR receiver, same window | auto-brightness; I²C `0x29` |
 | Fuel gauge (MAX17048) | top, left strip | battery %, time-to-empty and the cell voltage; I²C `0x36` |
-| EN + GND reset pads | underside, below the module, under a slot in the back plate | short them (a small screwdriver across both) to reset the ESP32 without opening the case |
-| BAT+ / BAT− pads, vibration-motor pads | underside: battery pads just below the screen on the left, motor in the left strip | the motor is an 8 mm ERM (or LRA) coin, set in firmware |
+| EN + GND reset pads | underside, below the module | short them (a small screwdriver across both) to reset the ESP32; the back plate has to come off (its slot was removed 2026-11-10) |
+| BAT+ / BAT− pads, vibration-motor pads | underside: battery pads just below the screen on the left, motor in the left strip | the motor is an 8 mm ERM (or LRA) coin, or a 21.5 × 6 × 3 mm X-axis bar LRA lying lengthwise in the same strip; which one is set in Settings > Haptics > Motor |
 
 ### ESP32-S3 pin map
 
@@ -87,12 +87,12 @@ The FPC leaves the panel's bottom edge, makes a U-bend down past the glass and r
 ## Assembly order
 
 1. **ESP32 module** (underside, lying across the board below the screen, antenna end at the right edge as the silk shows): tack two corners, then solder the edge pads. Solder the centre GND pad from the top side: feed solder into its four 1 mm holes until each one fills (the module's pad heats slowly, so use a hot, broad tip). Pins 1 and 40 (GND, by the antenna) are also tied to that pad with tracks.
-2. **Battery** leads to BAT+ / BAT− (underside, just below the screen on the left), **motor** leads to its pads (red to +). Cut the battery's plug off and solder the leads straight to the pads, red to BAT+: at 4 mm there's no room for a connector. Stick the motor to the board's underside by its adhesive back, on its spot in the left strip. The cell goes at the top end, under the screen and as far from the antenna as it goes, between the four corner guides on the back plate; its leads run down to the pads. A piece of Kapton tape on the board's underside over the cell area keeps via tips off the pouch.
+2. **Battery** leads to BAT+ / BAT− (underside, just below the screen on the left), **motor** leads to its pads (red to +). Cut the battery's plug off and solder the leads straight to the pads, red to BAT+: there's no room for a connector. Stick the motor to the board's underside by its adhesive back, on its spot in the left strip. A bar LRA instead (0619 X-axis, 21.5 × 6 × 3 mm, 170 Hz, 1.2 Vrms: crisper taps): solder thin wires to its two gold pads, lay it lengthwise along the left strip with its outer edge ~5 mm in from the board edge (clear of the shell's side rail), its top end a couple of mm below the top-left board screw and its pads towards the motor pads, and stick it down flat with thin double-sided tape (a firm mount carries the tap; x 5–11, y 108–129.5 in `layout.py` coordinates, clear of the screw heads and the key pillars, 3 mm in the 5.5 mm under the board). Then set Settings > Haptics > Motor to Bar (LRA). The cell goes at the top end, under the screen and as far from the antenna as it goes, in the pocket in the back plate; its leads run down to the pads. A piece of Kapton tape on the board's underside over the cell area keeps via tips off the pouch.
 3. **Display**: lay the panel face down beyond the board's key end, FPC towards J1. Flip J1's lid up, slide the FPC in with its contacts facing the board, then close the lid. Fold the panel over onto foam pads (two layers of 1 mm foam tape) at the board's top end, so the FPC makes a U-bend under it. Stick the pads left and right of the small IR-driver parts there (they sit under the LCD now), not on them.
-4. Flash over USB-C. esptool resets the ESP32 into download mode over USB by itself. If a broken firmware stops that from working, hold OK and short the two reset pads through the slot in the back plate (a small flat screwdriver across both), then release them while still holding OK. Plugging in USB doesn't reset the ESP32 once the battery is connected.
-5. Key caps into the front shell, face down: the one-piece **D-pad ring** first, then the **OK** button into the ring from behind, so its flange rests on the ring's inner edge (the ring holds the OK in; put in first, the OK would drop through the ring's opening), then the other caps.
+4. Flash over USB-C. esptool resets the ESP32 into download mode over USB by itself. If a broken firmware stops that from working, take the back plate off, hold OK and short the two reset pads below the ESP32 module (a small flat screwdriver across both), then release them while still holding OK. Plugging in USB doesn't reset the ESP32 once the battery is connected.
+5. Key caps into the front shell, face down: the one-piece **D-pad ring** first, with the eye on its arm dropped over the screw post to its right (that's what stops it turning, so it only goes in one way), then the **OK** button into the ring from behind, so its flange rests on the ring's inner edge (the ring holds the OK in; put in first, the OK would drop through the ring's opening), then the other caps.
 6. Board into the front shell (glass into its pocket), then screw it to the four posts in the key area with **4 × M2×4** from its underside, into the inserts. Use nylon screws, or at least put a disc of Kapton tape under the head at the top-left hole (H1): a VBAT track passes 1.75 mm from its centre on the underside, under the edge of a 4 mm head, with only solder mask in between.
-7. Battery on the back plate between its corner guides. Hook the back plate's top end in first: its two snap fingers click into grooves in the top wall. Then close it with **2 × M2×8** through the bottom bosses (they pass through the board too).
+7. Battery into its pocket in the back plate. The plate **drops in and slides**: lay it flat on the back about 4.5 mm towards the key end, so the three tabs on each long edge drop through the notches in the side walls, then push it towards the screen end until it stops. The tabs slide under the ledges in the side walls and the two top hooks go into the pockets in the top wall. Then fit **2 × M2×10** through the bottom bosses (they pass through the board too); they stop the plate sliding back. Don't force the plate down: if it doesn't sit flat, the cell is too thick for its pocket.
 
 ## Ordering
 
@@ -137,13 +137,13 @@ Shipping ≈ $11 (Global Standard, 12–19 days). VAT is added at checkout.
 | M2 × 4 nylon pan-head screws (the board screws) | search "M2 nylon screw 4mm" | 4 mm | ≈ 1–2 |
 | 1 mm double-sided foam tape, 10 m | [1005007483857645](https://www.aliexpress.com/item/1005007483857645.html) | 10 mm wide | 3.53 |
 
-Alternative screws: [4000970993800](https://www.aliexpress.com/item/4000970993800.html) (€2.26, 50 pcs stainless). An LRA 0832 exists ([1005010354264566](https://www.aliexpress.com/item/1005010354264566.html)) but costs ≈ €23.6 with shipping; the ERM works with the DRV2605L (a firmware setting).
+Alternative screws: [4000970993800](https://www.aliexpress.com/item/4000970993800.html) (€2.26, 50 pcs stainless). An LRA 0832 exists ([1005010354264566](https://www.aliexpress.com/item/1005010354264566.html)) but costs ≈ €23.6 with shipping; the ERM works with the DRV2605L (a firmware setting). The crispest option tried: an X-axis bar LRA 0619AAC (21.5 × 6 × 3 mm, 170 Hz, 1.2 Vrms, 9 Ω), e.g. [1005009456390635](https://www.aliexpress.com/item/1005009456390635.html); the firmware has a Motor setting for it.
 
 ### 4. Battery: Eremit, to the German forwarding address
 
 Li-Po cells count as dangerous goods for shipping, and the shops that sell them won't send them to Cyprus directly. Eremit ships only within Germany but explicitly allows forwarding services, so order to the forwarder's German address.
 
-Look for a flat Li-Po (pouch) cell, **at most 4.0 mm thick and 50.8 × 86.1 mm**, with its leads on a short edge and a protection circuit. Pouch cells are named by size: thickness in tenths of a mm, then width, then length, so **405085** is 4.0 × 50 × 85 mm, the largest that fits and the one the back plate is set up for. 3.0–4.0 mm thick, up to 50 mm wide and 86 mm long all fit: 405085, 405080, 404080, 405060 or the smaller 404060. Set `BATT` in `layout.py` to the cell you buy and rebuild the back plate, so its corner guides fit it. Not yet chosen.
+Look for a flat Li-Po (pouch) cell, **at most 6.0 mm thick (measured, not the name) and 50.8 × 86.1 mm**, with its leads on a short edge and a protection circuit. Pouch cells are named by size: thickness in tenths of a mm, then width, then length, so **524261** is 5.2 × 42 × 61 mm. Real cells run thicker than their name: the EEMB 524261 (1500 mAh) bought for v1 measures 5.5–6.0 mm. Set `BATT` in `layout.py` to the cell you have and rebuild the back plate, so its pocket fits it.
 
 ### Rough total
 
@@ -155,14 +155,26 @@ Look for a flat Li-Po (pouch) cell, **at most 4.0 mm thick and 50.8 × 86.1 mm**
 | Batteries (to Germany, not yet chosen) | ≈ 15–20 + forwarding |
 | **Total** | **≈ €130 + forwarding + VAT on the JLCPCB and BuyDisplay parts** |
 
-Already on hand (not counted): PETG in two colours, solder, flux, solder wick. The second colour prints the key labels and the ring dots.
+Already on hand (not counted): PLA in two colours for the caps, PETG for the shell, TPU (Creality CR-TPU) for the soft-key springs, solder, flux, solder wick. The second colour prints the key labels and the ring dots.
+
+**Key caps.** `stl/caps.3mf` is a Bambu Studio project with every cap on one plate, face down (X2D 0.4 nozzle, 0.20mm Standard, Bambu PLA Basic, Textured PEI plate). Each cap is one object with two parts: the body on filament 1 and the label inlay on filament 2. The labels are 0.6 mm deep, so they're only in the first three layers. To change a colour, change that filament (or map it to another AMS slot) in the slicer. Both filaments go to the main nozzle. The ring has supports turned on (tree, from the plate only): they hold up its fork arm, which hangs about 3 mm over the bed. A slice takes about 32 min, 6.3 g + 0.9 g. The project comes from `enclosure/build_3mf.py` (run by `build.sh`), with the printer settings in `enclosure/bambu_x2d_project.json` and the filament in `enclosure/bambu_x2d_pla_filament.json` (Bambu's own preset, flattened by `enclosure/flatten_preset.py`). For another slicer, `stl/caps.stl` and `stl/caps_labels.stl` are the same parts, already lined up: load them as one object with two parts.
+
+**Soft keys (test).** The bare caps press the switch directly, so every key feels and sounds like the switch's metal dome: short and clicky. The test puts a small TPU spring between cap and switch: a beam across a frame, with a nub under its middle on the plunger. The beam bends before the dome trips (160 gf), so a key travels further (up to about 1.5 mm, then the housing lands on the switch's cover) and the click comes through muffled. Two prints:
+
+- `stl/soft_test_caps.3mf`: the three app pills (Plex, Netflix, YouTube) in PLA, with a pocket for the spring where the stem was (about 16 min). They swap in for the normal app pills; the other caps stay as they are.
+- `stl/soft_springs.3mf`: five stiffnesses of the spring, three of each, in TPU (Generic TPU preset, about 14 min, 1.2 g). Print it from an external spool on the main nozzle, not through the AMS. Each object is one stiffness: **Spring 1** is the firmest, **Spring 5** the softest, and a spring has that many notches on one edge, so you can tell them apart once they're off the plate.
+
+Press a spring into a cap's pocket, notches first (the nub sticks out). Then fit three different stiffnesses in the three app keys and compare them with each other and with the normal keys. If a key doesn't click at all, its spring is too soft for the switch; if it feels like before, it's too stiff. Report back which one feels right; that stiffness then goes into every cap. The round caps and OK need their anti-turn sockets reworked for the extra travel, so they aren't in this test.
+
 
 **Windows.** The IR window and the sensor window are two small separate prints in translucent PETG (Creality CR-PETG Translucent Blue), fitted by hand with a drop of clear glue:
 
 - `stl/ir_window.stl` (15.8 × 6.2 × 1.8 mm, printed flange down): a plug that fills the slot in the top wall, flush outside. Push it in from the inside before the board goes in; its flange sits in the recess round the slot, so it can't be pushed out.
-- `stl/sensor_window.stl` (10.8 × 3.8 mm, pegs 4.95 mm tall, printed pill face down): the pill sits flush in its recess under the screen, with a peg down through each hole. The peg over the light sensor runs on to 0.5 mm above it as a light pipe, because through the bare 1.6 mm hole the sensor would see only about ±8°.
+- `stl/sensor_window.stl` (12.8 × 5.8 mm flange, 1.6 mm tall, printed flange down): one 11 × 4 mm pill slot under the screen sits over both the IR receiver and the light sensor. Push the plug into it from inside, before the board goes in, so it's flush outside and its flange sits flush in the recess on the inside; glue round the flange.
 
-Each has 0.1 mm clearance per side for a press fit; if a peg is too tight, run a 1.5 / 3.0 mm drill through the shell's holes. Print a few spares: they're tiny.
+Each has 0.1 mm clearance per side for a press fit; if one is too tight, sand its edge. Print a few spares: they're tiny.
+
+**Slide test.** `stl/fit_test_slide.stl` is a 20 mm band of the shell round the first pair of side tabs (printed face down, a bar across the front keeps it square) and the matching band of the back plate. Lay the plate band in 4.5 mm towards the key end, tabs through the notches, and slide it home: it should go without forcing and then not lift off.
 
 Before printing the real ones, check the filament passes infrared. Print a 1 mm square, hold it over a working remote's LED and work your TV from across the room (a phone's front camera usually shows the LED's glow through it too). Clear and translucent dyed PETG normally pass 940 nm. The blue tint dims and colours what the light sensor sees, so its lux reading needs a scale factor in firmware; calibrate it once against a phone's light meter. Auto-brightness only needs it to rise and fall with the room.
 

@@ -15,17 +15,32 @@
 
 #define WHEEL 120
 
-static bool light_expanded[64];
+/* The light whose colour wheel is open (one at a time; a house has hundreds of entities) */
+static int light_open = -1;
+#define light_expanded(i) (light_open == (i))
 static const uint32_t favourites[] = {0xD94FB0, 0xFF5A3C, 0xFFB020, 0x40D27A, 0x2FB8FF, 0x7A5CFF};
 
 /* ---- shared parts ---- */
 
 static int ent_of(lv_event_t *e) { return ARG_INT(e); }
 
+/* Things that are on or off: off, their icon is muted */
+static bool switches(const ha_entity_t *e)
+{
+    switch (e->domain) {
+    case HA_LIGHT: case HA_SWITCH: case HA_FAN: case HA_HUMIDIFIER: case HA_SIREN: case HA_MEDIA: case HA_REMOTE:
+    case HA_AUTOMATION: case HA_INPUT_BOOLEAN: return true;
+    default: return false;
+    }
+}
+
 static lv_obj_t *head(lv_obj_t *card, const ha_entity_t *e, bool on)
 {
     lv_obj_t *row = w_row(card, UI_PICK(12, 10));
-    w_icon_circle(row, home_card_icon(e), ICON_CIRCLE, on && !e->alert);
+    const char *icon = home_card_icon(e);
+    if (on && !e->alert && icon && !strcmp(icon, ICON_BULB)) icon = ICON_BULB_FILL;   /* a light that's on: filled */
+    lv_obj_t *ic = w_icon_circle(row, icon, ICON_CIRCLE, on && !e->alert);
+    if (!on && !e->alert && switches(e)) w_icon_circle_off(ic);
     if (e->alert) {
         lv_obj_t *c = lv_obj_get_child(row, 0);
         lv_obj_set_style_text_color(lv_obj_get_child(c, 0), T->warning, 0);
@@ -64,7 +79,7 @@ static void action_cb(lv_event_t *e)
 static lv_obj_t *action_btn(lv_obj_t *parent, int idx, const char *text, const char *icon, const char *action,
                             btn_kind_t kind)
 {
-    lv_obj_t *b = w_button(parent, text, icon, kind);
+    lv_obj_t *b = text ? w_button(parent, text, icon, kind) : w_icon_button(parent, icon, BTN_H, kind);
     lv_obj_set_user_data(b, (void *)action);
     lv_obj_add_event_cb(b, action_cb, LV_EVENT_CLICKED, ARG(idx));
     return b;
@@ -120,8 +135,9 @@ static void rgb_cb(lv_event_t *e)
 
 static void expand_cb(lv_event_t *e)
 {
-    int i = ent_of(e);
-    light_expanded[i] = !light_expanded[i];
+    int i = ent_of(e), was = light_open;
+    light_open = light_open == i ? -1 : i;
+    if (was >= 0 && was != i) app_notify(EV_HA, was);
     app_notify(EV_HA, i);
 }
 
@@ -199,6 +215,31 @@ static lv_obj_t *colour_wheel(lv_obj_t *parent, int idx, lv_color_t bg)
     return c;
 }
 
+/* Hue (0..359) and saturation (0..255) of an RGB colour */
+static void hue_sat(uint32_t c, int *h, int *s)
+{
+    int r = c >> 16 & 255, g = c >> 8 & 255, b = c & 255;
+    int mx = r > g ? (r > b ? r : b) : (g > b ? g : b), mn = r < g ? (r < b ? r : b) : (g < b ? g : b), d = mx - mn;
+    *s = mx ? d * 255 / mx : 0;
+    if (!d) *h = 0;
+    else if (mx == r) *h = (60 * (g - b) / d + 360) % 360;
+    else if (mx == g) *h = 60 * (b - r) / d + 120;
+    else *h = 60 * (r - g) / d + 240;
+}
+
+/* The light shows this swatch's colour. Not an exact match: HA keeps a
+ * colour as hue and saturation and reports it back at full brightness
+ * (0xD94FB0 comes back as 255,93,207), so compare those. */
+static bool same_colour(uint32_t swatch, uint32_t light)
+{
+    int h1, s1, h2, s2;
+    hue_sat(swatch, &h1, &s1);
+    hue_sat(light, &h2, &s2);
+    int dh = abs(h1 - h2);
+    if (dh > 180) dh = 360 - dh;
+    return abs(s1 - s2) <= 24 && (dh <= 8 || (s1 < 40 && s2 < 40));
+}
+
 static void swatches(lv_obj_t *parent, int idx, const ha_entity_t *e, int n, bool expand_btn)
 {
     lv_obj_t *row = w_row(parent, 8);
@@ -211,17 +252,19 @@ static void swatches(lv_obj_t *parent, int idx, const ha_entity_t *e, int n, boo
         lv_obj_set_style_radius(s, LV_RADIUS_CIRCLE, 0);
         lv_obj_set_style_bg_opa(s, LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(s, lv_color_hex(c), 0);
-        if (c == e->rgb) {
+        if (e->on && same_colour(c, e->rgb)) {
             lv_obj_set_style_outline_width(s, 2, 0);
             lv_obj_set_style_outline_pad(s, 2, 0);
             lv_obj_set_style_outline_color(s, T->text, 0);
         }
+        static const char *const names[] = {"Colour 1", "Colour 2", "Colour 3", "Colour 4", "Colour 5", "Colour 6"};
+        w_name(s, names[i]);   /* tests tap it by this */
         lv_obj_set_user_data(s, (void *)(uintptr_t)c);
         lv_obj_set_ext_click_area(s, 4);
         w_on_click(s, rgb_cb, idx);
     }
     if (expand_btn) {
-        lv_obj_t *b = w_icon_button(row, light_expanded[idx] ? ICON_X : ICON_EXPAND, 32, BTN_DEFAULT);
+        lv_obj_t *b = w_icon_button(row, light_expanded(idx) ? ICON_X : ICON_EXPAND, 32, BTN_DEFAULT);
         lv_obj_set_ext_click_area(b, UI_PICK(6, 2));   /* taps: 44 px (36) */
         lv_obj_add_event_cb(b, expand_cb, LV_EVENT_CLICKED, ARG(idx));
     }
@@ -241,11 +284,11 @@ static void light_card(lv_obj_t *c, int idx, ha_entity_t *e)
         char b[8];
         snprintf(b, sizeof(b), "%d%%", e->value);
         w_label(row, F_LABEL_B, T->text, b);
-        if (light_expanded[idx]) {
+        if (light_expanded(idx)) {
             w_segmented(c, "Colour\nWhite\nEffect", 0, NULL);
             lv_obj_t *wr = w_row(c, 0);
             lv_obj_set_flex_align(wr, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-            colour_wheel(wr, idx, e->on ? T->accent_tint : T->surface);
+            colour_wheel(wr, idx, T->surface);
             swatches(c, idx, e, UI_PICK(6, 5), false);
             lv_obj_t *b2 = w_button(c, "Done", NULL, BTN_DEFAULT);
             lv_obj_set_width(b2, lv_pct(100));
@@ -261,17 +304,18 @@ static void light_card(lv_obj_t *c, int idx, ha_entity_t *e)
         int ct = e->ct < CT_MIN ? CT_MIN : e->ct > CT_MAX ? CT_MAX : e->ct;
         lv_obj_t *sl = w_slider(c, ct, CT_MIN, CT_MAX);
         w_slider_detents(sl, 0);
-        lv_obj_set_height(sl, 8);
-        lv_obj_set_style_margin_top(sl, 12, 0);   /* clear of the brightness knob above */
-        lv_obj_set_style_radius(sl, 4, 0);
+        lv_obj_set_style_margin_top(sl, UI_PICK(8, 6), 0);   /* clear of the brightness knob above */
         lv_obj_set_style_bg_color(sl, lv_color_hex(0xFFB46B), 0);
         lv_obj_set_style_bg_grad_color(sl, lv_color_hex(0xDDE8FF), 0);
         lv_obj_set_style_bg_grad_dir(sl, LV_GRAD_DIR_HOR, 0);
         lv_obj_set_style_bg_opa(sl, LV_OPA_TRANSP, LV_PART_INDICATOR);
-        /* a ring in the card's colour keeps the knob visible on the pale cool end */
-        lv_obj_set_style_border_width(sl, 3, LV_PART_KNOB);
-        lv_obj_set_style_border_color(sl, e->on ? T->accent_tint : T->surface, LV_PART_KNOB);
-        lv_obj_set_style_pad_all(sl, 8, LV_PART_KNOB);   /* 18 px inside the ring, like the other knobs */
+        /* the bar knob in the text colour, edged in the card's so it shows on either end */
+        int h = lv_obj_get_style_height(sl, 0);
+        lv_obj_set_style_bg_color(sl, T->text, LV_PART_KNOB);
+        lv_obj_set_style_border_width(sl, 2, LV_PART_KNOB);
+        lv_obj_set_style_border_color(sl, T->surface, LV_PART_KNOB);
+        lv_obj_set_style_radius(sl, 4, LV_PART_KNOB);
+        lv_obj_set_style_pad_hor(sl, (8 - h) / 2, LV_PART_KNOB);   /* 8 px: 4 of knob, 2 of edge each side */
         char k[16];
         snprintf(k, sizeof(k), "%d K", e->ct);
         lv_obj_t *row = kv_row(c, "Colour temperature", k);
@@ -386,13 +430,7 @@ static void select_cb(lv_event_t *e)
     ui_choice("Home Assistant", ent->name, select_opts, n, ent->mode, select_done, NULL);
 }
 
-static void text_done(const char *text, void *ctx)
-{
-    ha_entity_t *ent = ha_get((int)(intptr_t)ctx);
-    snprintf(ent->title, sizeof(ent->title), "%s", text);
-    hal_log("ha: input_text.set_value %s = \"%s\"", ent->id, text);
-    app_notify(EV_HA, (int)(intptr_t)ctx);
-}
+static void text_done(const char *text, void *ctx) { ha_set_text((int)(intptr_t)ctx, text); }
 
 static void text_cb(lv_event_t *e)
 {
@@ -669,7 +707,7 @@ lv_obj_t *ha_card_create(lv_obj_t *parent, int idx)
         const char *t[] = {"Home", "Back", "Menu"};
         for (int i = 0; i < 3; i++) {
             lv_obj_t *b = action_btn(r, idx, t[i], i == 0 ? ICON_HOME : NULL, i == 0 ? "send_command home" :
-                                     i == 1 ? "send_command back" : "send_command menu", BTN_DEFAULT);
+                                     i == 1 ? "send_command back" : "send_command menu", BTN_KEY);
             lv_obj_set_flex_grow(b, 1);
         }
         break;
@@ -751,9 +789,9 @@ lv_obj_t *ha_card_create(lv_obj_t *parent, int idx)
         lv_obj_set_size(av, 32, 32);
         lv_obj_set_style_radius(av, LV_RADIUS_CIRCLE, 0);
         lv_obj_set_style_bg_opa(av, LV_OPA_COVER, 0);
-        lv_obj_set_style_bg_color(av, T->surface2, 0);
+        lv_obj_set_style_bg_color(av, T->tonal, 0);
         char ini[2] = {home_card_name(e)[0], 0};
-        lv_obj_center(w_label(av, F_LABEL_B, T->text, ini));
+        lv_obj_center(w_label(av, F_LABEL_B, T->on_tonal, ini));
         break;
     }
     case HA_CALENDAR:
@@ -821,9 +859,8 @@ lv_obj_t *ha_scene_row(lv_obj_t *parent, const int *idx, int n)
     lv_obj_t *r = w_row(parent, 8);
     lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW_WRAP);   /* more than fit: a second row */
     for (int i = 0; i < n; i++) {
-        lv_obj_t *b = action_btn(r, idx[i], home_card_name(ha_get(idx[i])), NULL, "turn_on", BTN_OUTLINE);
+        lv_obj_t *b = action_btn(r, idx[i], home_card_name(ha_get(idx[i])), NULL, "turn_on", BTN_TONAL);
         lv_obj_set_flex_grow(b, 1);
-        lv_obj_set_style_radius(b, BTN_H / 2, 0);
     }
     return r;
 }

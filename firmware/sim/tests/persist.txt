@@ -3,7 +3,7 @@ click Start
 wait 300
 tab Settings
 wait 1500
-click Display & haptics
+click Display
 wait 300
 click Theme
 wait 300
@@ -13,7 +13,11 @@ click Activities & routines
 wait 300
 click List
 wait 300
-slide Haptics 3
+back
+wait 300
+click Haptics
+wait 300
+slide Strength 3
 back
 wait 300
 click Power & sleep
@@ -89,12 +93,13 @@ tab Settings
 wait 300
 expect Guest
 expect Light
-click Display & haptics
+click Display
 wait 300
 expect Light
 expect List
-expect Strong
 back
+wait 300
+expect Strong
 wait 300
 click Power & sleep
 wait 300
@@ -110,7 +115,7 @@ expect Connected · Guest
 # an unsaved change is lost by a reset (it would be saved before sleep or power off)
 back
 wait 300
-click Display & haptics
+click Display
 wait 300
 click Theme
 wait 300
@@ -123,7 +128,7 @@ tab Settings
 wait 300
 expect Light
 # but power off saves at once
-click Display & haptics
+click Display
 wait 300
 click Theme
 wait 300

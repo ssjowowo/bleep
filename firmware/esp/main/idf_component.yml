@@ -1,0 +1,8 @@
+dependencies:
+  idf: ">=5.5"
+  # the same LVGL as the emulator (sim/CMakeLists.txt)
+  lvgl/lvgl: "9.6.0"
+  joltwallet/littlefs: "^1.20.0"
+  # Home Assistant: its WebSocket API, and finding it on the network
+  espressif/esp_websocket_client: "^1.4.0"
+  espressif/mdns: "^1.8.0"

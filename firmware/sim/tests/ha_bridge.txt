@@ -22,7 +22,7 @@ tab Settings
 wait 300
 click Home Assistant
 wait 600
-expect THIS REMOTE IN HOME ASSISTANT
+expect This remote in Home Assistant
 expect Key presses as events
 shot 84_ha_bridge
 switch Key presses as events

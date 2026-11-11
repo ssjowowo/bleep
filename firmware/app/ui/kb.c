@@ -193,14 +193,11 @@ static void kb_draw(lv_event_t *e)
     if (type == LV_DRAW_TASK_TYPE_FILL) {
         lv_draw_fill_dsc_t *f = (lv_draw_fill_dsc_t *)base;
         if (enter) f->color = T->accent;
-        else if (shift_on) f->color = T->accent_tint;
-    } else if (type == LV_DRAW_TASK_TYPE_BORDER) {
-        lv_draw_border_dsc_t *b = (lv_draw_border_dsc_t *)base;
-        if (shift_on) b->color = T->accent_edge;
+        else if (shift_on) f->color = T->accent_c;
     } else if (type == LV_DRAW_TASK_TYPE_LABEL) {
         lv_draw_label_dsc_t *l = (lv_draw_label_dsc_t *)base;
         if (enter) l->color = T->on_accent;
-        else if (shift_on) l->color = T->accent;
+        else if (shift_on) l->color = T->on_accent_c;
         const char *t = lv_buttonmatrix_get_button_text(kb, id);
         if (mod && t && (t[0] & 0x80) == 0 && tx.mode != KB_PIN) {
             /* LVGL placed the word for the key font: move the smaller one to the key's middle */
@@ -254,27 +251,20 @@ static lv_obj_t *make_keyboard(void)
 
     /* background: pad 3 outside, 4 between keys, 5 between rows (2, 3, 4 on the small screen) */
     lv_obj_set_style_bg_opa(kb, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(kb, T->tabbar, 0);
-    lv_obj_set_style_border_side(kb, LV_BORDER_SIDE_TOP, 0);
-    lv_obj_set_style_border_width(kb, 1, 0);
-    lv_obj_set_style_border_color(kb, T->tabbar_line, 0);
+    lv_obj_set_style_bg_color(kb, T->surface, 0);
     lv_obj_set_style_pad_all(kb, UI_PICK(3, 2), 0);
     lv_obj_set_style_pad_column(kb, pin ? 6 : UI_PICK(4, 3), 0);
     lv_obj_set_style_pad_row(kb, pin ? UI_PICK(6, 5) : UI_PICK(5, 4), 0);
-    /* keys */
+    /* keys: container high; modifiers tonal; Enter primary (kb_draw) */
     lv_obj_set_style_bg_opa(kb, LV_OPA_COVER, LV_PART_ITEMS);
-    lv_obj_set_style_bg_color(kb, T->surface2, LV_PART_ITEMS);
-    lv_obj_set_style_radius(kb, 8, LV_PART_ITEMS);
+    lv_obj_set_style_bg_color(kb, T->surface_hi, LV_PART_ITEMS);
+    lv_obj_set_style_radius(kb, R_CHIP, LV_PART_ITEMS);
     lv_obj_set_style_text_color(kb, T->text, LV_PART_ITEMS);
     lv_obj_set_style_text_font(kb, &key_font, LV_PART_ITEMS);
-    lv_obj_set_style_bg_color(kb, T->accent_tint, LV_PART_ITEMS | LV_STATE_PRESSED);
-    lv_obj_set_style_border_width(kb, 1, LV_PART_ITEMS | LV_STATE_PRESSED);
-    lv_obj_set_style_border_color(kb, T->accent_edge, LV_PART_ITEMS | LV_STATE_PRESSED);
-    /* modifiers: same fill, 1 px border */
-    lv_obj_set_style_bg_color(kb, T->bg, LV_PART_ITEMS | LV_STATE_CHECKED);
-    lv_obj_set_style_border_width(kb, 1, LV_PART_ITEMS | LV_STATE_CHECKED);
-    lv_obj_set_style_border_color(kb, T->line, LV_PART_ITEMS | LV_STATE_CHECKED);
-    lv_obj_set_style_bg_color(kb, T->surface2, LV_PART_ITEMS | LV_STATE_CHECKED | LV_STATE_PRESSED);
+    lv_obj_set_style_bg_color(kb, theme_pressed(T->surface_hi, T->text), LV_PART_ITEMS | LV_STATE_PRESSED);
+    lv_obj_set_style_bg_color(kb, T->tonal, LV_PART_ITEMS | LV_STATE_CHECKED);
+    lv_obj_set_style_text_color(kb, T->on_tonal, LV_PART_ITEMS | LV_STATE_CHECKED);
+    lv_obj_set_style_bg_color(kb, theme_pressed(T->tonal, T->on_tonal), LV_PART_ITEMS | LV_STATE_CHECKED | LV_STATE_PRESSED);
     return kb;
 }
 
@@ -326,10 +316,11 @@ static void text_build(lv_obj_t *root, int arg)
             lv_obj_set_style_text_color(tx.ta, T->text2, LV_PART_TEXTAREA_PLACEHOLDER);
         }
         lv_obj_set_size(tx.ta, lv_pct(100), UI_PICK(48, 40));
+        /* an outlined text field, focused: a 2 px primary outline */
         lv_obj_set_style_bg_opa(tx.ta, LV_OPA_COVER, 0);
-        lv_obj_set_style_bg_color(tx.ta, T->surface, 0);
-        lv_obj_set_style_border_width(tx.ta, 1, 0);
-        lv_obj_set_style_border_color(tx.ta, T->accent_edge, 0);
+        lv_obj_set_style_bg_color(tx.ta, T->bg, 0);
+        lv_obj_set_style_border_width(tx.ta, 2, 0);
+        lv_obj_set_style_border_color(tx.ta, T->accent, 0);
         lv_obj_set_style_radius(tx.ta, UI_PICK(12, 10), 0);
         lv_obj_set_style_pad_left(tx.ta, UI_PICK(14, 12), 0);
         bool masked = tx.mode == KB_PASSWORD || tx.mode == KB_SECRET;

@@ -13,7 +13,7 @@ clear
 type wrongpass
 kbkey enter
 wait 300
-expect NOT SAVED YET
+expect not saved yet
 click Connect
 wait 300
 expect Connecting…
@@ -35,7 +35,7 @@ click Scan
 wait 300
 expect Scanning…
 wait 2200
-expect NETWORKS IN RANGE
+expect Networks in range
 expect DIRECT-HP-LaserJet
 shot 65_wifi_scan
 click Guest

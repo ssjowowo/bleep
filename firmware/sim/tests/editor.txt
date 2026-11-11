@@ -3,7 +3,7 @@ click Start
 wait 300
 press Watch TV
 wait 200
-expect START SEQUENCE
+expect Start sequence
 shot 70_editor
 drag ~160 ~400 ~160 ~100
 shot 71_editor_2

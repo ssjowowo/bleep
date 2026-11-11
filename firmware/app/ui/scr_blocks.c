@@ -184,7 +184,7 @@ static void game_over(void)
     }
     hal_log("blocks: game over, score %lu, lines %d, best %lu", (unsigned long)bk.score, bk.lines,
             (unsigned long)g_model.settings.blocks_best);
-    app_buzz(HAPTIC_NO);
+    app_buzz_ev(BUZZ_GAMES, HAPTIC_NO);
     set_state(BK_OVER);
 }
 
@@ -243,7 +243,7 @@ static void lock(void)
         bk.lines += cleared;
         bk.level = bk.lines / 10 + 1;
         hal_log("blocks: %d line%s", cleared, cleared > 1 ? "s" : "");
-        app_buzz(cleared == 4 ? HAPTIC_CONFIRM : HAPTIC_TICK);
+        app_buzz_ev(BUZZ_GAMES, cleared == 4 ? HAPTIC_CONFIRM : HAPTIC_TICK);
     }
     spawn();
 }

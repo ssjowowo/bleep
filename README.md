@@ -28,16 +28,16 @@ The industrial design comes from a concept pack made in Claude Design (design **
 | Part | State |
 |---|---|
 | Main board v1 | **Ordered** from JLCPCB on 2026-10-08 (5 boards, 2 assembled). The design is locked: the files in `hardware/mainboard/` are the ones in production. |
-| Enclosure | Ready to print. The back plate is flat, with room for a 4.0 × 50 × 85 mm Li-Po (405085) under the screen. |
+| Enclosure | Ready to print. 14.0 mm thick since 2026-11-10: the cell sits in a pocket in the flat back plate, which drops in and slides home under ledges in the side walls; back edges rounded 3 mm. |
 | Display | BuyDisplay ER-TFT035IPS-6 + capacitive touch, **ordered** 2026-10-09. Its cable fold gets checked on the real panel before assembly. |
-| Battery | **Ordered** 2026-10-09 (405085 planned; if the cell differs, set `BATT` in `layout.py` and rebuild the back plate). |
-| Firmware | App and UI (C + LVGL 9) running in a PC/browser emulator with 51 scripted test scenarios; ESP-IDF port next. [firmware/](firmware/) |
+| Battery | EEMB 524261, 1500 mAh (sold as 5.2 mm, measured 5.5–6.0 mm thick); `BATT` in `layout.py` is set for 6.0 mm. |
+| Firmware | App and UI (C + LVGL 9) running in a PC/browser emulator with 53 scripted test scenarios; the ESP-IDF build runs on the first board (since 2026-11-02), with a Home Assistant client tested against a real Home Assistant. [firmware/](firmware/) |
 
 ## Hardware at a glance
 
 | | |
 |---|---|
-| Size | 60.7 × 182.2 × 13.0 mm |
+| Size | 60.7 × 182.2 × 14.0 mm |
 | MCU | ESP32-S3-WROOM-1-N8R2 (8 MB flash, 2 MB PSRAM), antenna at the right edge beside the D-pad |
 | Display | 3.5″ IPS 320 × 480, ILI9488 on an 8-bit parallel bus (much faster than SPI), FT6236 capacitive touch |
 | Keys | 14 tactile switches, each on its own wake-capable GPIO |
@@ -45,7 +45,7 @@ The industrial design comes from a concept pack made in Claude Design (design **
 | Sensors | MMA8452Q accelerometer, LTR-303ALS light sensor, MAX17048 fuel gauge |
 | Power | 1-cell Li-Po, TP4056 charger with load sharing, ME6211 3.3 V LDO |
 | Board | 2 layers, 0.8 mm, 54 × 178 mm. JLCPCB assembles the top side; you solder the ESP32 module, battery and motor on the underside. |
-| Case | PETG, two colours for the key labels (flush inlays), plus translucent blue PETG for the IR and sensor windows (two small separate prints); the board screwed to the front shell (4 × M2×4) and the back plate held by 2 × M2×8 and two snap fingers, all into heat-set inserts |
+| Case | PETG, two colours for the key labels (flush inlays), plus translucent blue PETG for the IR and sensor windows (two small separate prints); the board screwed to the front shell (4 × M2×4) and the back plate dropped in and slid home under side ledges and two top hooks, then held by 2 × M2×10, all into heat-set inserts |
 
 The parts list, pin map, assembly steps, ordering guide (≈ €130 in total, delivered to Cyprus) and firmware notes are in **[hardware/README.md](hardware/README.md)**.
 

@@ -12,6 +12,14 @@ expect 14° · Cloudy · H 17° · L 9°
 expect Charging · 82%
 expect-log wifi: connected
 shot 83_nightstand
+# the lights go out: the clock drops to the lowest backlight, and back up with them
+mark
+lux 2
+wait 1500
+expect-log power: dim backlight 2%
+lux 400
+wait 1500
+expect-log power: dim backlight 17%
 # it stays up all night: no screen off while on USB
 wait 120000
 expect Thursday 8 October
@@ -28,6 +36,6 @@ key OK
 wait 300
 tab Settings
 wait 300
-click Display & haptics
+click Display
 wait 300
 expect Nightstand clock

@@ -73,12 +73,41 @@ void app_notify(app_event_t ev, int arg)
     for (int i = 0; i < n_listeners; i++) listeners[i].cb(ev, arg, listeners[i].ctx);
 }
 
+static int hap_level = -1, hap_feel = -1, hap_motor = -1;   /* what the HAL was last given */
+
+static void haptics_config(void)
+{
+    const settings_t *s = &g_model.settings;
+    int level = s->haptics ? s->haptics : 2;
+    if (level != hap_level || hap_feel != s->haptic_feel || hap_motor != s->haptic_motor)
+        hal_haptic_config(hap_level = level, hap_feel = s->haptic_feel, hap_motor = s->haptic_motor);
+}
+
+void app_buzz_ev(buzz_ev_t ev, haptic_t pattern)
+{
+    const settings_t *s = &g_model.settings;
+    if (!s->haptics) return;
+    if (ev < BUZZ_EV_COUNT) {
+        if (!(s->haptic_events & (1 << ev))) return;
+        if (s->haptic_quiet_usb && batt.usb) return;
+    }
+    haptics_config();
+    hal_haptic(pattern);
+}
+
+bool app_haptics_calibrate(void)
+{
+    haptics_config();
+    bool ok = hal_haptic_calibrate();
+    hal_log("haptics: calibration %s", ok ? "ok" : "failed");
+    return ok;
+}
+
 void app_buzz(haptic_t pattern)
 {
-    uint8_t s = g_model.settings.haptics;
-    if (!s) return;
-    if (s == 1 && pattern == HAPTIC_TICK) return;   /* light: confirmations and slider detents only */
-    hal_haptic(pattern);
+    static const uint8_t ev[] = {[HAPTIC_TICK] = BUZZ_TAPS, [HAPTIC_CONFIRM] = BUZZ_CONFIRM, [HAPTIC_NO] = BUZZ_ALERTS,
+                                 [HAPTIC_ALERT] = BUZZ_ALERTS, [HAPTIC_DETENT] = BUZZ_SLIDERS};
+    app_buzz_ev(ev[pattern], pattern);
 }
 
 static void sensors_read(void)
@@ -317,10 +346,11 @@ void app_tick(void)
     if (pwr_down && !pwr_long && power_state() != PWR_OFF && hal_millis() - pwr_down_at >= POWER_OFF_HOLD_MS) {
         pwr_long = true;
         hal_log("key PWR held %d s: power off?", POWER_OFF_HOLD_MS / 1000);
-        app_buzz(HAPTIC_TICK);
+        app_buzz_ev(BUZZ_KEYS, HAPTIC_TICK);
         ov_power_off_ask();
     }
     update_tick();
+    ha_poll();
 
     uint32_t now = hal_millis();
     if (now - last_second >= 1000) {

@@ -20,7 +20,7 @@ expect Discard changes to this activity?
 key BACK
 wait 300
 expect-no Discard changes to this activity?
-expect START SEQUENCE
+expect Start sequence
 # the physical BACK on an editor goes back (and asks), it doesn't go to the TV
 mark
 key BACK
@@ -29,11 +29,11 @@ expect Discard changes to this activity?
 expect-log-no IR  >
 click Discard
 wait 300
-expect-no START SEQUENCE
+expect-no Start sequence
 # the physical HOME on a settings page goes to Activities
 tab Settings
 wait 300
-click Display & haptics
+click Display
 wait 300
 mark
 key HOME
@@ -52,11 +52,11 @@ key PWR
 wait 300
 tab Settings
 wait 300
-click Display & haptics
+click Display
 wait 300
 key BACK
 wait 300
-expect Display & haptics
+expect Display
 expect-no Select a device
 # typing keeps the screen on: 20 s on the keyboard, no dimming
 click Wi-Fi

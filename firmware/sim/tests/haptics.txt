@@ -1,0 +1,100 @@
+# Settings > Haptics: strength, feel, the test buttons, the event switches, quiet on USB; all saved
+click Start
+wait 300
+click Shield TV
+wait 3000
+# a key press buzzes (the Key presses switch, on by default)
+mark
+key VOL+
+wait 300
+expect-haptic tick 1
+tab Settings
+wait 300
+expect Haptics
+expect Medium
+click Haptics
+wait 300
+expect Strength
+expect Crisp
+click Feel
+wait 300
+click Soft
+wait 300
+expect Soft
+# the test buttons
+mark
+click Tap
+click OK
+click Error
+expect-haptic tick 1
+expect-haptic confirm 1
+expect-haptic no 1
+shot 200_haptics
+# key presses off: a key doesn't buzz
+switch Key presses
+wait 300
+mark
+key VOL+
+wait 300
+expect-haptic tick 0
+switch Key presses
+wait 300
+# quiet while charging: nothing buzzes on USB, but the page's test still does
+switch Quiet while charging
+wait 300
+usb on
+wait 1500
+# a tap puts the charging screen away
+tap 50% 50%
+wait 300
+expect Quiet while charging
+mark
+click Tap
+wait 300
+expect-haptic tick 1
+mark
+key VOL+
+wait 300
+expect-haptic tick 0
+usb off
+wait 1500
+mark
+key VOL+
+wait 300
+expect-haptic tick 1
+# Max, then off: nothing buzzes at all
+slide Strength 4
+expect Max
+slide Strength 0
+wait 300
+mark
+click Tap
+key VOL+
+wait 300
+expect-haptic tick 0
+slide Strength 4
+# the motor: an LRA fitted; calibrate again
+expect Coin (ERM)
+click Motor
+wait 300
+click Coin (LRA)
+wait 300
+expect Coin (LRA)
+click Calibrate
+wait 300
+expect Motor calibrated
+expect-log haptics: calibration ok
+back
+wait 3000
+# saved: after a restart it's all still set
+reboot
+click Start
+wait 300
+tab Settings
+wait 300
+expect Max
+click Haptics
+wait 300
+expect Soft
+expect Max
+expect Coin (LRA)

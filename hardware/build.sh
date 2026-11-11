@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Regenerate every Bleep v1 hardware output from layout.py.
 #   ./build.sh            everything except the (locked) main board
-#   ./build.sh enclosure  STLs + renders only
+#   ./build.sh enclosure  STLs, the key-cap 3MF + renders only
 #   ./build.sh pcb        main board PCB: place, route, DRC, Gerbers, BOM/CPL -- LOCKED, see below
 #   ./build.sh viewer     meshes for the 3D color viewer
 # Tools: Python 3 (no extra packages), OpenSCAD (2021.01+), KiCad 10 (for kicad-cli and its Python),
@@ -23,9 +23,9 @@ what="${1:-all}"
 
 if [[ "$what" == all || "$what" == enclosure ]]; then
   cd enclosure
-  for p in front ir_window sensor_window back caps caps_labels fit_test; do
+  for p in front ir_window sensor_window back caps caps_labels fit_test fit_test_top fit_test_slide; do
     out="stl/$p.stl"
-    case $p in front) out=stl/front_shell.stl;; back) out=stl/back_plate.stl;; fit_test) out=stl/fit_test_keys.stl;; esac
+    case $p in front) out=stl/front_shell.stl;; back) out=stl/back_plate.stl;; fit_test) out=stl/fit_test_keys.stl;; fit_test_top) out=stl/fit_test_top.stl;; fit_test_slide) out=stl/fit_test_slide.stl;; esac
     "$OPENSCAD" -D "part=\"$p\"" -o "$out" remote.scad &
   done
   # PNG renders need a display (OpenSCAD 2021 renders through OpenGL)
@@ -37,10 +37,15 @@ if [[ "$what" == all || "$what" == enclosure ]]; then
     echo "no display: skipping the PNG renders in docs/"
   fi
   wait
+  # Multicolour key caps for Bambu Studio: caps + label inlays as one project, one plate;
+  # plus the soft-key test (test caps + TPU springs)
+  "$PYTHON" build_3mf.py "$OPENSCAD"
   # Interference checks: both must print "Current top level object is empty"
   # (OpenSCAD exits non-zero on an empty result, so capture the text instead of using the pipe status)
   out=$("$OPENSCAD" -D 'part="cap_interference"' -o "${TMPDIR:-/tmp}/capint.stl" remote.scad 2>&1 || true)
   if grep -qi "empty" <<<"$out"; then echo "caps vs shell: OK (no overlap)"; else echo "WARNING: caps intersect the shell"; fi
+  out=$("$OPENSCAD" -D 'part="caps_vs_parts"' -o "${TMPDIR:-/tmp}/cvp.stl" remote.scad 2>&1 || true)
+  grep -i -E "empty|Volumes" <<<"$out" | sed 's/^/caps vs board parts (stems touch the switches: 15 is right): /' || true
   out=$("$OPENSCAD" -D 'part="interference"' -o "${TMPDIR:-/tmp}/int.stl" remote.scad 2>&1 || true)
   grep -i -E "empty|Volumes" <<<"$out" | sed 's/^/parts vs shell: /' || true
   out=$("$OPENSCAD" -D 'part="board_vs_bp"' -o "${TMPDIR:-/tmp}/bvb.stl" remote.scad 2>&1 || true)

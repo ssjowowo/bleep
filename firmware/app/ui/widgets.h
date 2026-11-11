@@ -1,7 +1,9 @@
 /*
- * The component kit from the design: buttons, chips, toggles, sliders,
- * tiles, cards, list rows, the status bar and the tab bar. Built from plain
- * lv_obj rectangles, labels and arcs, with token colours only.
+ * The component kit from the design ("Bleep Material UI", Material 3
+ * Expressive): buttons, chips, switches, sliders, tiles, cards, list rows,
+ * the status bar and the floating nav bar. Built from stock LVGL objects,
+ * labels, sliders, switches and arcs, with token colours only: one radius per
+ * object, no shadows, gradients or opacity.
  */
 #pragma once
 
@@ -29,7 +31,7 @@ typedef struct {
     int16_t w, h;           /* screen */
     int16_t pad;            /* screen side margin */
     int16_t status_h;       /* status bar */
-    int16_t tabbar_h;       /* tab bar */
+    int16_t tabbar_h;       /* the nav bar, docked at the bottom: its height */
     bool compact;           /* the small screen */
 } ui_profile_t;
 
@@ -40,6 +42,10 @@ void ui_profile_init(int w, int h);   /* before anything is built (ui_init); set
 #define SCREEN_H (UI->h)
 #define PAD (UI->pad)
 #define TABBAR_H (UI->tabbar_h)
+/* The nav bar, docked under the page (w_tabbar): 52 px (42 compact), the
+ * tab pills 40 (32) tall in it */
+#define NAV_H 52
+#define NAV_H_COMPACT 42
 #define STATUS_H (UI->status_h)
 #define CONTENT_W (SCREEN_W - 2 * PAD)   /* between the side margins */
 /* The largest screen there is, for static buffers sized by the screen */
@@ -54,11 +60,25 @@ void ui_profile_init(int w, int h);   /* before anything is built (ui_init); set
 #define ROW_H       UI_PICK(45, 38)   /* list rows (w_list_row) */
 #define ICON_CIRCLE UI_PICK(36, 30)   /* the icon circle on cards and list items */
 #define PAGE_GAP    UI_PICK(12, 8)    /* between a page's blocks */
+#define ROW_GAP     UI_PICK(4, 3)     /* between list rows, each a rounded card of its own */
+
+/* The shape scale: one radius per object */
+#define R_CHIP      8                 /* chips */
+#define R_KEY       UI_PICK(16, 12)   /* keys, list rows */
+#define R_CARD      UI_PICK(20, 12)   /* cards */
+#define R_TILE      UI_PICK(24, 12)   /* activity tiles, the battery card */
+#define R_ART       UI_PICK(28, 20)   /* artwork */
 
 /* Width of one of n equal columns, gap px apart, across the content width */
 int w_col_w(int n, int gap);
 
-typedef enum { BTN_DEFAULT, BTN_PRIMARY, BTN_OUTLINE, BTN_SELECTED, BTN_DISABLED } btn_kind_t;
+/* DEFAULT and TONAL: secondary container, a pill (or a circle);
+ * PRIMARY: filled, a pill; OUTLINE: a 1 px outline, a pill;
+ * KEY: one of a remote's keys, container high with R_KEY corners;
+ * SELECTED: the key picked in a row of them (an input), filled, a full pill;
+ * DISABLED: greyed out */
+/* NEUTRAL: a grey pill, beside an accent one (a sheet's Cancel): the accent fills every other kind */
+typedef enum { BTN_DEFAULT, BTN_PRIMARY, BTN_OUTLINE, BTN_SELECTED, BTN_DISABLED, BTN_TONAL, BTN_KEY, BTN_NEUTRAL } btn_kind_t;
 
 #define ARG(x) ((void *)(intptr_t)(x))
 #define ARG_INT(e) ((int)(intptr_t)lv_event_get_user_data(e))
@@ -130,8 +150,11 @@ lv_obj_t *w_row_stepper(lv_obj_t *row, const char *value, lv_event_cb_t minus_cb
 /* Surfaces */
 lv_obj_t *w_card(lv_obj_t *parent, bool on, bool alert);
 void w_card_set_state(lv_obj_t *card, bool on, bool alert);
+/* The round icon badge: tonal, or on (a light that's on, a picked item) in
+ * the primary container. w_icon_circle_off: an entity that's off, muted. */
 lv_obj_t *w_icon_circle(lv_obj_t *parent, const char *icon, int size, bool on);
 void w_icon_circle_set(lv_obj_t *circle, bool on);
+void w_icon_circle_off(lv_obj_t *circle);
 lv_obj_t *w_tile(lv_obj_t *parent, const char *icon, const char *name, const char *sub, bool running);
 lv_obj_t *w_list_row(lv_obj_t *parent, const char *icon, const char *text, const char *value,
                      lv_obj_t **value_label);

@@ -134,11 +134,9 @@ static void tp_build(lv_obj_t *root, int dev)
 
     lv_obj_t *pad = w_box(col);
     lv_obj_set_size(pad, lv_pct(100), UI_PICK(250, 184));   /* the Back / Home row stays in view */
-    lv_obj_set_style_radius(pad, UI_PICK(18, 14), 0);
+    lv_obj_set_style_radius(pad, R_ART, 0);
     lv_obj_set_style_bg_opa(pad, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(pad, T->surface, 0);
-    lv_obj_set_style_border_width(pad, 1, 0);
-    lv_obj_set_style_border_color(pad, T->line, 0);
     lv_obj_set_clickable(pad, true);
     lv_obj_set_scrollable(pad, false);
     lv_obj_add_event_cb(pad, tp_cb, LV_EVENT_PRESSED, NULL);
@@ -154,14 +152,14 @@ static void tp_build(lv_obj_t *root, int dev)
     w_label(mid, F_CAPTION, T->text2, "Tap for OK");
 
     lv_obj_t *row = w_row(col, 8);
-    lv_obj_t *b = w_button(row, "Back", ICON_BACK, BTN_DEFAULT);
+    lv_obj_t *b = w_button(row, "Back", ICON_BACK, BTN_KEY);
     lv_obj_set_flex_grow(b, 1);
     lv_obj_add_event_cb(b, tp_btn_cb, LV_EVENT_CLICKED, ARG(FN_BACK));
-    b = w_button(row, "Home", ICON_HOME, BTN_DEFAULT);
+    b = w_button(row, "Home", ICON_HOME, BTN_KEY);
     lv_obj_set_flex_grow(b, 1);
     lv_obj_add_event_cb(b, tp_btn_cb, LV_EVENT_CLICKED, ARG(FN_HOME));
     if (device_can_type(dev)) {
-        b = w_button(row, "Type", ICON_KEYBOARD, BTN_DEFAULT);
+        b = w_button(row, "Type", ICON_KEYBOARD, BTN_KEY);
         lv_obj_set_flex_grow(b, 1);
         lv_obj_add_event_cb(b, tp_kb_cb, LV_EVENT_CLICKED, NULL);
     }

@@ -21,10 +21,11 @@ static bool editing;
 static struct {
     int ent;
     lv_obj_t *obj;
+    bool dirty;             /* its entity changed: the card is rebuilt */
 } cards[MAX_CARDS];
 static int n_cards;
+static int built_ents[MAX_CARDS], n_built;   /* every entity on the page, scene groups' too */
 static bool empty;          /* built with nothing from HA yet */
-static uint64_t dirty;      /* entities whose card needs rebuilding */
 static bool scheduled;
 
 static void select_room(int r)
@@ -171,7 +172,7 @@ static lv_obj_t *edit_row(lv_obj_t *parent, int i)
     lv_obj_set_style_pad_all(card, UI_PICK(10, 6), 0);
     lv_obj_set_style_pad_left(card, UI_PICK(12, 8), 0);
     lv_obj_set_clickable(card, true);
-    lv_obj_set_style_bg_color(card, T->surface2, LV_STATE_PRESSED);
+    lv_obj_set_style_bg_color(card, theme_pressed(T->surface, T->text), LV_STATE_PRESSED);
     lv_obj_add_event_cb(card, card_cb, LV_EVENT_SHORT_CLICKED, ARG(i));
     lv_obj_t *row = w_row(card, UI_PICK(12, 10));
     lv_obj_t *ic = w_icon_circle(row, e ? home_card_icon(e) : ICON_INFO, ICON_CIRCLE, false);
@@ -223,8 +224,7 @@ static void build_edit(lv_obj_t *root)
 
 static void home_build(lv_obj_t *root, int arg)
 {
-    n_cards = 0;
-    dirty = 0;
+    n_cards = n_built = 0;
     empty = ha_count() == 0;
     editing = arg == 1 && !empty;
     int n_rooms = empty ? 0 : home_rooms(editing);
@@ -279,6 +279,8 @@ static void home_build(lv_obj_t *root, int arg)
     lv_obj_set_style_pad_hor(list, PAD, 0);
     int ents[MAX_CARDS];
     int n = n_rooms ? home_cards(room, ents, MAX_CARDS) : 0;
+    memcpy(built_ents, ents, n * sizeof(int));
+    n_built = n;
     if (!n) {
         lv_obj_t *l = w_label(list, F_LABEL, T->text2, "Nothing to show here.");
         lv_obj_set_width(l, lv_pct(100));
@@ -295,6 +297,7 @@ static void home_build(lv_obj_t *root, int arg)
         }
         cards[n_cards].ent = ents[i];
         cards[n_cards].obj = ha_card_create(list, ents[i]);
+        cards[n_cards].dirty = false;
         n_cards++;
     }
     if (sel) {
@@ -320,10 +323,10 @@ static void rebuild_dirty(void *unused)
     scheduled = false;
     if (ui_current() != &page_home) return;
     for (int i = 0; i < n_cards; i++) {
-        if (!(dirty & (1ull << cards[i].ent))) continue;
+        if (!cards[i].dirty) continue;
         lv_obj_t *old = cards[i].obj;
         if (pressed_inside(old)) continue;   /* don't pull a slider out from under a finger */
-        dirty &= ~(1ull << cards[i].ent);
+        cards[i].dirty = false;
         lv_obj_t *fresh = ha_card_create(lv_obj_get_parent(old), cards[i].ent);
         lv_obj_move_to_index(fresh, lv_obj_get_index(old));
         lv_obj_delete(old);
@@ -344,10 +347,29 @@ static void home_event(app_event_t ev, int arg)
         else update_link();
         return;
     }
-    if (ev != EV_HA || arg >= 64) return;
+    if (ev != EV_HA || arg < 0) return;
+    /* unavailable entities don't show: one that went (or came back) changes
+     * the page's cards, not just its own */
+    const ha_entity_t *e = ha_get(arg);
+    bool shown = false;
+    for (int i = 0; i < n_built; i++) shown |= built_ents[i] == arg;
+    if (e && !editing && e->unavailable == shown) {
+        bool now = false;
+        if (!shown) {
+            int ents[MAX_ROOM_ITEMS];
+            int n = home_cards(cur_room(), ents, MAX_ROOM_ITEMS);
+            for (int i = 0; i < n; i++) now |= ents[i] == arg;
+        }
+        if (shown || now) {
+            ui_refresh();
+            return;
+        }
+    }
+    /* (a 64-bit mask of entity indexes stood here: a house with more than 64
+     * entities never saw its later cards change, the colour lights among them) */
     for (int i = 0; i < n_cards; i++) {
         if (cards[i].ent != arg) continue;
-        dirty |= 1ull << arg;
+        cards[i].dirty = true;
         if (!scheduled) {
             scheduled = true;
             lv_async_call(rebuild_dirty, NULL);
@@ -422,6 +444,7 @@ static bool contains(const char *hay, const char *needle)
 
 static bool matches(const ha_entity_t *e)
 {
+    if (e->unavailable) return false;   /* HA can't reach it: not offered */
     if (!diag && (e->hidden || e->category != HA_CAT_NONE)) return false;
     if (area_pick != AREA_ALL && e->area != area_pick) return false;
     return !query[0] || contains(home_card_name(e), query) || contains(e->name, query) || contains(e->id, query);
@@ -495,11 +518,12 @@ static void add_build(lv_obj_t *root, int arg)
         lv_obj_set_style_pad_left(card, UI_PICK(12, 8), 0);
         if (!add_in[i]) {
             lv_obj_set_clickable(card, true);
-            lv_obj_set_style_bg_color(card, T->surface2, LV_STATE_PRESSED);
+            lv_obj_set_style_bg_color(card, theme_pressed(T->surface, T->text), LV_STATE_PRESSED);
             lv_obj_add_event_cb(card, pick_cb, LV_EVENT_CLICKED, ARG(i));
         }
         lv_obj_t *row = w_row(card, UI_PICK(12, 10));
-        w_icon_circle(row, home_card_icon(e), ICON_CIRCLE, add_in[i]);
+        lv_obj_t *ic = w_icon_circle(row, home_card_icon(e), ICON_CIRCLE, true);
+        if (!add_in[i]) w_icon_circle_off(ic);   /* not added: grey, the added ones the accent */
         lv_obj_t *txt = w_col(row, 2);
         lv_obj_set_flex_grow(txt, 1);
         lv_obj_set_width(txt, LV_SIZE_CONTENT);

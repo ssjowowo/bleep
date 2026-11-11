@@ -15,7 +15,7 @@ back
 wait 300
 click Home Assistant
 wait 600
-expect SERVER
+expect Server
 shot 63_ha_settings
 click Address
 shot 64_url_keyboard

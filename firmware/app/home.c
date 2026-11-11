@@ -83,14 +83,15 @@ static int cards_of(int saved, int area, int *ents, int max)
         int ent = ha_find(g_model.home.ents[hr->items[i]].id);
         bool dup = false;
         for (int k = 0; k < n; k++) dup |= ents[k] == ent;
-        if (ent >= 0 && !dup) ents[n++] = ent;   /* one HA no longer has: skipped */
+        /* one HA no longer has, or has but can't reach (unavailable): skipped */
+        if (ent >= 0 && !dup && !ha_get(ent)->unavailable) ents[n++] = ent;
     }
 
     static int cand[MAX_CANDIDATES];
     int nc = 0;
     for (int i = 0; i < ha_count() && nc < MAX_CANDIDATES; i++) {
         const ha_entity_t *e = ha_get(i);
-        if (e->area != area || !home_default_card(i)) continue;
+        if (e->area != area || e->unavailable || !home_default_card(i)) continue;
         if (hr && (listed(hr->items, hr->n_items, e->id) || listed(hr->hide, hr->n_hide, e->id))) continue;
         int k = nc++;
         for (; k > 0 && before(i, cand[k - 1]); k--) cand[k] = cand[k - 1];

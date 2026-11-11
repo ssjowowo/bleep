@@ -31,9 +31,15 @@
  *   wait MS            let time pass
  *   type TEXT          type into the open text box
  *   clear              empty the open text box
- *   battery PCT | usb on|off | lux N
+ *   battery PCT | usb on|off | nocell on|off | lux N
+ *   usbfw PCT | done | fail | idle   an update over the USB cable (the flash page) at PCT %, ...
  *   reach wifi|ble on|off   the router / the TVs answer or not (Wi-Fi, Bluetooth links)
+ *   unavailable ENTITY on|off   Home Assistant can't reach the entity (its state "unavailable"), or can again
  *   shot NAME          save NAME.png
+ *   expect-panel       fail unless the panel (rotated by hardware scrolling, strips drawn) shows
+ *                      exactly what drawing the whole screen again shows
+ *   watch-panel on|off the same check after every frame in between (a scroll's
+ *                      frames, not only where it ends)
  *   expect TEXT        fail unless a label on screen contains TEXT
  *   expect-no TEXT     fail if a label on screen contains TEXT
  *   mark               start a fresh log for expect-log (and expect-haptic)
@@ -42,6 +48,7 @@
  *   expect-log-count N TEXT   fail unless exactly N log lines since the mark contain TEXT
  *   expect-before A | B   fail unless label A comes before label B (top to bottom, left to right)
  *   factory            first command only: boot with nothing saved, as a new remote
+ *   bighouse           before boot: HA has 80 hidden entities before the demo house's (indexes past 64)
  *   store FILE         first command only: the flash holds this saved file (path next to the script)
  *   reboot             power cycle: end the run here; test.sh starts a fresh one on the same store,
  *                      from the next line. A wake from deep sleep, or a restart, ends a run the same
@@ -60,24 +67,42 @@
 #include <stdlib.h>
 #include <string.h>
 #include "app.h"
+#include "ha.h"
 #include "sim.h"
 #include "ui/ui.h"
 #include "src/widgets/buttonmatrix/lv_buttonmatrix_private.h"   /* the keys' areas, for kbkey */
 #include "src/widgets/label/lv_label_private.h"                 /* a label's text behind its "..." */
 
 static uint32_t now_ms;
-static uint16_t fb[SCREEN_W_MAX * SCREEN_H_MAX];
+static uint16_t fb[SCREEN_W_MAX * SCREEN_H_MAX];     /* what the panel shows (screenshots) */
+static uint16_t gram[SCREEN_W_MAX * SCREEN_H_MAX];   /* the panel's frame memory */
+#define DRAW_LINES 40                                /* LVGL draws in slices, as on the remote */
+static uint16_t drawbuf[SCREEN_W_MAX * DRAW_LINES];
 static lv_point_t pt;
 static bool pressed;
 static int failures;
 
 static uint32_t tick_cb(void) { return now_ms; }
 
+/* A slice into frame memory, each row where it shows (the rotation), as the
+ * remote's display driver does */
 static void flush_cb(lv_display_t *d, const lv_area_t *area, uint8_t *px)
 {
-    LV_UNUSED(area);
-    LV_UNUSED(px);
+    int w = lv_area_get_width(area), W = g_sim.screen_w;
+    const uint16_t *src = (const uint16_t *)px;
+    for (int y = area->y1; y <= area->y2;) {
+        int n = hws_run(&g_sim.lcd_map, y, area->y2 - y + 1), g = hws_row(&g_sim.lcd_map, y);
+        for (int k = 0; k < n; k++) memcpy(&gram[(g + k) * W + area->x1], src + (y - area->y1 + k) * w, w * 2);
+        y += n;
+    }
     lv_display_flush_ready(d);
+}
+
+/* The picture: each screen row from where the panel reads it */
+static void compose(void)
+{
+    int W = g_sim.screen_w;
+    for (int y = 0; y < g_sim.screen_h; y++) memcpy(&fb[y * W], &gram[hws_row(&g_sim.lcd_map, y) * W], W * 2);
 }
 
 static void read_cb(lv_indev_t *indev, lv_indev_data_t *data)
@@ -88,6 +113,31 @@ static void read_cb(lv_indev_t *indev, lv_indev_data_t *data)
 }
 
 /* Time passes. Asleep, nothing runs: only a touch can still wake it. */
+/* Rows the panel shows differently from all of it drawn again (0: none);
+ * *first: the first of them. Leaves the panel drawn in full. */
+static int panel_diff(int *first)
+{
+    lv_refr_now(g_sim.disp);
+    compose();
+    static uint16_t shown[SCREEN_W_MAX * SCREEN_H_MAX];
+    memcpy(shown, fb, g_sim.screen_w * g_sim.screen_h * 2);
+    lv_obj_invalidate(lv_screen_active());
+    lv_obj_invalidate(lv_layer_top());
+    lv_refr_now(g_sim.disp);
+    compose();
+    int rows = 0;
+    *first = -1;
+    for (int y = 0; y < g_sim.screen_h; y++)
+        if (memcmp(&shown[y * g_sim.screen_w], &fb[y * g_sim.screen_w], g_sim.screen_w * 2)) {
+            if (*first < 0) *first = y;
+            rows++;
+        }
+    return rows;
+}
+
+static bool watching;   /* watch-panel: check the panel after every frame */
+static int watch_bad;
+
 static void run(uint32_t ms)
 {
     for (uint32_t t = 0; t < ms; t += 5) {
@@ -99,6 +149,12 @@ static void run(uint32_t ms)
         }
         lv_timer_handler();
         app_tick();
+        if (watching) {
+            int first, rows = panel_diff(&first);
+            if (rows && !watch_bad++)
+                printf("FAIL: watch-panel: %d rows differ from a full redraw, first %d (rotation %d, scroll frame)\n",
+                       rows, first, g_sim.lcd_map.start);
+        }
     }
 }
 
@@ -358,6 +414,7 @@ int script_run(const char *path, const char *shot_dir)
         char *cmd = strtok(line, " \t\r\n");
         if (!cmd || cmd[0] == '#') continue;
         if (!strcmp(cmd, "factory")) g_sim.factory = true;
+        if (!strcmp(cmd, "bighouse")) g_sim.big_house = true;
         if (!strcmp(cmd, "store")) {
             /* store FILE: the flash holds this saved file (next to the script) */
             char p[512], *arg = strtok(NULL, " \t\r\n");
@@ -381,8 +438,9 @@ int script_run(const char *path, const char *shot_dir)
     lv_init();
     lv_tick_set_cb(tick_cb);
     g_sim.disp = lv_display_create(g_sim.screen_w, g_sim.screen_h);
-    lv_display_set_buffers(g_sim.disp, fb, NULL, (uint32_t)(g_sim.screen_w * g_sim.screen_h * 2),
-                           LV_DISPLAY_RENDER_MODE_DIRECT);
+    g_sim.panel = true;
+    lv_display_set_buffers(g_sim.disp, drawbuf, NULL, (uint32_t)(g_sim.screen_w * DRAW_LINES * 2),
+                           LV_DISPLAY_RENDER_MODE_PARTIAL);
     lv_display_set_flush_cb(g_sim.disp, flush_cb);
     lv_indev_t *ind = lv_indev_create();
     lv_indev_set_type(ind, LV_INDEV_TYPE_POINTER);
@@ -675,8 +733,29 @@ int script_run(const char *path, const char *shot_dir)
         } else if (!strcmp(cmd, "battery") && rest) {
             g_sim.battery = atoi(rest);
             run(50);
+        } else if (!strcmp(cmd, "nocell") && rest) {
+            g_sim.no_cell = !strcmp(rest, "on");
+            run(50);
+        } else if (!strcmp(cmd, "usbfw") && rest) {
+            if (!strcmp(rest, "done")) g_sim.usb_fw = USB_FW_DONE, g_sim.usb_fw_pct = 100;
+            else if (!strcmp(rest, "fail")) g_sim.usb_fw = USB_FW_FAILED;
+            else if (!strcmp(rest, "idle")) g_sim.usb_fw = USB_FW_IDLE;
+            else g_sim.usb_fw = USB_FW_RECEIVING, g_sim.usb_fw_pct = atoi(rest);
+            run(50);
         } else if (!strcmp(cmd, "usb") && rest) {
             sim_set_usb(!strcmp(rest, "on"));
+            run(50);
+        } else if (!strcmp(cmd, "unavailable") && rest) {
+            /* HA loses (or finds again) an entity: as its state "unavailable" would */
+            char id[96];
+            int idx = sscanf(rest, "%95s", id) == 1 ? ha_find(id) : -1;
+            if (idx < 0) {
+                printf("FAIL: unavailable: no entity %s\n", rest);
+                failures++;
+            } else {
+                ha_get(idx)->unavailable = strstr(rest, " on") != NULL;
+                app_notify(EV_HA, idx);
+            }
             run(50);
         } else if (!strcmp(cmd, "reach") && rest) {
             bool on = strstr(rest, " on") != NULL;
@@ -690,11 +769,30 @@ int script_run(const char *path, const char *shot_dir)
         } else if (!strcmp(cmd, "shot") && rest) {
             run(20);
             lv_refr_now(g_sim.disp);
+            compose();
             char p[512];
             snprintf(p, sizeof(p), "%s/%s.png", shot_dir ? shot_dir : ".", rest);
             if (!png_write_rgb565(p, fb, g_sim.screen_w, g_sim.screen_h, g_sim.screen_w))
                 fprintf(stderr, "can't write %s\n", p);
             else printf("shot: %s\n", p);
+        } else if (!strcmp(cmd, "expect-panel")) {
+            /* what the panel shows after its rotations and strips, against all of it drawn again */
+            run(20);
+            int bad, rows = panel_diff(&bad);
+            if (!rows) printf("ok  : expect-panel (rotation %d of %d)\n", g_sim.lcd_map.start, g_sim.lcd_map.height);
+            else {
+                printf("FAIL: expect-panel: %d rows differ from a full redraw, first %d (rotation %d)\n", rows, bad,
+                       g_sim.lcd_map.start);
+                failures++;
+            }
+        } else if (!strcmp(cmd, "watch-panel") && rest) {
+            /* watch-panel on|off: expect-panel after every frame (the first miss fails, once) */
+            if (!strcmp(rest, "on")) watching = true, watch_bad = 0;
+            else {
+                watching = false;
+                if (watch_bad) failures++;
+                else printf("ok  : watch-panel\n");
+            }
         } else if (!strcmp(cmd, "probe") && nums(rest, v, 2, 2) == 2) {
             a = v[0], b = v[1];
             lv_point_t p = {a, b};
@@ -770,7 +868,7 @@ int script_run(const char *path, const char *shot_dir)
              * the same --store file, from the next line. Nothing in RAM
              * survives, not even the RTC block; what wasn't saved is lost. */
             sim_reboot(BOOT_COLD, 0, 0);
-        } else if (!strcmp(cmd, "factory") || !strcmp(cmd, "store")) {
+        } else if (!strcmp(cmd, "factory") || !strcmp(cmd, "store") || !strcmp(cmd, "bighouse")) {
             /* handled before boot */
         } else {
             fprintf(stderr, "%s:%d: can't parse: %s\n", path, n, cmd);

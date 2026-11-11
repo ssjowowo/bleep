@@ -21,7 +21,7 @@ typedef enum {
     EV_VOLUME,      /* a volume key was sent; arg = +1, -1 or 0 (mute) */
     EV_NO_TARGET,   /* a key had nowhere to go */
     EV_PAIRING,     /* BLE pairing or IR learning progressed */
-    EV_UPDATE,      /* firmware update state; arg = 1 if only the download progress changed */
+    EV_UPDATE,      /* firmware update state; arg = 1 if only the download progress changed, 2: over USB (overlays.c) */
     EV_ROUTINE,     /* a routine started, moved to a step, waited, finished or stopped */
     EV_LINK_FAILED, /* keys were dropped: arg = the device whose Bluetooth host didn't answer */
 } app_event_t;
@@ -70,5 +70,13 @@ void app_factory_reset(void);
 /* Restart (after an update): save, keep the runtime state in RTC memory, reboot */
 void app_restart(void);
 
-/* Haptics with the user's strength setting applied */
+/* Haptics with the user's settings applied (Settings > Haptics: strength,
+ * feel, which events, quiet on USB). app_buzz files the buzz by its pattern
+ * (tick: a screen tap, confirm, no and alert: errors and alerts, detent: a
+ * slider); app_buzz_ev says what it's for. BUZZ_EV_COUNT is the Haptics
+ * page itself: it plays whatever the event switches and USB say. */
 void app_buzz(haptic_t pattern);
+void app_buzz_ev(buzz_ev_t ev, haptic_t pattern);
+/* Settings > Haptics > Calibrate: the motor's auto-calibration again (~0.5 s
+ * of buzzing); false if it failed (it then runs open loop) */
+bool app_haptics_calibrate(void);

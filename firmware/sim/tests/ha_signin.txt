@@ -18,7 +18,7 @@ shot 69_ha_signed_out
 # server: found on the network
 click Address
 wait 2000
-expect FOUND ON YOUR NETWORK
+expect Found on your network
 expect Holiday flat
 shot 70_ha_server
 click Home
@@ -47,10 +47,19 @@ click Sign out
 wait 300
 click Sign in on the remote
 wait 300
+# typing the account takes a while: Wi-Fi stays on past its 20 s linger
+mark
 click Username
-type sam
+wait 6000
+kbkey s
+wait 6000
+kbkey a
+wait 6000
+kbkey m
+wait 6000
 kbkey enter
 wait 300
+expect-log-no wifi: off
 click Password
 type wrong
 kbkey enter

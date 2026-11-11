@@ -70,6 +70,7 @@ int ha_area_find(const char *area_id);  /* -1 if HA has no such area */
 
 void ha_init(void);
 void ha_tick(void);                     /* call every second */
+void ha_poll(void);                     /* call every loop: handles what HA sent meanwhile */
 void ha_set_wifi(bool up);              /* radio policy: Wi-Fi is up/down */
 ha_link_t ha_link(void);
 
@@ -120,6 +121,7 @@ typedef enum {
     HA_LOGIN_UNREACHABLE,       /* no answer from the server URL */
     HA_LOGIN_DENIED,            /* phone: sign-in cancelled on the phone */
     HA_LOGIN_EXPIRED,           /* phone: nothing happened for 5 minutes */
+    HA_LOGIN_UNAVAILABLE,       /* phone: not offered yet (bleepremote.com's callback page isn't up) */
 } ha_login_t;
 
 /* Sign in on a phone. The remote serves a page on its own IP:
@@ -167,3 +169,4 @@ void ha_set_ct(int idx, int kelvin);
 void ha_action(int idx, const char *action);  /* press, activate, run, open, close, stop, lock, unlock, ... */
 void ha_alarm(int idx, int mode, const char *code);
 void ha_todo_toggle(int idx, int item);
+void ha_set_text(int idx, const char *text);  /* input_text / text: set_value */

@@ -49,7 +49,7 @@ wait 3000
 # edit Louder: change its button, Update
 press Louder
 wait 300
-expect STEPS
+expect Steps
 expect 1. AV receiver · Volume + × 5
 shot 107_routine_editor
 click 1. AV receiver · Volume + × 5

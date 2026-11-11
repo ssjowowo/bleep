@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bleep Firmware</title>
+<meta name="description" content="Install or update the firmware on your Bleep remote from the browser, over USB-C.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* "Terminal" direction: the remote's dark Cyan, set as a console */
+  :root {
+    --bg: #050708; --panel: #000000; --bar: #02171c; --line: #1e4953;
+    --text: #cfe3e6; --text-hi: #f4f7f8; --text2: #8fa3a7; --dim: #6e8c92;
+    --accent: #3fd8f2; --on-accent: #021f25; --accent-hi: #c1f1fe;
+    --ok: #25d367; --warn: #f7ac4d; --gold: #d3b172;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 400 15px/1.6 var(--mono); }
+  main { max-width: 1120px; margin: 0 auto; padding: 32px 40px 96px; display: flex; flex-direction: column; gap: 48px; }
+  a { color: var(--accent); }
+  a:hover { color: var(--accent-hi); }
+  h1, h2, h3 { margin: 0; }
+  p { margin: 0; text-wrap: pretty; }
+  b, strong { color: var(--text-hi); font-weight: 700; }
+  code, kbd { font: inherit; color: var(--accent-hi); }
+  .p { color: var(--accent); }            /* the $ / › prompts */
+  .dim { color: var(--dim); }
+  .muted { color: var(--text2); }
+  .warn-t { color: var(--warn); }
+
+  /* header */
+  header.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+               border-bottom: 1px dashed var(--line); padding-bottom: 20px; }
+  .brand { display: flex; align-items: center; gap: 14px; color: var(--text2); }
+  .brand > svg { width: 104px; height: auto; display: block; color: var(--text-hi); }
+  .status { display: flex; gap: 16px; font-size: 13px; color: var(--text2); flex-wrap: wrap; }
+  .status .led { color: var(--ok); }
+  .status .led.bad { color: var(--warn); }
+
+  /* intro */
+  .intro { display: flex; flex-direction: column; gap: 18px; }
+  h1 { font: 700 clamp(40px, 6vw, 76px)/1.02 "Sora", sans-serif; letter-spacing: -0.03em; color: var(--text-hi); }
+  h1 span { color: var(--accent); }
+  .lede { max-width: 60ch; color: var(--text2); }
+
+  .note { display: flex; gap: 10px; align-items: flex-start; padding: 14px 18px; border: 1px solid var(--warn);
+          border-radius: 16px; color: var(--text); }
+  .note::before { content: "!"; color: var(--warn); font-weight: 700; }
+  .blocked { display: none; }
+  .blocked.on { display: flex; }
+
+  /* the installer window */
+  .win { border: 1px solid var(--line); border-radius: 20px; overflow: hidden; background: var(--panel); }
+  .win-bar { display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--bar);
+             font-size: 13px; color: var(--text2); }
+  .win-bar i { width: 12px; height: 12px; border-radius: 6px; background: var(--line); }
+  .win-bar i:first-child { background: var(--gold); }
+  .win-bar span { margin-left: 12px; }
+  .win-body { padding: 28px; display: flex; flex-direction: column; gap: 26px; }
+  .cmd { display: flex; flex-direction: column; gap: 10px; }
+
+  /* choices: radio buttons drawn as ( ) / (•) */
+  .choices { display: flex; gap: 10px; flex-wrap: wrap; }
+  .choice { position: relative; display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 18px;
+            border-radius: 12px; border: 1px solid var(--line); color: var(--text); cursor: pointer; font-weight: 500; }
+  .choice input { position: absolute; opacity: 0; pointer-events: none; }
+  .choice .dot::before { content: "( )"; color: var(--text2); white-space: pre; }
+  .choice:has(input:checked) { border-color: var(--accent); background: var(--bar); color: var(--text-hi); }
+  .choice:has(input:checked) .dot::before { content: "(•)"; color: var(--accent); }
+  .choice:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .choice:has(input:disabled) { cursor: not-allowed; border-style: dashed; color: var(--dim); }
+  .choice:has(input:disabled) .dot::before { color: var(--dim); }
+  .choice strong { color: inherit; font-weight: 500; text-transform: lowercase; }
+  .choice .d { color: var(--text2); font-size: 13px; }
+  .choice:has(input:disabled) .d { color: var(--dim); }
+  .badge { margin-left: 8px; font-size: 13px; color: var(--dim); text-transform: lowercase; white-space: nowrap; }
+  .badge::before { content: "— "; }
+  .badge.warn { margin-left: 0; color: var(--warn); }
+  .badge.warn::before { content: "["; }
+  .badge.warn::after { content: "]"; }
+  #fw-line { font-size: 14px; color: var(--text2); }
+
+  /* what's happened so far, one line per phase */
+  .trail { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--text2); }
+  .trail:empty { display: none; }
+  .trail div::before { content: "› "; color: var(--accent); }
+  .trail div.now { color: var(--text); }
+  .trail div.done::before { content: "✓ "; color: var(--ok); }
+  .trail div.fail { color: var(--text); }
+  .trail div.fail::before { content: "✗ "; color: var(--warn); }
+
+  .progress { display: none; flex-direction: column; gap: 8px; }
+  .progress.on { display: flex; }
+  .phase { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+  .phase b { color: var(--text); font-weight: 400; }
+  #pct { color: var(--accent); }
+  /* a block-character bar: 14px cells with a 2px gap */
+  .bar { height: 18px; background: repeating-linear-gradient(90deg, var(--line) 0 12px, transparent 12px 14px); }
+  .bar > i { display: block; height: 100%; width: 0%; transition: width .2s;
+             background: repeating-linear-gradient(90deg, var(--accent) 0 12px, transparent 12px 14px); }
+
+  .result { display: none; padding: 14px 18px; border-radius: 14px; border: 1px solid; }
+  .result.ok { display: block; border-color: var(--ok); }
+  .result.ok b { color: var(--ok); }
+  .result.err { display: block; border-color: var(--warn); }
+  .result.err b { color: var(--warn); }
+
+  .go { display: flex; gap: 12px 16px; flex-wrap: wrap; align-items: center; border-top: 1px dashed var(--line); padding-top: 24px; }
+
+  /* buttons */
+  button { font: 500 14px var(--mono); height: 44px; padding: 0 16px; border-radius: 12px; cursor: pointer;
+           border: 1px solid var(--line); background: transparent; color: var(--text);
+           display: inline-flex; align-items: center; gap: 12px; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button.primary { height: 56px; padding: 0 26px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent);
+                   font-weight: 700; font-size: 16px; }
+  button.primary:hover:not(:disabled) { background: var(--accent-hi); }
+  button.primary .key { border: 1.5px solid currentColor; border-radius: 6px; padding: 1px 7px; font-size: 12px; line-height: 1.4; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  details.log summary { cursor: pointer; color: var(--text2); font-size: 14px; }
+  details.log summary:hover { color: var(--text); }
+  pre.term { margin: 10px 0 0; background: var(--panel); color: var(--text2); border: 1px solid var(--line); border-radius: 16px; padding: 18px;
+             font: 13px/1.7 var(--mono); white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow: auto; }
+
+  /* steps */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .steps li { border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .steps .n { color: var(--gold); }
+  .steps p { color: var(--text2); font-size: 14px; }
+
+  /* console */
+  .con { display: flex; flex-direction: column; gap: 12px; }
+  .con-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  h2 { font: 700 18px var(--mono); color: var(--text-hi); }
+  .con-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  #console-out { margin: 0; min-height: 220px; max-height: 420px; }
+  #console-out:empty::before { content: "connect to see what the remote reports"; color: var(--dim); }
+  #console-out:empty::after { content: " "; background: var(--accent); }
+
+  /* help */
+  .help { display: flex; flex-direction: column; gap: 12px; }
+  details.q { border-top: 1px dashed var(--line); padding: 14px 4px; }
+  details.q:last-of-type { border-bottom: 1px dashed var(--line); }
+  details.q summary { cursor: pointer; list-style: none; display: flex; gap: 12px; color: var(--text); }
+  details.q summary::-webkit-details-marker { display: none; }
+  details.q summary::before { content: "[+]"; color: var(--gold); flex: none; }
+  details.q[open] summary::before { content: "[–]"; }
+  details.q summary:hover { color: var(--text-hi); }
+  details.q .a { margin: 10px 0 0 calc(3ch + 12px); color: var(--text2); display: grid; gap: 8px; font-size: 14px; }
+  ol.howto { margin: 0; padding-left: 3ch; display: grid; gap: 6px; }
+
+  footer { color: var(--dim); font-size: 13px; border-top: 1px dashed var(--line); padding-top: 20px; display: grid; gap: 4px; }
+
+  @media (max-width: 640px) {
+    main { padding: 24px 16px 64px; gap: 36px; }
+    .win-body { padding: 20px 16px; }
+    .choice { flex: 1 1 100%; }
+    button.primary { flex: 1 1 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div class="brand">
+      <!--LOGO: build.sh puts logo.svg here, inline, so it takes the text colour-->
+      <span class="dim" aria-hidden="true">/</span>
+      <span>firmware</span>
+    </div>
+    <div class="status">
+      <span id="hdr-serial"><span class="led">●</span> web serial ok</span>
+      <span id="hdr-fw"></span>
+    </div>
+  </header>
+
+  <section class="intro">
+    <div class="dim">// install the remote's software over usb-c</div>
+    <h1>flash<span>_</span>your<span>_</span>bleep</h1>
+    <p class="lede">Everything happens in this tab: the browser talks to the remote over the cable. It takes about a minute, and nothing leaves your computer.</p>
+    <!-- shown when the browser can't talk to USB devices -->
+    <div id="no-serial" class="note blocked" role="alert"><div id="no-serial-text"></div></div>
+  </section>
+
+  <section class="win" aria-label="Installer">
+    <div class="win-bar" aria-hidden="true"><i></i><i></i><i></i><span>bleep@usb-c — installer</span></div>
+    <div class="win-body">
+      <div class="cmd">
+        <div id="l-model"><span class="p">$</span> select --remote</div>
+        <div class="choices" id="models" role="radiogroup" aria-labelledby="l-model"></div>
+        <p id="fw-line"></p>
+      </div>
+
+      <div class="cmd">
+        <div id="l-mode"><span class="p">$</span> select --mode</div>
+        <div class="choices" role="radiogroup" aria-labelledby="l-mode">
+          <label class="choice">
+            <input type="radio" name="mode" value="update" checked>
+            <span class="dot" aria-hidden="true"></span>
+            <span>update <span class="d">--keep-settings</span></span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="mode" value="clean">
+            <span class="dot" aria-hidden="true"></span>
+            <span>clean <span class="d warn-t">--erase-all</span></span>
+          </label>
+        </div>
+        <p class="muted" style="font-size:14px">Update keeps your devices, activities, Wi-Fi and paired TVs, and shows its progress on the remote's screen when the remote's firmware can take it. Clean erases everything first, and the remote starts as new.</p>
+      </div>
+
+      <div class="trail" id="trail" aria-live="polite"></div>
+      <div class="progress" id="progress">
+        <div class="phase"><b id="phase">Connecting…</b><span id="pct"></span></div>
+        <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+      </div>
+      <div class="result" id="result" role="status"></div>
+
+      <div class="go">
+        <button class="primary" id="install"><span class="key" aria-hidden="true">⏎</span> install</button>
+        <span class="dim" style="font-size:13px">then pick “USB JTAG/serial debug unit”</span>
+      </div>
+
+      <details class="log" id="log-box">
+        <summary>details</summary>
+        <pre class="term" id="log"></pre>
+      </details>
+    </div>
+  </section>
+
+  <ol class="steps" aria-label="Steps">
+    <li><div class="n">[01] plug in</div><p>Use a USB-C cable that carries data, not one for charging only.</p></li>
+    <li><div class="n">[02] wake it</div><p>Press any key so the remote is awake. Asleep, its USB connection is off.</p></li>
+    <li><div class="n">[03] install</div><p>Press install and pick the remote in the browser's list.</p></li>
+    <li><div class="n">[04] done</div><p>Leave the cable in until it says done. The remote restarts by itself.</p></li>
+  </ol>
+
+  <section class="con" aria-labelledby="s-con">
+    <div class="con-head">
+      <h2 id="s-con"><span class="p">$</span> tail -f bleep.log</h2>
+      <div class="con-btns">
+        <button id="con-connect">connect</button>
+        <button id="con-restart" disabled>restart</button>
+        <button id="con-save" disabled>save</button>
+        <button id="con-clear">clear</button>
+      </div>
+    </div>
+    <p class="muted" style="font-size:14px">What the remote reports as it runs. Useful when something isn't working and you're asked for its log.</p>
+    <pre class="term" id="console-out" aria-live="off" aria-label="Console output"></pre>
+  </section>
+
+  <section class="help" aria-labelledby="help">
+    <h2 id="help"><span class="p">$</span> help</h2>
+    <details class="q">
+      <summary>The remote isn't in the list</summary>
+      <div class="a">
+        <p>Wake it up: press any key, then try again. A sleeping remote switches its USB connection off.</p>
+        <p>Try another cable. Many USB-C cables only charge. Then try another USB port, plugged straight into the computer rather than through a hub.</p>
+        <p>On Linux, your user needs to be allowed to use serial ports: run <code>sudo usermod -aG dialout $USER</code>, then log out and in again.</p>
+      </div>
+    </details>
+    <details class="q">
+      <summary>“Couldn't connect” or “port is busy”</summary>
+      <div class="a">
+        <p>Only one program can talk to the remote at a time. Disconnect the console on this page, and close other tabs or programs that might have it open (a serial monitor, Arduino, another flasher), then try again.</p>
+      </div>
+    </details>
+    <details class="q">
+      <summary>The remote doesn't start, or the screen stays dark after an install</summary>
+      <div class="a">
+        <p>Install again, choosing <b>clean</b>. If the remote isn't in the list any more, start it in download mode, where it always shows up:</p>
+        <ol class="howto">
+          <li>Hold the <b>OK</b> key down.</li>
+          <li>Through the slot in the back, touch a small flat screwdriver across the two reset pads, then take it away.</li>
+          <li>Let go of OK. The screen stays dark: that's expected.</li>
+          <li>Press <b>install</b> here. When it's done, unplug the cable and plug it back in, or short the reset pads once more.</li>
+        </ol>
+      </div>
+    </details>
+    <details class="q">
+      <summary>It stopped halfway</summary>
+      <div class="a">
+        <p>The remote may not start until it's installed again, but nothing is damaged, and an <b>update</b> keeps your setup. Plug it back in and press <b>install</b> again. If it isn't in the list, use download mode (above).</p>
+      </div>
+    </details>
+    <details class="q">
+      <summary>Which browsers work?</summary>
+      <div class="a">
+        <p>Chrome, Edge or another Chromium browser on a computer (Windows, macOS, Linux or ChromeOS). Firefox, Safari and phones can't connect to USB devices from a web page.</p>
+      </div>
+    </details>
+  </section>
+
+  <footer>
+    <span id="footer-fw"></span>
+    <span>Flashing with <a href="https://github.com/espressif/esptool-js">esptool-js</a> 0.7.0 by Espressif (Apache 2.0). Nothing you do here leaves your computer.</span>
+  </footer>
+</main>
+<script type="module" src="flasher.js"></script>
+</body>
+</html>

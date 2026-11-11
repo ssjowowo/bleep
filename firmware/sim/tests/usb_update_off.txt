@@ -1,0 +1,28 @@
+# Off on the charger, its screen gone dark: an update over USB lights it,
+# shows the update, and the remote stays off; it goes dark again after
+click Start
+wait 300
+tab Settings
+wait 1500
+click Power off
+wait 300
+click Power off
+wait 500
+usb on
+wait 11000
+expect-log power: off, charging, screen dark
+mark
+usbfw 30
+wait 300
+expect Updating over USB
+expect 30%
+# lit for as long as it runs, past the charging screen's 10 s
+wait 15000
+expect-log-no power: off, charging, screen dark
+usbfw fail
+wait 300
+expect Update stopped
+wait 6500
+expect-no Update stopped
+wait 11000
+expect-log power: off, charging, screen dark

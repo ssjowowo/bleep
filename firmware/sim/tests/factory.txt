@@ -55,10 +55,10 @@ expect Sign in
 shot 86_factory_home_signin
 click Sign in
 wait 300
-expect SERVER
+expect Server
 click Address
 wait 2000
-expect FOUND ON YOUR NETWORK
+expect Found on your network
 click Home
 wait 300
 click Sign in with your phone

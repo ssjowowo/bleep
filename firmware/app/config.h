@@ -15,7 +15,7 @@
  *
  *  1. Never rename or reuse a key or a name in the file: JSON keys, and the
  *     ids in config.c (fn_ids, kind_ids, proto_ids, step_ids, op_ids,
- *     theme_ids, layout_ids, size_ids, transport names, activity_icons[].name,
+ *     theme_ids, accent_ids, layout_ids, size_ids, transport names, activity_icons[].name,
  *     home_icons[].name, the secret key "wifi_pass"). Add new ones instead. A
  *     setting that's dropped altogether may stop being written; its key is
  *     then retired: older files still have it and it's ignored, and it's

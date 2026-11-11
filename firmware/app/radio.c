@@ -12,6 +12,13 @@
 static radio_status_t st = {.ble_dev = -1};
 static bool view_home, view_np;
 static bool hold_pair, hold_rx, hold_wifi, hold_update, hold_routine_wifi, hold_night, hold_bridge;
+/* Just paired: the link that bonded is this device's. It stays up a while
+ * even if nothing needs it, while the TV finishes setting the remote up (it
+ * reads the HID map and subscribes to reports); hanging up then left Google
+ * TV stuck on "Pairing…". */
+#define ADOPT_MS 30000
+static int adopt_dev = -1;
+static uint32_t adopt_until;
 static int8_t hold_ble_dev = -1;
 static uint32_t wifi_t0, ble_t0, wifi_retry_at, ble_retry_at;
 
@@ -41,6 +48,12 @@ void radio_hold_pairing(bool on)
 {
     power_keep_awake(AWAKE_PAIRING, on);
     if (hold_pair != on) hold_pair = on, radio_update();
+}
+
+void radio_ble_paired_as(int dev)
+{
+    adopt_dev = dev;
+    adopt_until = hal_millis() + ADOPT_MS;
 }
 
 void radio_hold_ir_rx(bool on)
@@ -144,6 +157,14 @@ static int drop_queued(int dev)
 
 static void set_ble(bool on, int dev)
 {
+    if (on && dev >= 0 && dev == adopt_dev && st.ble_dev < 0 && st.ble != LINK_OFF && hal_ble_link() == HAL_LINK_UP) {
+        /* the pairing's own link: keep it, it's this device's now */
+        st.ble = LINK_UP;
+        st.ble_dev = dev;
+        st.ble_tries = 0;
+        hal_log("ble: keeping the link to %s", g_model.devices[dev].name);
+        return;
+    }
     if (on && (st.ble == LINK_OFF || st.ble_dev != dev)) {
         if (st.ble != LINK_OFF && st.ble_dev != dev) hal_log("ble: switch host");
         st.ble_tries = 0;
@@ -185,8 +206,10 @@ void radio_update(void)
 
     /* BLE: stays connected while warm; off in deep sleep */
     st.ble_pairing = hold_pair && !asleep;
+    bool adopting = adopt_dev >= 0 && (int32_t)(hal_millis() - adopt_until) < 0 && !asleep;
     if (st.ble_pairing) set_ble(true, -1);
     else if (hold_ble_dev >= 0 && !asleep) set_ble(true, hold_ble_dev);   /* a routine step's device */
+    else if (adopting && !((tr & TR_BLE) && ble_dev >= 0)) set_ble(true, adopt_dev);   /* the TV finishes setting up */
     else set_ble(!asleep && (tr & TR_BLE) && ble_dev >= 0, ble_dev);
 
     st.ir_ready = (tr & TR_IR) != 0;
@@ -201,6 +224,7 @@ void radio_device_moved(int from, int to)
 {
     st.ble_dev = model_moved_index(st.ble_dev, from, to);
     hold_ble_dev = model_moved_index(hold_ble_dev, from, to);
+    adopt_dev = model_moved_index(adopt_dev, from, to);
     for (int i = 0; i < queued; i++) queue[i].dev = model_moved_index(queue[i].dev, from, to);
 }
 
@@ -217,6 +241,8 @@ void radio_device_deleted(int idx)
     }
     if (hold_ble_dev == idx) hold_ble_dev = -1;
     else if (hold_ble_dev > idx) hold_ble_dev--;
+    if (adopt_dev == idx) adopt_dev = -1;
+    else if (adopt_dev > idx) adopt_dev--;
     drop_queued(idx);
     for (int i = 0; i < queued; i++)
         if (queue[i].dev > idx) queue[i].dev--;
@@ -316,6 +342,10 @@ static void ble_tick(uint32_t now)
 void radio_tick(void)
 {
     uint32_t now = hal_millis();
+    if (adopt_dev >= 0 && (int32_t)(now - adopt_until) >= 0) {
+        adopt_dev = -1;
+        radio_update();   /* nothing else wants the link: it can go */
+    }
     if (st.wifi_off_at && (int32_t)(now - st.wifi_off_at) >= 0) {
         st.wifi_off_at = 0;
         set_wifi(false);

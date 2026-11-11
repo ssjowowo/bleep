@@ -1,0 +1,49 @@
+# An update over the USB cable (the flash page drives it through the running
+# firmware): its screen shows over everything, wakes a dark screen, and
+# keeps it lit; a stopped one says nothing changed and goes; DONE restarts
+click Start
+wait 300
+tab Settings
+wait 300
+click Display
+wait 300
+switch Nightstand clock
+wait 300
+back
+wait 300
+usb on
+nocell off
+wait 40000
+expect-log power: Dim -> Warm (screen off)
+mark
+usbfw 0
+wait 300
+expect-log power: Warm (screen off) -> Active
+expect Updating over USB
+expect Keep the cable plugged in
+usbfw 45
+wait 300
+expect 45%
+shot 240_usb_update
+# however long it takes, the screen stays on
+wait 40000
+expect Updating over USB
+expect-log-no power: Active -> Dim
+usbfw fail
+wait 300
+expect Update stopped
+expect Nothing changed
+shot 241_usb_update_failed
+wait 6500
+expect-no Update stopped
+# a second go, to the end: the remote restarts into it
+usbfw 10
+wait 300
+expect 10%
+mark
+usbfw done
+wait 300
+expect Installed · restarting
+shot 242_usb_update_done
+expect-log update: written over USB and verified, restarting
+wait 2000

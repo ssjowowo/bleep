@@ -38,7 +38,7 @@ static void fun_build(lv_obj_t *root, int arg)
     lv_obj_t *col = w_col(root, 0);
     lv_obj_set_style_pad_hor(col, PAD, 0);
     char buf[24];
-    w_section(col, "GAMES");
+    w_section(col, "Games");
     snprintf(buf, sizeof(buf), "Best %u", (unsigned)s->snake_best);
     w_on_click(w_list_row(col, ICON_SNAKE, "Snake", buf, NULL), game_cb, 0);
     snprintf(buf, sizeof(buf), "Best %lu", (unsigned long)s->blocks_best);
@@ -78,11 +78,9 @@ void game_card(lv_obj_t *parent, game_chrome_t *g, int y)
     lv_obj_set_size(g->card, SCREEN_W - 2 * PAD, LV_SIZE_CONTENT);
     lv_obj_set_flex_align(g->card, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_all(g->card, UI_PICK(16, 10), 0);
-    lv_obj_set_style_radius(g->card, 14, 0);
+    lv_obj_set_style_radius(g->card, R_CARD, 0);
     lv_obj_set_style_bg_opa(g->card, LV_OPA_90, 0);
-    lv_obj_set_style_bg_color(g->card, T->bg, 0);
-    lv_obj_set_style_border_width(g->card, 1, 0);
-    lv_obj_set_style_border_color(g->card, T->line, 0);
+    lv_obj_set_style_bg_color(g->card, T->surface_hi, 0);
     lv_obj_set_floating(g->card, true);
     lv_obj_align(g->card, LV_ALIGN_TOP_MID, 0, y);
     lv_obj_set_clickable(g->card, false);   /* taps go through to the board */

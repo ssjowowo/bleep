@@ -10,7 +10,7 @@
 
 /* ---- display profile ---- */
 
-static ui_profile_t profile = {320, 480, 16, 36, 60, false};
+static ui_profile_t profile = {320, 480, 16, 36, 68, false};
 const ui_profile_t *UI = &profile;
 
 void ui_profile_init(int w, int h)
@@ -20,7 +20,7 @@ void ui_profile_init(int w, int h)
     profile.compact = w < 300 || h < 400;
     profile.pad = profile.compact ? 10 : 16;
     profile.status_h = profile.compact ? 26 : 36;
-    profile.tabbar_h = profile.compact ? 36 : 60;
+    profile.tabbar_h = profile.compact ? NAV_H_COMPACT : NAV_H;
     theme_fonts(profile.compact);
 }
 
@@ -98,7 +98,7 @@ lv_obj_t *w_spacer(lv_obj_t *parent)
 
 lv_obj_t *w_section(lv_obj_t *parent, const char *text)
 {
-    lv_obj_t *l = w_label(parent, F_LABEL, T->text2, text);
+    lv_obj_t *l = w_label(parent, F_LABEL_B, T->text2, text);
     lv_obj_set_style_pad_top(l, UI_PICK(6, 4), 0);
     return l;
 }
@@ -217,23 +217,42 @@ lv_obj_t *w_header(lv_obj_t *parent, const char *sub, const char *title, lv_even
 
 /* ---- buttons ---- */
 
+/* Icon buttons (square, no side padding) and chips (R_CHIP) keep their own
+ * shape; other buttons take the kind's: keys R_KEY, the rest pills */
+static bool fixed_shape(lv_obj_t *b)
+{
+    return lv_obj_get_style_radius(b, 0) == R_CHIP ||
+           (lv_obj_get_style_pad_left(b, 0) == 0 && lv_obj_get_style_width(b, 0) == lv_obj_get_style_height(b, 0));
+}
+
 void w_button_set_kind(lv_obj_t *b, btn_kind_t kind)
 {
-    lv_color_t bg = T->surface2, fg = T->text, border = T->surface2, pressed = T->line;
+    bool round = fixed_shape(b);
+    lv_color_t bg = T->surface_hi, fg = T->text, icon = T->text;
+    lv_opa_t opa = LV_OPA_COVER;
+    if (kind == BTN_DEFAULT) kind = BTN_TONAL;
     switch (kind) {
-    case BTN_PRIMARY: bg = border = T->accent, fg = T->on_accent, pressed = T->accent_edge; break;
-    case BTN_OUTLINE: bg = T->surface, border = T->line; break;
-    case BTN_SELECTED: bg = T->accent_tint, border = T->accent_edge, fg = T->accent; break;
-    case BTN_DISABLED: bg = border = T->surface, fg = lv_color_mix(T->text2, T->surface, 128); break;
+    case BTN_PRIMARY:
+    case BTN_SELECTED: bg = T->accent, fg = icon = T->on_accent; break;
+    case BTN_TONAL: bg = T->tonal, fg = icon = T->on_tonal; break;
+    case BTN_NEUTRAL: bg = T->surface_top; break;   /* sheets are surface_hi: a step above it */
+    case BTN_OUTLINE: bg = T->bg, opa = LV_OPA_TRANSP, icon = T->accent; break;
+    case BTN_DISABLED: bg = theme_disabled_bg(), fg = icon = theme_disabled_fg(); break;
     default: break;
     }
+    lv_obj_set_style_bg_opa(b, opa, 0);
     lv_obj_set_style_bg_color(b, bg, 0);
-    lv_obj_set_style_border_color(b, border, 0);
-    lv_obj_set_style_bg_color(b, pressed, LV_STATE_PRESSED);
+    lv_obj_set_style_border_width(b, kind == BTN_OUTLINE ? 1 : 0, 0);
+    lv_obj_set_style_border_color(b, T->line, 0);
+    /* pressed: a 10 % layer of the content colour (an outline button on the page's background) */
+    lv_obj_set_style_bg_opa(b, LV_OPA_COVER, LV_STATE_PRESSED);
+    lv_obj_set_style_bg_color(b, theme_pressed(bg, fg), LV_STATE_PRESSED);
+    if (!round) lv_obj_set_style_radius(b, kind == BTN_KEY ? R_KEY : LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_text_color(b, fg, 0);
-    /* children are labels; they inherit text colour */
-    for (uint32_t i = 0; i < lv_obj_get_child_count(b); i++)
-        lv_obj_set_style_text_color(lv_obj_get_child(b, i), fg, 0);
+    /* children are labels: an icon, then the text */
+    uint32_t n = lv_obj_get_child_count(b);
+    for (uint32_t i = 0; i < n; i++)
+        lv_obj_set_style_text_color(lv_obj_get_child(b, i), i + 1 < n || !lv_obj_get_user_data(lv_obj_get_child(b, i)) ? icon : fg, 0);
     if (kind == BTN_DISABLED) lv_obj_add_state(b, LV_STATE_DISABLED);
     else lv_obj_remove_state(b, LV_STATE_DISABLED);
 }
@@ -279,14 +298,11 @@ lv_obj_t *w_button(lv_obj_t *parent, const char *text, const char *icon, btn_kin
     lv_obj_set_scrollable(b, false);
     lv_obj_set_size(b, LV_SIZE_CONTENT, BTN_H);
     lv_obj_set_style_min_width(b, BTN_H, 0);
-    lv_obj_set_style_pad_hor(b, UI_PICK(14, 10), 0);
-    lv_obj_set_style_radius(b, UI_PICK(12, 10), 0);
-    lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(b, 1, 0);
+    lv_obj_set_style_pad_hor(b, UI_PICK(16, 10), 0);
     lv_obj_set_flex_flow(b, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(b, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_gap(b, UI_PICK(6, 5), 0);
-    if (icon) w_icon(b, icon, 16, T->text);
+    if (icon) w_icon(b, icon, text && *text ? 16 : 20, T->text);   /* an icon on its own a size up */
     if (text && *text) {
         lv_obj_t *l = w_label(b, F_LABEL_B, T->text, text);
         lv_obj_set_user_data(l, (void *)(intptr_t)text_w(text, F_LABEL_B));
@@ -298,45 +314,59 @@ lv_obj_t *w_button(lv_obj_t *parent, const char *text, const char *icon, btn_kin
 
 lv_obj_t *w_icon_button(lv_obj_t *parent, const char *icon, int size, btn_kind_t kind)
 {
-    lv_obj_t *b = w_button(parent, NULL, icon, kind);
+    lv_obj_t *b = w_button(parent, NULL, icon, BTN_DEFAULT);
     lv_obj_set_size(b, size, size);
     lv_obj_set_style_pad_hor(b, 0, 0);
     lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
+    w_button_set_kind(b, kind);
     lv_obj_t *ic = lv_obj_get_child(b, 0);
-    lv_obj_set_style_text_font(ic, icon_font(size >= UI_PICK(56, 48) ? 24 : size >= UI_PICK(44, 40) ? 20 : 16), 0);
+    /* Material Symbols sit well inside their box: an icon about half the button's size */
+    lv_obj_set_style_text_font(ic, icon_font(size >= 40 ? 24 : size >= 30 ? 20 : 16), 0);
     return b;
 }
 
+/* A filter chip: outlined, or picked (secondary container, with a tick
+ * where it has no icon of its own) */
 lv_obj_t *w_chip(lv_obj_t *parent, const char *text, const char *icon, bool selected)
 {
-    lv_obj_t *b = w_button(parent, text, icon, selected ? BTN_SELECTED : BTN_OUTLINE);
-    lv_obj_set_height(b, UI_PICK(36, 30));
-    lv_obj_set_ext_click_area(b, UI_PICK(4, 3));   /* taps: 44 px (36) */
-    lv_obj_set_style_radius(b, UI_PICK(18, 15), 0);
-    lv_obj_set_style_pad_hor(b, UI_PICK(13, 11), 0);
-    if (icon) lv_obj_set_style_text_font(lv_obj_get_child(b, 0), icon_font(14), 0);
+    lv_obj_t *b = w_button(parent, text, icon ? icon : selected ? ICON_CHECK : NULL, selected ? BTN_TONAL : BTN_OUTLINE);
+    lv_obj_set_height(b, UI_PICK(32, 30));
+    lv_obj_set_ext_click_area(b, UI_PICK(6, 3));   /* taps: 44 px (36) */
+    lv_obj_set_style_radius(b, R_CHIP, 0);
+    lv_obj_set_style_pad_left(b, icon || selected ? UI_PICK(8, 6) : UI_PICK(12, 10), 0);
+    lv_obj_set_style_pad_right(b, UI_PICK(12, 10), 0);
+    lv_obj_set_style_pad_gap(b, UI_PICK(6, 4), 0);
+    lv_obj_t *l = lv_obj_get_child(b, -1);
+    if (!selected) lv_obj_set_style_text_color(l, T->text2, 0);
+    if (icon || selected) lv_obj_set_style_text_font(lv_obj_get_child(b, 0), icon_font(16), 0);
     return b;
 }
 
 /* ---- controls ---- */
 
+/* The M3 switch: off, an outlined track with a small knob in the outline
+ * colour; on, a filled track with a bigger knob. 46 x 28 (40 x 24). */
 lv_obj_t *w_switch(lv_obj_t *parent, bool on)
 {
     lv_obj_t *s = lv_switch_create(parent);
-    lv_obj_set_size(s, UI_PICK(40, 36), UI_PICK(24, 20));
+    int h = UI_PICK(28, 24);
+    lv_obj_set_size(s, UI_PICK(46, 40), h);
     lv_obj_set_style_bg_opa(s, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(s, T->track, 0);
+    lv_obj_set_style_bg_color(s, T->surface_top, 0);
+    lv_obj_set_style_border_width(s, 2, 0);
+    lv_obj_set_style_border_color(s, T->outline, 0);
+    lv_obj_set_style_bg_color(s, T->accent, LV_STATE_CHECKED);
+    lv_obj_set_style_border_color(s, T->accent, LV_STATE_CHECKED);
     lv_obj_set_style_radius(s, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_bg_opa(s, LV_OPA_COVER, LV_PART_INDICATOR);
-    lv_obj_set_style_bg_color(s, T->track, LV_PART_INDICATOR);
-    lv_obj_set_style_bg_color(s, T->accent, LV_PART_INDICATOR | LV_STATE_CHECKED);
-    lv_obj_set_style_radius(s, LV_RADIUS_CIRCLE, LV_PART_INDICATOR);
+    lv_obj_set_style_bg_opa(s, LV_OPA_TRANSP, LV_PART_INDICATOR);
     lv_obj_set_style_bg_opa(s, LV_OPA_COVER, LV_PART_KNOB);
-    lv_obj_set_style_bg_color(s, T->text2, LV_PART_KNOB);
+    lv_obj_set_style_bg_color(s, T->outline, LV_PART_KNOB);
     lv_obj_set_style_bg_color(s, T->on_accent, LV_PART_KNOB | LV_STATE_CHECKED);
     lv_obj_set_style_radius(s, LV_RADIUS_CIRCLE, LV_PART_KNOB);
-    lv_obj_set_style_pad_all(s, -3, LV_PART_KNOB);
-    lv_obj_set_ext_click_area(s, UI_PICK(10, 8));
+    /* the knob is the track's height less these: 14 px off, 20 on (12, 18) */
+    lv_obj_set_style_pad_all(s, -(h - UI_PICK(14, 12)) / 2, LV_PART_KNOB);
+    lv_obj_set_style_pad_all(s, -(h - UI_PICK(20, 18)) / 2, LV_PART_KNOB | LV_STATE_CHECKED);
+    lv_obj_set_ext_click_area(s, UI_PICK(8, 6));
     if (on) lv_obj_add_state(s, LV_STATE_CHECKED);
     return s;
 }
@@ -349,18 +379,22 @@ lv_obj_t *w_slider(lv_obj_t *parent, int value, int min, int max)
     lv_obj_t *s = lv_slider_create(parent);
     lv_slider_set_range(s, min, max);
     lv_slider_set_value(s, value, LV_ANIM_OFF);
-    lv_obj_set_size(s, lv_pct(100), 6);
+    /* a 12 px track (8) with a 4 px bar for a knob, 28 px tall (20): the
+     * knob is the track's height square, so negative padding at the sides */
+    int h = UI_PICK(12, 8), knob_h = UI_PICK(28, 20);
+    lv_obj_set_size(s, lv_pct(100), h);
     lv_obj_set_style_bg_opa(s, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(s, T->track, 0);
-    lv_obj_set_style_radius(s, 3, 0);
+    lv_obj_set_style_bg_color(s, T->surface_top, 0);
+    lv_obj_set_style_radius(s, h / 2, 0);
     lv_obj_set_style_bg_opa(s, LV_OPA_COVER, LV_PART_INDICATOR);
     lv_obj_set_style_bg_color(s, T->accent, LV_PART_INDICATOR);
-    lv_obj_set_style_radius(s, 3, LV_PART_INDICATOR);
+    lv_obj_set_style_radius(s, h / 2, LV_PART_INDICATOR);
     lv_obj_set_style_bg_opa(s, LV_OPA_COVER, LV_PART_KNOB);
-    lv_obj_set_style_bg_color(s, T->text, LV_PART_KNOB);
-    lv_obj_set_style_radius(s, LV_RADIUS_CIRCLE, LV_PART_KNOB);
-    lv_obj_set_style_pad_all(s, UI_PICK(6, 5), LV_PART_KNOB);
-    lv_obj_set_ext_click_area(s, UI_PICK(14, 15));   /* 34 px tall to touch (36 on the small screen) */
+    lv_obj_set_style_bg_color(s, T->accent, LV_PART_KNOB);
+    lv_obj_set_style_radius(s, 2, LV_PART_KNOB);
+    lv_obj_set_style_pad_ver(s, (knob_h - h) / 2, LV_PART_KNOB);
+    lv_obj_set_style_pad_hor(s, (4 - h) / 2, LV_PART_KNOB);
+    lv_obj_set_ext_click_area(s, (TOUCH_MIN - h) / 2);   /* 44 px tall to touch (36) */
     return s;
 }
 
@@ -403,7 +437,7 @@ static void step_dots_draw(lv_event_t *e)
      * so each dot sits exactly under the knob at its step */
     int x0 = a.x1 + lv_obj_get_style_pad_left(s, LV_PART_MAIN);
     int len = lv_area_get_width(&a) - lv_obj_get_style_pad_left(s, LV_PART_MAIN) - lv_obj_get_style_pad_right(s, LV_PART_MAIN);
-    /* 4 px dots on a 6 px track: (y1 + y2 + 1) / 2 leaves 1 px of track above and below */
+    /* 4 px dots, centred on the track */
     int cy = (a.y1 + a.y2 + 1) / 2;
     lv_draw_rect_dsc_t r;
     lv_draw_rect_dsc_init(&r);
@@ -411,10 +445,11 @@ static void step_dots_draw(lv_event_t *e)
     for (int i = 0; i < d->n; i++) {
         if (i == cur) continue;   /* under the knob */
         int cx = x0 + len * i / (d->n - 1) - 1;
-        /* the knob overhangs the ends; the end dots stay inside the rounded track */
-        if (cx - 2 < a.x1 + 1) cx = a.x1 + 3;
-        if (cx + 1 > a.x2 - 1) cx = a.x2 - 2;
-        r.bg_color = i < cur ? T->on_accent : T->text2;
+        /* the end dots stay inside the rounded track */
+        int in = lv_area_get_height(&a) / 2;
+        if (cx - 2 < a.x1 + in - 2) cx = a.x1 + in;
+        if (cx + 1 > a.x2 - in + 2) cx = a.x2 - in + 1;
+        r.bg_color = i < cur ? T->on_accent : T->on_tonal;
         lv_area_t dot = {cx - 2, cy - 2, cx + 1, cy + 1};
         lv_draw_rect(layer, &r, &dot);
     }
@@ -435,20 +470,21 @@ lv_obj_t *w_step_slider(lv_obj_t *parent, const char *icon, const char *title, c
 {
     lv_obj_t *block = w_col(parent, UI_PICK(8, 5));
     lv_obj_set_style_pad_ver(block, UI_PICK(12, 8), 0);
-    lv_obj_set_style_border_side(block, LV_BORDER_SIDE_BOTTOM, 0);
-    lv_obj_set_style_border_width(block, 1, 0);
-    lv_obj_set_style_border_color(block, T->line, 0);
+    lv_obj_set_style_pad_hor(block, UI_PICK(14, 10), 0);
+    lv_obj_set_style_bg_opa(block, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(block, T->surface, 0);
+    lv_obj_set_style_radius(block, R_KEY, 0);
+    lv_obj_set_style_margin_bottom(block, ROW_GAP, 0);
 
     lv_obj_t *head = w_row(block, UI_PICK(10, 8));
-    if (icon) w_icon(head, icon, 18, T->text2);
+    if (icon) w_icon(head, icon, 20, T->text2);
     w_label(head, F_BODY, T->text, title);
     w_spacer(head);
     lv_obj_t *value = w_label(head, F_LABEL_B, T->accent, d->labels[selected]);
 
-    /* inset to line up with the title; the right inset leaves room for the knob */
+    /* inset to line up with the title */
     lv_obj_t *s = w_slider(block, selected, 0, d->n - 1);
-    lv_obj_set_style_margin_left(s, icon ? UI_PICK(28, 24) : 9, 0);
-    lv_obj_set_style_margin_right(s, 9, 0);
+    lv_obj_set_style_margin_left(s, icon ? UI_PICK(30, 24) : 0, 0);
     lv_obj_set_style_margin_top(s, UI_PICK(6, 4), 0);
     lv_obj_set_width(s, lv_pct(100));
     lv_obj_set_user_data(s, value);              /* slider -> value label -> steps */
@@ -458,7 +494,7 @@ lv_obj_t *w_step_slider(lv_obj_t *parent, const char *icon, const char *title, c
     lv_obj_add_event_cb(s, step_dots_draw, LV_EVENT_DRAW_MAIN_END, (void *)d);
 
     lv_obj_t *ends = w_row(block, 0);
-    lv_obj_set_style_pad_left(ends, icon ? UI_PICK(28, 24) - 2 : 0, 0);
+    lv_obj_set_style_pad_left(ends, icon ? UI_PICK(30, 24) : 0, 0);
     w_label(ends, F_CAPTION, T->text2, d->labels[0]);
     w_spacer(ends);
     w_label(ends, F_CAPTION, T->text2, d->labels[d->n - 1]);
@@ -480,16 +516,17 @@ void w_segmented_select(lv_obj_t *seg, int selected)
         lv_obj_t *b = lv_obj_get_child(seg, i);
         bool sel = (int)i == selected;
         lv_obj_set_style_bg_opa(b, sel ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
-        lv_obj_set_style_text_color(lv_obj_get_child(b, 0), sel ? T->accent : T->text2, 0);
+        lv_obj_set_style_text_color(lv_obj_get_child(b, 0), sel ? T->on_tonal : T->text2, 0);
     }
 }
 
 lv_obj_t *w_segmented(lv_obj_t *parent, const char *options, int selected, lv_event_cb_t cb)
 {
+    /* a button group: a pill of the container colour, the picked one a tonal pill in it */
     lv_obj_t *seg = w_row(parent, UI_PICK(4, 3));
     lv_obj_set_style_bg_opa(seg, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(seg, T->surface2, 0);
-    lv_obj_set_style_radius(seg, UI_PICK(12, 10), 0);
+    lv_obj_set_style_bg_color(seg, T->surface, 0);
+    lv_obj_set_style_radius(seg, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_pad_all(seg, UI_PICK(4, 2), 0);
     char buf[96];
     snprintf(buf, sizeof(buf), "%s", options);
@@ -500,8 +537,8 @@ lv_obj_t *w_segmented(lv_obj_t *parent, const char *options, int selected, lv_ev
         lv_obj_set_height(b, UI_PICK(36, 28));
         lv_obj_set_ext_click_area(b, 4);   /* the frame round it counts too: 44 px (36) */
         lv_obj_set_flex_grow(b, 1);
-        lv_obj_set_style_radius(b, UI_PICK(9, 8), 0);
-        lv_obj_set_style_bg_color(b, T->accent_tint, 0);
+        lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_bg_color(b, T->tonal, 0);
         lv_obj_t *l = w_label(b, F_LABEL_B, T->text2, tok);
         w_one_line(l);
         lv_obj_center(l);
@@ -566,10 +603,16 @@ lv_obj_t *w_row_stepper(lv_obj_t *row, const char *value, lv_event_cb_t minus_cb
 
 /* ---- surfaces ---- */
 
+#define GRID_GAP 8   /* between tiles */
+
+/* Cards are all the container colour (what's on shows in its icon and
+ * controls); an alert gets a warning outline */
 void w_card_set_state(lv_obj_t *c, bool on, bool alert)
 {
-    lv_obj_set_style_bg_color(c, on ? T->accent_tint : T->surface, 0);
-    lv_obj_set_style_border_color(c, alert ? T->warning : on ? T->accent_edge : T->line, 0);
+    LV_UNUSED(on);
+    lv_obj_set_style_bg_color(c, T->surface, 0);
+    lv_obj_set_style_border_width(c, alert ? 2 : 0, 0);
+    lv_obj_set_style_border_color(c, T->warning, 0);
 }
 
 lv_obj_t *w_card(lv_obj_t *parent, bool on, bool alert)
@@ -579,8 +622,7 @@ lv_obj_t *w_card(lv_obj_t *parent, bool on, bool alert)
     lv_obj_set_clickable(c, false);
     lv_obj_set_size(c, lv_pct(100), LV_SIZE_CONTENT);
     lv_obj_set_style_bg_opa(c, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(c, 1, 0);
-    lv_obj_set_style_radius(c, UI_PICK(16, 12), 0);
+    lv_obj_set_style_radius(c, R_CARD, 0);
     lv_obj_set_style_pad_all(c, UI_PICK(14, 10), 0);
     lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_style_pad_gap(c, UI_PICK(12, 8), 0);
@@ -590,8 +632,14 @@ lv_obj_t *w_card(lv_obj_t *parent, bool on, bool alert)
 
 void w_icon_circle_set(lv_obj_t *circle, bool on)
 {
-    lv_obj_set_style_bg_color(circle, on ? T->accent_icon : T->surface2, 0);
-    lv_obj_set_style_text_color(lv_obj_get_child(circle, 0), on ? T->accent : T->text2, 0);
+    lv_obj_set_style_bg_color(circle, on ? T->accent_c : T->tonal, 0);
+    lv_obj_set_style_text_color(lv_obj_get_child(circle, 0), on ? T->on_accent_c : T->on_tonal, 0);
+}
+
+void w_icon_circle_off(lv_obj_t *circle)
+{
+    lv_obj_set_style_bg_color(circle, T->surface_top, 0);
+    lv_obj_set_style_text_color(lv_obj_get_child(circle, 0), T->text2, 0);
 }
 
 lv_obj_t *w_icon_circle(lv_obj_t *parent, const char *icon, int size, bool on)
@@ -600,57 +648,74 @@ lv_obj_t *w_icon_circle(lv_obj_t *parent, const char *icon, int size, bool on)
     lv_obj_set_size(c, size, size);
     lv_obj_set_style_radius(c, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_opa(c, LV_OPA_COVER, 0);
-    lv_obj_t *ic = w_icon(c, icon, size >= UI_PICK(36, 30) ? 18 : 16, T->text2);
+    lv_obj_t *ic = w_icon(c, icon, size >= UI_PICK(48, 40) ? 24 : size >= UI_PICK(32, 28) ? 20 : 16, T->text2);
     lv_obj_center(ic);
     w_icon_circle_set(c, on);
     return c;
 }
 
-/* The tile: the icon over the name and its line, 88 px tall; compact, the
- * icon beside them, 56 px */
+/* The tile: the icon beside the name, its line under them, 88 px tall;
+ * compact, all on one line, 54 px. The running one is solid primary, with a
+ * "Running" badge. */
 lv_obj_t *w_tile(lv_obj_t *parent, const char *icon, const char *name, const char *sub, bool running)
 {
+    lv_color_t fg = running ? T->on_accent : T->text, bg = running ? T->accent : T->surface;
     lv_obj_t *t = lv_obj_create(parent);
     lv_obj_set_scrollable(t, false);
     lv_obj_set_height(t, UI_PICK(88, 54));
     lv_obj_set_style_pad_all(t, UI_PICK(12, 8), 0);
-    lv_obj_set_style_radius(t, UI_PICK(16, 12), 0);
+    lv_obj_set_style_radius(t, R_TILE, 0);
     lv_obj_set_style_bg_opa(t, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(t, 1, 0);
-    lv_obj_set_style_bg_color(t, running ? T->accent_tint : T->surface, 0);
-    lv_obj_set_style_border_color(t, running ? T->accent_edge : T->line, 0);
-    lv_obj_set_style_bg_color(t, running ? T->accent_tint : T->surface2, LV_STATE_PRESSED);
-    lv_obj_t *col;
+    lv_obj_set_style_bg_color(t, bg, 0);
+    lv_obj_set_style_bg_color(t, theme_pressed(bg, fg), LV_STATE_PRESSED);
+    lv_obj_t *head = t;
     if (UI->compact) {
         lv_obj_set_flex_flow(t, LV_FLEX_FLOW_ROW);
         lv_obj_set_flex_align(t, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
         lv_obj_set_style_pad_right(t, 5, 0);   /* the text may run closer to the edge */
         lv_obj_set_style_pad_gap(t, 6, 0);
-        w_icon_circle(t, icon, 24, running);
-        col = flex(t, LV_FLEX_FLOW_COLUMN, 1);
-        lv_obj_set_flex_grow(col, 1);
     } else {
         lv_obj_set_flex_flow(t, LV_FLEX_FLOW_COLUMN);
         lv_obj_set_flex_align(t, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-        w_icon_circle(t, icon, 30, running);
-        col = flex(t, LV_FLEX_FLOW_COLUMN, 2);
-        lv_obj_set_width(col, lv_pct(100));
+        head = w_row(t, 10);
     }
-    lv_obj_t *n = w_label(col, F_BODY_B, T->text, name);
-    lv_obj_set_size(n, lv_pct(100), lv_font_get_line_height(F_BODY_B));   /* one line, "…" if too long */
-    lv_label_set_long_mode(n, LV_LABEL_LONG_MODE_DOTS);
+    lv_obj_t *ic = w_icon_circle(head, icon, UI_PICK(36, 26), false);
     if (running) {
-        lv_obj_t *r = w_row(col, UI_PICK(6, 5));
-        lv_obj_t *dot = w_box(r);
+        lv_obj_set_style_bg_color(ic, T->on_accent, 0);
+        lv_obj_set_style_text_color(lv_obj_get_child(ic, 0), T->accent, 0);
+    }
+    lv_obj_t *col = head;
+    if (UI->compact) {
+        col = flex(head, LV_FLEX_FLOW_COLUMN, 1);
+        lv_obj_set_flex_grow(col, 1);
+    }
+    lv_obj_t *n = w_label(col, F_BODY_B, fg, name);
+    lv_obj_set_size(n, lv_pct(100), lv_font_get_line_height(F_BODY_B));   /* one line, "…" if too long */
+    if (!UI->compact) {
+        lv_obj_set_width(n, 1);
+        lv_obj_set_flex_grow(n, 1);
+    }
+    lv_label_set_long_mode(n, LV_LABEL_LONG_MODE_DOTS);
+    if (running && !UI->compact) {
+        /* the badge: a pill in the on-primary colour, with a dot */
+        lv_obj_t *b = w_row(t, 6);
+        lv_obj_set_size(b, LV_SIZE_CONTENT, 24);
+        lv_obj_set_style_pad_hor(b, 10, 0);
+        lv_obj_set_style_radius(b, 12, 0);
+        lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
+        lv_obj_set_style_bg_color(b, T->on_accent, 0);
+        lv_obj_t *dot = w_box(b);
         lv_obj_set_size(dot, 6, 6);
         lv_obj_set_style_radius(dot, 3, 0);
         lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(dot, T->accent, 0);
-        w_label(r, F_CAPTION, T->accent, sub);
+        lv_obj_t *l = w_label(b, F_LABEL_B, T->accent, sub);
+        lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
+        lv_obj_set_style_max_width(l, w_col_w(2, GRID_GAP) - 2 * 12 - 2 * 10 - 12, 0);   /* the tile's inside, less the badge's */
     } else {
-        lv_obj_t *s = w_label(col, F_CAPTION, T->text2, sub);
-        lv_obj_set_size(s, lv_pct(100), lv_font_get_line_height(F_CAPTION));
-        lv_label_set_long_mode(s, LV_LABEL_LONG_MODE_DOTS);
+        lv_obj_t *sl = w_label(UI->compact ? col : t, F_CAPTION, running ? fg : T->text2, sub);
+        lv_obj_set_size(sl, lv_pct(100), lv_font_get_line_height(F_CAPTION));
+        lv_label_set_long_mode(sl, LV_LABEL_LONG_MODE_DOTS);
     }
     return t;
 }
@@ -681,18 +746,21 @@ static void row_fit_cb(lv_event_t *e)
 lv_obj_t *w_list_row(lv_obj_t *parent, const char *icon, const char *text, const char *value,
                      lv_obj_t **value_label)
 {
+    /* a rounded row of its own, ROW_GAP under it; the icon in a tonal circle */
     lv_obj_t *r = lv_obj_create(parent);
     lv_obj_set_scrollable(r, false);
     lv_obj_set_size(r, lv_pct(100), ROW_H);
-    lv_obj_set_style_border_side(r, LV_BORDER_SIDE_BOTTOM, 0);
-    lv_obj_set_style_border_width(r, 1, 0);
-    lv_obj_set_style_border_color(r, T->line, 0);
-    lv_obj_set_style_bg_color(r, T->surface, LV_STATE_PRESSED);
-    lv_obj_set_style_bg_opa(r, LV_OPA_COVER, LV_STATE_PRESSED);
+    lv_obj_set_style_radius(r, R_KEY, 0);
+    lv_obj_set_style_margin_bottom(r, ROW_GAP, 0);
+    lv_obj_set_style_bg_opa(r, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(r, T->surface, 0);
+    lv_obj_set_style_bg_color(r, theme_pressed(T->surface, T->text), LV_STATE_PRESSED);
+    lv_obj_set_style_pad_left(r, icon ? UI_PICK(6, 4) : UI_PICK(14, 10), 0);
+    lv_obj_set_style_pad_right(r, UI_PICK(14, 8), 0);
     lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_gap(r, UI_PICK(10, 8), 0);
-    if (icon) w_icon(r, icon, 18, T->text2);
+    lv_obj_set_style_pad_gap(r, UI_PICK(10, 6), 0);
+    if (icon) w_icon_circle(r, icon, UI_PICK(32, 24), false);
     lv_obj_t *t = w_label(r, F_BODY, T->text, text);
     lv_obj_set_flex_grow(t, 1);
     w_one_line(t);
@@ -709,69 +777,25 @@ lv_obj_t *w_list_row(lv_obj_t *parent, const char *icon, const char *text, const
     return r;
 }
 
-static void art_draw(lv_event_t *e)
-{
-    lv_obj_t *o = lv_event_get_target_obj(e);
-    lv_layer_t *layer = lv_event_get_layer(e);
-    lv_area_t a;
-    lv_obj_get_coords(o, &a);
-    lv_draw_line_dsc_t d;
-    lv_draw_line_dsc_init(&d);
-    d.color = T->art2;
-    d.width = 8;
-    int h = lv_area_get_height(&a);
-    int r = lv_obj_get_style_radius(o, 0);
-    for (int x = a.x1 - h; x < a.x2; x += 22) {
-        /* "/" stripes, kept off the rounded corners */
-        int x0 = x, y0 = a.y2, x1 = x + h, y1 = a.y1;
-        d.p1.x = x0;
-        d.p1.y = y0 - r / 3;
-        d.p2.x = x1 - r / 3;
-        d.p2.y = y1;
-        if (d.p1.x < a.x1 + r / 2) {
-            int dx = a.x1 + r / 2 - d.p1.x;
-            d.p1.x += dx;
-            d.p1.y -= dx;
-        }
-        if (d.p2.x > a.x2 - r / 2) {
-            int dx = d.p2.x - (a.x2 - r / 2);
-            d.p2.x -= dx;
-            d.p2.y += dx;
-        }
-        if (d.p1.x >= d.p2.x) continue;
-        lv_draw_line(layer, &d);
-    }
-}
-
 lv_obj_t *w_artwork(lv_obj_t *parent, int w, int h, int radius, bool caption)
 {
     lv_obj_t *o = w_box(parent);
     lv_obj_set_size(o, w, h);
     lv_obj_set_style_radius(o, radius, 0);
     lv_obj_set_style_bg_opa(o, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(o, T->art1, 0);
-    lv_obj_set_style_border_width(o, 1, 0);
-    lv_obj_set_style_border_color(o, T->line, 0);
-    lv_obj_set_style_clip_corner(o, true, 0);
-    lv_obj_add_event_cb(o, art_draw, LV_EVENT_DRAW_MAIN_END, NULL);
+    lv_obj_set_style_bg_color(o, T->surface_hi, 0);
     if (caption) lv_obj_center(w_label(o, F_CAPTION, T->text2, "artwork"));
     return o;
 }
 
 lv_obj_t *w_battery_glyph(lv_obj_t *parent, int percent, lv_color_t color)
 {
-    lv_obj_t *b = w_box(parent);
-    lv_obj_set_size(b, UI_PICK(20, 18), UI_PICK(10, 9));
-    lv_obj_set_style_border_width(b, 1, 0);
-    lv_obj_set_style_border_color(b, color, 0);
-    lv_obj_set_style_radius(b, UI_PICK(3, 2), 0);
-    lv_obj_set_style_pad_all(b, 2, 0);
-    lv_obj_t *f = w_box(b);
-    lv_obj_set_size(f, (UI_PICK(14, 12) * (percent < 0 ? 0 : percent > 100 ? 100 : percent) + 50) / 100, UI_PICK(4, 3));
-    lv_obj_set_style_radius(f, 1, 0);
-    lv_obj_set_style_bg_opa(f, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(f, color, 0);
-    return b;
+    static const char *const bars[] = {ICON_BATTERY_0, ICON_BATTERY_1, ICON_BATTERY_2, ICON_BATTERY_3,
+                                       ICON_BATTERY_4, ICON_BATTERY_5, ICON_BATTERY_6, ICON_BATTERY};
+    int p = percent < 0 ? 0 : percent > 100 ? 100 : percent;
+    /* empty under 5 %, full from 95 %, six bars between */
+    int i = p >= 95 ? 7 : p < 5 ? 0 : 1 + (p - 5) * 6 / 90;
+    return w_icon(parent, bars[i], 16, color);
 }
 
 lv_obj_t *w_ring(lv_obj_t *parent, int size, int width, int percent)
@@ -784,7 +808,7 @@ lv_obj_t *w_ring(lv_obj_t *parent, int size, int width, int percent)
     lv_arc_set_value(a, percent);
     lv_obj_set_clickable(a, false);
     lv_obj_set_style_arc_width(a, width, 0);
-    lv_obj_set_style_arc_color(a, T->track, 0);
+    lv_obj_set_style_arc_color(a, T->surface_top, 0);
     lv_obj_set_style_arc_rounded(a, false, 0);
     lv_obj_set_style_arc_width(a, width, LV_PART_INDICATOR);
     lv_obj_set_style_arc_color(a, T->accent, LV_PART_INDICATOR);
@@ -798,7 +822,7 @@ lv_obj_t *w_ring(lv_obj_t *parent, int size, int width, int percent)
 
 lv_obj_t *w_status_bar(lv_obj_t *parent)
 {
-    lv_obj_t *bar = w_row(parent, UI_PICK(8, 5));
+    lv_obj_t *bar = w_row(parent, 4);
     lv_obj_set_height(bar, STATUS_H);
     lv_obj_set_style_pad_hor(bar, PAD, 0);
     w_status_bar_update(bar);
@@ -832,21 +856,21 @@ static void target_pill(lv_obj_t *bar)
     const char *icon = NULL;
     const char *name = control_target_name(&icon);
     if (!name) return;
-    lv_obj_t *p = w_row(bar, UI_PICK(5, 4));
+    lv_obj_t *p = w_row(bar, UI_PICK(4, 3));
     lv_obj_set_size(p, LV_SIZE_CONTENT, UI_PICK(24, 20));
-    lv_obj_set_style_pad_hor(p, UI_PICK(8, 6), 0);
-    lv_obj_set_style_radius(p, UI_PICK(12, 10), 0);
+    lv_obj_set_style_pad_left(p, UI_PICK(6, 5), 0);
+    lv_obj_set_style_pad_right(p, UI_PICK(10, 7), 0);
+    lv_obj_set_style_radius(p, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_opa(p, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(p, T->accent_tint, 0);
-    lv_obj_set_style_border_width(p, 1, 0);
-    lv_obj_set_style_border_color(p, T->accent_edge, 0);
+    lv_obj_set_style_bg_color(p, T->tonal, 0);
+    lv_obj_set_style_bg_color(p, theme_pressed(T->tonal, T->on_tonal), LV_STATE_PRESSED);
     lv_obj_set_style_flex_cross_place(p, LV_FLEX_ALIGN_CENTER, 0);
-    w_icon(p, icon ? icon : ICON_REMOTE, 14, T->accent);
-    lv_obj_t *l = w_label(p, F_CAPTION, T->accent, name);
+    w_icon(p, icon ? icon : ICON_REMOTE, 16, T->on_tonal);
+    lv_obj_t *l = w_label(p, F_LABEL_B, T->on_tonal, name);
     lv_point_t sz;
-    lv_text_get_size(&sz, name, F_CAPTION, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    lv_text_get_size(&sz, name, F_LABEL_B, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
     int max = UI_PICK(104, 76);
-    lv_obj_set_size(l, sz.x < max ? sz.x + 1 : max, lv_font_get_line_height(F_CAPTION));
+    lv_obj_set_size(l, sz.x < max ? sz.x + 1 : max, lv_font_get_line_height(F_LABEL_B));
     lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);   /* long names end in "…" */
     lv_obj_set_ext_click_area(p, UI_PICK(10, 8));   /* 24 px pill, 44 px of taps (20, 36) */
     w_on_click(p, target_cb, 0);
@@ -872,22 +896,28 @@ static void fit_pill(lv_obj_t *bar)
 void w_status_bar_update(lv_obj_t *bar)
 {
     lv_obj_clean(bar);
-    lv_color_t c = lv_color_mix(T->text, T->bg, 217);   /* opacity .85, premixed */
+    lv_color_t c = T->text;
     char buf[16];
     int64_t t = hal_time();
     snprintf(buf, sizeof(buf), "%02d:%02d", (int)(t / 3600 % 24), (int)(t / 60 % 60));
-    w_label(bar, F_LABEL_B, c, buf);
+    w_label(bar, F_LABEL, c, buf);
     target_pill(bar);
     w_spacer(bar);
     const radio_status_t *r = radio_status();
     if (r->ble_pairing || r->ble != LINK_OFF)
-        w_icon(bar, ICON_BLUETOOTH, 14, r->ble == LINK_UP ? c : T->text2);
-    if (r->ir_rx) w_icon(bar, ICON_IR, 14, T->accent);
-    if (r->wifi != LINK_OFF) w_icon(bar, ICON_WIFI, 14, r->wifi == LINK_UP ? c : T->text2);
+        w_icon(bar, ICON_BLUETOOTH, 16, r->ble == LINK_UP ? c : T->text2);
+    if (r->ir_rx) w_icon(bar, ICON_IR, 16, T->accent);
+    if (r->wifi != LINK_OFF) w_icon(bar, ICON_WIFI_BAR, 16, r->wifi == LINK_UP ? c : T->text2);
     hal_battery_t b = *app_battery();
-    if (b.charging) w_icon(bar, ICON_BOLT, 14, T->accent);
+    if (b.no_cell) {   /* bench use on USB alone: no percentage to show */
+        w_icon(bar, ICON_BOLT, 16, c);
+        w_label(bar, F_LABEL, c, "USB");
+        fit_pill(bar);
+        return;
+    }
+    if (b.charging) w_icon(bar, ICON_BOLT, 16, T->accent);
     snprintf(buf, sizeof(buf), "%d%%", b.percent);
-    w_label(bar, F_LABEL_B, b.percent <= 8 && !b.usb ? T->warning : c, buf);
+    w_label(bar, F_LABEL, b.percent <= 8 && !b.usb ? T->warning : c, buf);
     w_battery_glyph(bar, b.percent, b.percent <= 8 && !b.usb ? T->warning : c);
     fit_pill(bar);
 }
@@ -897,50 +927,39 @@ void w_status_bar_update(lv_obj_t *bar)
 lv_obj_t *w_tabbar(lv_obj_t *parent, int active, lv_event_cb_t cb)
 {
     static const char *const names[TAB_COUNT] = {"Activities", "Devices", "Home", "Settings"};
-    static const char *const icons[TAB_COUNT] = {ICON_GRID, ICON_REMOTE, ICON_HOME, ICON_SLIDERS};
+    static const char *const icons[TAB_COUNT] = {ICON_GRID, ICON_REMOTE, ICON_HOME, ICON_GEAR};
+    static const char *const filled[TAB_COUNT] = {ICON_GRID_FILL, ICON_REMOTE_FILL, ICON_HOME_FILL, ICON_GEAR_FILL};
+    /* docked under the page, full width, in the page's background with a line
+     * above: nothing scrolls behind it. The active tab a primary pill, its icon filled */
+    int h = TABBAR_H;
+    int item_w = UI_PICK(64, 48), item_h = UI_PICK(40, 32);
     lv_obj_t *bar = w_box(parent);
-    lv_obj_set_size(bar, SCREEN_W, TABBAR_H);
+    lv_obj_set_size(bar, lv_pct(100), h);
+    lv_obj_set_style_radius(bar, 0, 0);
     lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(bar, T->tabbar, 0);
-    lv_obj_set_style_border_side(bar, LV_BORDER_SIDE_TOP, 0);
+    lv_obj_set_style_bg_color(bar, T->bg, 0);
     lv_obj_set_style_border_width(bar, 1, 0);
-    lv_obj_set_style_border_color(bar, T->tabbar_line, 0);
+    lv_obj_set_style_border_side(bar, LV_BORDER_SIDE_TOP, 0);
+    lv_obj_set_style_border_color(bar, T->line, 0);
+    lv_obj_set_style_pad_hor(bar, UI_PICK(12, 8), 0);
+    lv_obj_set_style_pad_ver(bar, 0, 0);
     lv_obj_set_flex_flow(bar, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(bar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_clickable(bar, true);   /* a tap between the items doesn't reach the page under it */
     for (int i = 0; i < TAB_COUNT; i++) {
-        lv_color_t c = i == active ? T->accent : T->text2;
+        bool on = i == active;
         lv_obj_t *cell = lv_obj_create(bar);
         lv_obj_set_scrollable(cell, false);
-        lv_obj_set_size(cell, SCREEN_W / TAB_COUNT, lv_pct(100));
+        lv_obj_set_size(cell, item_w, item_h);
+        lv_obj_set_ext_click_area(cell, (h - item_h) / 2);
+        lv_obj_set_style_radius(cell, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_bg_opa(cell, on ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
+        lv_obj_set_style_bg_color(cell, T->accent, 0);
+        lv_obj_set_style_bg_opa(cell, LV_OPA_COVER, LV_STATE_PRESSED);
+        lv_obj_set_style_bg_color(cell, on ? theme_pressed(T->accent, T->on_accent) : theme_pressed(T->bg, T->text),
+                                  LV_STATE_PRESSED);
         w_name(cell, names[i]);
-        if (UI->compact) {
-            /* icons only: the active one in the accent, with a short line under it */
-            lv_obj_t *ic = w_label(cell, icon_font_exact(20), c, icons[i]);
-            lv_obj_align(ic, LV_ALIGN_CENTER, 0, -2);
-            if (i == active) {
-                lv_obj_t *ind = w_box(cell);
-                lv_obj_set_size(ind, 16, 2);
-                lv_obj_set_style_radius(ind, 1, 0);
-                lv_obj_set_style_bg_opa(ind, LV_OPA_COVER, 0);
-                lv_obj_set_style_bg_color(ind, T->accent, 0);
-                lv_obj_align(ind, LV_ALIGN_BOTTOM_MID, 0, -3);
-            }
-            lv_obj_add_event_cb(cell, cb, LV_EVENT_CLICKED, ARG(i));
-            continue;
-        }
-        lv_obj_set_flex_flow(cell, LV_FLEX_FLOW_COLUMN);
-        lv_obj_set_flex_align(cell, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-        lv_obj_set_style_pad_gap(cell, 5, 0);
-        w_icon(cell, icons[i], 20, c);
-        w_label(cell, F_CAPTION, c, names[i]);
-        if (i == active) {
-            lv_obj_t *ind = w_box(cell);
-            lv_obj_set_ignore_layout(ind, true);
-            lv_obj_set_size(ind, 44, 2);
-            lv_obj_set_style_radius(ind, 1, 0);
-            lv_obj_set_style_bg_opa(ind, LV_OPA_COVER, 0);
-            lv_obj_set_style_bg_color(ind, T->accent, 0);
-            lv_obj_align(ind, LV_ALIGN_TOP_MID, 0, -1);
-        }
+        lv_obj_center(w_label(cell, icon_font_exact(UI_PICK(24, 20)), on ? T->on_accent : T->text2, on ? filled[i] : icons[i]));
         lv_obj_add_event_cb(cell, cb, LV_EVENT_CLICKED, ARG(i));
     }
     return bar;
@@ -965,11 +984,15 @@ lv_obj_t *w_save_bar_test(lv_obj_t *root, const char *text, bool enabled, const 
 {
     if (enabled) why = NULL;
     int bar_h = SAVE_BAR_H + (why ? UI_PICK(22, 18) : 0);
-    int pad = UI_PICK(16, 10) + bar_h;   /* room to scroll the last row clear of the bar */
+    /* The page already leaves room at the bottom for the nav bar, if it has
+     * one (ui.c): the bar goes on that and reaches down behind it */
+    int below = lv_obj_get_style_pad_bottom(root, 0) - UI_PICK(16, 10);
+    int pad = UI_PICK(16, 10) + bar_h + below;   /* room to scroll the last row clear of the bar */
     lv_obj_set_style_pad_bottom(root, pad, 0);
     lv_obj_t *bar = w_row(root, 0);
     lv_obj_set_floating(bar, true);
-    lv_obj_set_height(bar, bar_h);
+    lv_obj_set_height(bar, bar_h + below);
+    lv_obj_set_style_pad_bottom(bar, below, 0);
     lv_obj_align(bar, LV_ALIGN_BOTTOM_MID, 0, pad);   /* aligns to the content area: undo the padding */
     if (why) {
         lv_obj_set_flex_flow(bar, LV_FLEX_FLOW_COLUMN);
@@ -981,9 +1004,6 @@ lv_obj_t *w_save_bar_test(lv_obj_t *root, const char *text, bool enabled, const 
     }
     lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(bar, T->bg, 0);
-    lv_obj_set_style_border_side(bar, LV_BORDER_SIDE_TOP, 0);
-    lv_obj_set_style_border_width(bar, 1, 0);
-    lv_obj_set_style_border_color(bar, T->line, 0);
     lv_obj_set_style_pad_hor(bar, PAD, 0);
     lv_obj_t *row = bar;
     if (test_cb) {
@@ -1047,10 +1067,11 @@ static void reorder_cb(lv_event_t *e)
         rd.from = rd.cur = lv_obj_get_index(o) - d->first;
         rd.out = false;
         lv_obj_get_coords(o, &rd.home);
-        /* lifted: an accent edge */
+        /* lifted: a primary edge (or the text colour's, on a primary fill) */
         rd.border = lv_obj_get_style_border_color(o, 0);
         rd.border_w = lv_obj_get_style_border_width(o, 0);
-        lv_obj_set_style_border_color(o, T->accent, 0);
+        bool filled = lv_color_eq(lv_obj_get_style_bg_color(o, 0), T->accent);
+        lv_obj_set_style_border_color(o, filled ? T->text : T->accent, 0);
         lv_obj_set_style_border_width(o, 2, 0);
         /* the page mustn't scroll under the finger meanwhile; it's scrolled from here instead */
         for (lv_obj_t *p = lv_obj_get_parent(o); p; p = lv_obj_get_parent(p))
@@ -1109,11 +1130,9 @@ void w_reorderable(lv_obj_t *item, const reorder_desc_t *d)
 
 /* ---- grid or list ---- */
 
-#define GRID_GAP UI_PICK(10, 8)
-
 lv_obj_t *w_items(lv_obj_t *root, int layout)
 {
-    lv_obj_t *box = layout == LAYOUT_GRID ? w_row(root, GRID_GAP) : w_col(root, UI_PICK(8, 6));
+    lv_obj_t *box = layout == LAYOUT_GRID ? w_row(root, GRID_GAP) : w_col(root, ROW_GAP);
     if (layout == LAYOUT_GRID) lv_obj_set_flex_flow(box, LV_FLEX_FLOW_ROW_WRAP);
     lv_obj_set_style_pad_hor(box, PAD, 0);
     lv_obj_set_style_pad_top(box, UI_PICK(2, 0), 0);
@@ -1124,25 +1143,33 @@ lv_obj_t *w_item(lv_obj_t *box, int layout, const char *icon, const char *name, 
 {
     if (layout == LAYOUT_GRID) {
         lv_obj_t *t = w_tile(box, icon, name, sub, on);
-        lv_obj_set_width(t, w_col_w(2, GRID_GAP));   /* 139 px, or 106 on the small screen */
+        lv_obj_set_width(t, w_col_w(2, GRID_GAP));   /* 140 px, or 106 on the small screen */
         return t;
     }
-    lv_obj_t *c = w_card(box, on, false);
-    lv_obj_set_style_pad_all(c, UI_PICK(12, 8), 0);
+    /* a card of its own; the running or selected one solid primary, as its tile is */
+    lv_color_t bg = on ? T->accent : T->surface, fg = on ? T->on_accent : T->text;
+    lv_obj_t *c = w_card(box, false, false);
+    lv_obj_set_style_radius(c, R_KEY, 0);
+    lv_obj_set_style_pad_all(c, UI_PICK(10, 8), 0);
     lv_obj_set_clickable(c, true);
-    lv_obj_set_style_bg_color(c, T->surface2, LV_STATE_PRESSED);
+    lv_obj_set_style_bg_color(c, bg, 0);
+    lv_obj_set_style_bg_color(c, theme_pressed(bg, fg), LV_STATE_PRESSED);
     lv_obj_t *row = w_row(c, UI_PICK(12, 10));
-    w_icon_circle(row, icon, ICON_CIRCLE, on);
+    lv_obj_t *ic = w_icon_circle(row, icon, ICON_CIRCLE, false);
+    if (on) {
+        lv_obj_set_style_bg_color(ic, T->on_accent, 0);
+        lv_obj_set_style_text_color(lv_obj_get_child(ic, 0), T->accent, 0);
+    }
     lv_obj_t *txt = w_col(row, 2);
     lv_obj_set_flex_grow(txt, 1);
     lv_obj_set_width(txt, LV_SIZE_CONTENT);
-    lv_obj_t *n = w_label(txt, F_BODY_B, T->text, name);
+    lv_obj_t *n = w_label(txt, F_BODY_B, fg, name);
     lv_obj_set_size(n, lv_pct(100), lv_font_get_line_height(F_BODY_B));
     lv_label_set_long_mode(n, LV_LABEL_LONG_MODE_DOTS);
-    lv_obj_t *sl = w_label(txt, F_CAPTION, on ? T->accent : T->text2, sub);
+    lv_obj_t *sl = w_label(txt, F_CAPTION, on ? fg : T->text2, sub);
     lv_obj_set_size(sl, lv_pct(100), lv_font_get_line_height(F_CAPTION));
     lv_label_set_long_mode(sl, LV_LABEL_LONG_MODE_DOTS);
-    if (chevron) w_icon(row, ICON_NEXT, 16, T->text2);
+    if (chevron) w_icon(row, ICON_NEXT, 20, on ? fg : T->text2);
     return c;
 }
 

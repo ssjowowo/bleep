@@ -396,6 +396,8 @@ void model_init_defaults(void)
     s->nightstand = true;
     s->ha_battery = true;
     s->haptics = 2;
+    s->haptic_feel = FEEL_CRISP;
+    s->haptic_events = BUZZ_ALL;
     s->dim_after_s = 8;
     s->sleep_after_s = 30;
     s->deep_after_s = 120;

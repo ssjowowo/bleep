@@ -3,15 +3,15 @@ click Start
 wait 300
 tab Settings
 wait 1500
-expect REMOTE
-expect CONNECTIONS
-expect SYSTEM
+expect Remote
+expect Connections
+expect System
 shot 120_settings_groups
-click Display & haptics
+click Display
 wait 300
-expect SCREEN
-expect LAYOUT
-expect FEEL
+expect Screen
+expect Layout
+expect-no Feel
 shot 121_display
 click Activities & routines
 wait 300
@@ -45,7 +45,7 @@ expect-before Watch TV | Kodi
 # hold and let go on a row: its editor
 press Watch TV
 wait 300
-expect START SEQUENCE
+expect Start sequence
 expect Watch TV
 back
 wait 300

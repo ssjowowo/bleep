@@ -1,77 +1,92 @@
 #!/usr/bin/env python3
-"""Build the Bleep icon font (icons.otf) from icons.json.
+"""Build the Bleep icon fonts from Material Symbols Outlined (icons.json).
 
-Each icon is a 24x24 SVG drawn with 1.6 px round-capped strokes, as in the
-design. picosvg turns the strokes into filled outlines; fontTools writes one
-glyph per icon at U+E000 upward. lv_font_conv then rasterises the font.
+icons.json maps each of the firmware's icon names to a Material Symbol and a
+style: "outline" (ICON_X), "fill" (ICON_X, the filled glyph) or "both"
+(ICON_X outlined and ICON_X_FILL filled: tab icons, a light that's on).
+The variable font is instanced at weight 400, grade 0 and an optical size to
+suit each pixel size, once outlined and once filled, and the glyphs are merged
+into one small font per size with their own codepoints:
+    U+E000..  the outlined (or only) glyph of each icon, in icons.json order
+    U+E100..  the _FILL glyphs
+The 32 px font has only the media keys: play, pause, replay 10 and forward 30.
+lv_font_conv then rasterises them (gen_fonts.sh).
 
-Needs: pip install fonttools picosvg (which brings skia-pathops)
-Writes: icons.otf and ../app/ui/icons.h
+Needs: pip install fonttools; the Material Symbols font and its codepoints
+file in fonts/ (gen_fonts.sh downloads them).
+Writes: fonts/icons-<px>.ttf and ../app/ui/icons.h
 """
-import json, os, sys
-from picosvg.svg import SVG
+import json, os
 from fontTools.fontBuilder import FontBuilder
-from fontTools.pens.t2CharStringPen import T2CharStringPen
-from fontTools.pens.transformPen import TransformPen
-from fontTools.svgLib.path import parse_path
-from pathops import Path, union
+from fontTools.pens.boundsPen import BoundsPen
+from fontTools.pens.recordingPen import DecomposingRecordingPen
+from fontTools.pens.ttGlyphPen import TTGlyphPen
+from fontTools.ttLib import TTFont
+from fontTools.varLib import instancer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-UPM = 960            # 40 units per design pixel
-SCALE = UPM / 24
-FIRST = 0xE000
+SRC = os.path.join(HERE, "fonts", "MaterialSymbolsOutlined-VF.ttf")
+CODEPOINTS = os.path.join(HERE, "fonts", "MaterialSymbolsOutlined.codepoints")
+SIZES = (14, 16, 20, 24, 32)
+FIRST, FIRST_FILL = 0xE000, 0xE100
+BIG = ("play", "pause", "replay_10", "forward_30")   # the only icons drawn 32 px: the media keys
 
 icons = json.load(open(os.path.join(HERE, "icons.json")))
+cps = {n: int(c, 16) for n, c in (l.split() for l in open(CODEPOINTS))}
 
-def outline(icon):
-    fill = 'currentColor' if icon["fill"] else 'none'
-    paths = "".join(f'<path d="{d}"/>' for d in icon["paths"])
-    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{fill}" '
-           f'stroke="black" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">{paths}</svg>')
-    pico = SVG.fromstring(svg.replace("currentColor", "black")).topicosvg()
-    return [shape.d for shape in pico.shapes()]
+# (codepoint, macro name, symbol, filled)
+glyphs = [(FIRST + i, i_["name"].upper(), i_["symbol"], i_["style"] == "fill") for i, i_ in enumerate(icons)]
+for n, i in enumerate(i for i in icons if i["style"] == "both"):
+    glyphs.append((FIRST_FILL + n, i["name"].upper() + "_FILL", i["symbol"], True))
+big = [g for g in glyphs if g[1].lower() in BIG]
 
-names = [".notdef"] + [i["name"] for i in icons]
-cmap, charstrings, metrics = {}, {}, {".notdef": (UPM, 0)}
-charstrings[".notdef"] = T2CharStringPen(UPM, None).getCharString()
-for n, icon in enumerate(icons):
-    pen = T2CharStringPen(UPM, None)
-    # SVG is y-down in a 24 box; font is y-up with the em box from 0 to UPM.
-    tpen = TransformPen(pen, (SCALE, 0, 0, -SCALE, 0, UPM))
-    # Union the shapes: a filled icon's fill and its stroke overlap, and
-    # overlapping contours would cancel out when rasterised.
-    shapes = []
-    for d in outline(icon):
-        p = Path()
-        parse_path(d, p.getPen())
-        # Normalise each shape's contour directions first: a fill and its
-        # stroke can wind opposite ways and cancel where they overlap.
-        p.simplify(fix_winding=True)
-        shapes.append(p)
-    union(shapes, tpen)
-    charstrings[icon["name"]] = pen.getCharString()
-    metrics[icon["name"]] = (UPM, 0)
-    cmap[FIRST + n] = icon["name"]
+def instance(fill, opsz):
+    f = TTFont(SRC)
+    return instancer.instantiateVariableFont(f, {"FILL": fill, "wght": 400, "GRAD": 0, "opsz": opsz})
 
-fb = FontBuilder(UPM, isTTF=False)
-fb.setupGlyphOrder(names)
-fb.setupCharacterMap(cmap)
-fb.setupCFF("BleepIcons", {"FullName": "Bleep Icons"}, charstrings, {})
-fb.setupHorizontalMetrics(metrics)
-fb.setupHorizontalHeader(ascent=UPM, descent=0)
-fb.setupNameTable({"familyName": "Bleep Icons", "styleName": "Regular"})
-fb.setupOS2(sTypoAscender=UPM, sTypoDescender=0, usWinAscent=UPM, usWinDescent=0)
-fb.setupPost()
-fb.save(os.path.join(HERE, "icons.otf"))
+for px in SIZES:
+    opsz = min(max(px, 20), 48)
+    src = {False: instance(0, opsz), True: instance(1, opsz)}
+    upm = src[False]["head"].unitsPerEm
+    order, cmap, outlines, metrics = [".notdef"], {}, {".notdef": TTGlyphPen(None).glyph()}, {".notdef": (upm, 0)}
+    for cp, _, symbol, filled in (big if px == 32 else glyphs):
+        f = src[filled]
+        gs = f.getGlyphSet()
+        name = f.getBestCmap()[cps[symbol]]
+        rec = DecomposingRecordingPen(gs)
+        gs[name].draw(rec)
+        pen = TTGlyphPen(None)
+        rec.replay(pen)
+        bounds = BoundsPen(None)
+        rec.replay(bounds)
+        gname = f"u{cp:04X}"
+        order.append(gname)
+        outlines[gname] = pen.glyph()
+        # the left side bearing is where the outline starts: without it the
+        # rasteriser puts every icon against the left of its box
+        metrics[gname] = (upm, round(bounds.bounds[0]) if bounds.bounds else 0)
+        cmap[cp] = gname
+    fb = FontBuilder(upm, isTTF=True)
+    fb.setupGlyphOrder(order)
+    fb.setupCharacterMap(cmap)
+    fb.setupGlyf(outlines)
+    fb.setupHorizontalMetrics(metrics)
+    # the em box is the icon's box: px tall, nothing above or below
+    fb.setupHorizontalHeader(ascent=upm, descent=0)
+    fb.setupNameTable({"familyName": "Bleep Icons", "styleName": f"{px}"})
+    fb.setupOS2(sTypoAscender=upm, sTypoDescender=0, usWinAscent=upm, usWinDescent=0)
+    fb.setupPost()
+    fb.save(os.path.join(HERE, "fonts", f"icons-{px}.ttf"))
 
 # C header: one UTF-8 string macro per icon
 with open(os.path.join(HERE, "..", "app", "ui", "icons.h"), "w") as h:
-    h.write("/* Generated by tools/make_icon_font.py from tools/icons.json. Do not edit. */\n")
+    h.write("/* Generated by tools/make_icon_font.py from tools/icons.json (Material Symbols). Do not edit. */\n")
     h.write("#pragma once\n\n")
-    for n, icon in enumerate(icons):
-        cp = FIRST + n
-        utf8 = chr(cp).encode("utf-8")
-        esc = "".join(f"\\x{b:02X}" for b in utf8)
-        h.write(f'#define ICON_{icon["name"].upper():<14} "{esc}"\n')
-    h.write(f"\n#define ICON_FIRST 0x{FIRST:04X}\n#define ICON_LAST  0x{FIRST + len(icons) - 1:04X}\n")
-print(f"{len(icons)} icons, U+{FIRST:04X}..U+{FIRST + len(icons) - 1:04X}")
+    for cp, macro, symbol, _ in glyphs:
+        esc = "".join(f"\\x{b:02X}" for b in chr(cp).encode("utf-8"))
+        h.write(f'#define ICON_{macro:<16} "{esc}"   /* {symbol} */\n')
+    last = max(cp for cp, *_ in glyphs if cp < FIRST_FILL)
+    last_fill = max(cp for cp, *_ in glyphs)
+    h.write(f"\n#define ICON_FIRST 0x{FIRST:04X}\n#define ICON_LAST  0x{last:04X}\n")
+    h.write(f"#define ICON_FIRST_FILL 0x{FIRST_FILL:04X}\n#define ICON_LAST_FILL  0x{last_fill:04X}\n")
+print(f"{len(glyphs)} glyphs, sizes {SIZES}")
