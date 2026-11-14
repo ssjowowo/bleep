@@ -384,7 +384,7 @@ function conButtons() {
   const open = !!con.reader;
   $("con-connect").textContent = con.want ? "disconnect" : "connect";
   $("con-restart").disabled = !open;
-  $("con-save").disabled = !$("console-out").textContent;
+  $("con-save").disabled = $("con-copy").disabled = !$("console-out").textContent;
 }
 
 async function conOpen(port) {
@@ -399,7 +399,7 @@ async function conOpen(port) {
         const { value, done } = await con.reader.read();
         if (done) break;
         conPrint(decoder.decode(value, { stream: true }));
-        $("con-save").disabled = false;
+        $("con-save").disabled = $("con-copy").disabled = false;
       }
     } catch {
       /* the remote restarted or was unplugged */
@@ -469,6 +469,30 @@ $("con-restart").addEventListener("click", async () => {
 $("con-clear").addEventListener("click", () => {
   $("console-out").textContent = "";
   conButtons();
+});
+
+/* the whole log to the clipboard, to paste where it's asked for */
+$("con-copy").addEventListener("click", async () => {
+  const btn = $("con-copy");
+  const text = $("console-out").textContent;
+  let ok = false;
+  try {
+    await navigator.clipboard.writeText(text);
+    ok = true;
+  } catch {
+    /* no clipboard API (or not allowed): select it and copy the old way */
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { ok = document.execCommand("copy"); } catch {}
+    ta.remove();
+  }
+  btn.textContent = ok ? "copied" : "couldn't copy";
+  clearTimeout(btn._t);
+  btn._t = setTimeout(() => (btn.textContent = "copy"), 1500);
 });
 
 $("con-save").addEventListener("click", () => {
