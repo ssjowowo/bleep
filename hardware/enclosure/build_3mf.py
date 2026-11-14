@@ -24,10 +24,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OPENSCAD = sys.argv[1] if len(sys.argv) > 1 else "openscad"
 OUT = os.path.join(HERE, "stl", "caps.3mf")
 
-# (cap_key in remote.scad, object name). The ring is one piece (drawn with UP).
+# (cap_key in remote.scad, object name). The ring is one piece (drawn with UP),
+# so is the volume rocker (drawn with VOLUP).
 CAPS = [("UP", "D-pad ring"), ("OK", "OK"), ("BACK", "Back"), ("HOME", "Home"), ("MUTE", "Mute"),
-        ("PLEX", "Plex"), ("NFLX", "Netflix"), ("YT", "YouTube"), ("VOLUP", "Vol +"),
-        ("VOLDN", "Vol -"), ("PWR", "Power")]
+        ("PLEX", "Plex"), ("NFLX", "Netflix"), ("YT", "YouTube"), ("VOLUP", "Volume"),
+        ("PWR", "Power")]
 SETTINGS = os.path.join(HERE, "bambu_x2d_project.json")
 COLOURS = ["#FFFFFF", "#000000"]   # filament 1 caps, filament 2 labels (as in the renders)
 # Both filaments on the X2D's main (direct-drive) nozzle, the labels an AMS

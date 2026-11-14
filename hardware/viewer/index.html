@@ -137,7 +137,7 @@ button { cursor: pointer; }
     <div class="hud">
       <div class="eyebrow">CONCEPT 1b · v1 SLIM · OWN MAIN BOARD</div>
       <h1>Bleep</h1>
-      <div class="dims">60.7 × 182.2 × 14.0 mm · 14 keys · 3.5″ 320×480</div>
+      <div class="dims">60.7 × 182.2 × 15.0 mm · 14 keys · 3.5″ 320×480</div>
     </div>
     <div class="toolbar">
       <button class="tool" id="spin" aria-pressed="false" type="button">Turntable</button>
@@ -221,7 +221,7 @@ import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
 
 // ---------- data -----------------------------------------------------------
 // Shell dimensions (mm), from hardware/enclosure/params.scad
-const DIM = { W: 60.74, L: 182.23, H: 13.95, LENS: [56.54, 84.96, 0], LENS_C: [30.37, 47.28], ACTIVE: [48.96, 73.44], ACTIVE_DY: 2.00, Z_LENS_TOP: 13.15 };
+const DIM = { W: 60.74, L: 182.23, H: 14.95, LENS: [56.54, 84.96, 0], LENS_C: [30.37, 47.28], ACTIVE: [48.96, 73.44], ACTIVE_DY: 2.00, Z_LENS_TOP: 14.15 };
 
 const SWATCHES = [
   ["Jet black", "#18191b"], ["Graphite", "#34363a"], ["Slate", "#5d636b"], ["Cool grey", "#9ea3a8"],
@@ -332,23 +332,23 @@ const layers = { back: new THREE.Group(), internals: new THREE.Group(), caps: ne
 // X-ray stand-ins (from hardware/enclosure/remote.scad), with callout text and
 // an anchor point in shell coordinates [x, y down, z up]. "g" = explode group.
 const INTERNALS = [
-  { id: "v_panel",    g: "board",   color: "#3d63dd", name: "Display panel", detail: "BuyDisplay 3.5\" IPS + touch, 3.75 mm", at: [57.7, 40, 11.3] },
-  { id: "v_fpc",      g: "board",   color: "#d9a441", name: "Display FPC", detail: "folds back under the panel", at: [20.4, 91.4, 8.6] },
-  { id: "v_zif",      g: "bp",      color: "#3b3f46", name: "50-pin ZIF connector", detail: "the display plugs in here", at: [42.4, 67.0, 9.3] },
-  { id: "v_pcb",      g: "bp",      color: "#2f8f5b", name: "Main board", detail: "0.8 mm, JLCPCB-assembled top side", at: [57.1, 135, 7.8] },
-  { id: "v_switches", g: "bp",      color: "#cfd2d6", name: "Key switches ×14", detail: "each on its own ESP32 GPIO", at: [30.4, 117.3, 9.3] },
-  { id: "v_ics",      g: "bp",      color: "#26282c", name: "TP4056 charger", detail: "USB-C charging, 360 mA", at: [52.7, 155.8, 9.5] },
-  { id: "v_ics",      g: "bp",      color: "#26282c", name: "DRV2605L + MMA8452Q", detail: "haptics, lift-to-wake", at: [8.2, 117.8, 8.9], noMesh: true },
-  { id: "v_ics",      g: "bp",      color: "#26282c", name: "IR receiver", detail: "learns codes from old remotes", at: [19.0, 96.3, 11.8], noMesh: true },
-  { id: "v_ics",      g: "bp",      color: "#26282c", name: "Light sensor", detail: "auto-brightness", at: [13.2, 95.6, 8.5], noMesh: true },
-  { id: "v_irleds",   g: "bp",      color: "#8b5cf6", name: "IR LEDs ×2", detail: "side-view 940 nm, top window", at: [30.4, 4.6, 9.1] },
-  { id: "v_usbc",     g: "bp",      color: "#9aa0a6", name: "USB-C", detail: "charging + flashing", at: [30.4, 177.7, 9.4] },
-  { id: "v_module",   g: "under",   color: "#c9ccd1", name: "ESP32-S3-WROOM-1", detail: "underside, antenna at the right edge", at: [44.3, 103.5, 4.4] },
-  { id: "v_lra",      g: "under",   color: "#b9bccb", name: "Vibration motor", detail: "8 mm coin, underside", at: [7.8, 127.8, 4.0] },
-  { id: "v_screws",   g: "under",   color: "#a7abb3", name: "Board screws ×4", detail: "M2×4 from the underside into the key-area posts", at: [6.3, 103.4, 6.2] },
-  { id: "windows",    g: "shell",   color: "#4a8fe0", name: "IR window", detail: "translucent PETG plug, 940 nm out", at: [30.4, 0.9, 9.0], noMesh: true },
-  { id: "windows",    g: "shell",   color: "#4a8fe0", name: "Sensor window", detail: "translucent PETG plug, glued in from inside", at: [16.4, 96.2, 13.9], noMesh: true },
-  { id: "v_battery",  g: "battery", color: "#e0683a", name: "Li-Po, flat", detail: "EEMB 524261, 1500 mAh, in a pocket in the back plate", at: [30.4, 46.2, 3.5] },
+  { id: "v_panel",    g: "board",   color: "#3d63dd", name: "Display panel", detail: "BuyDisplay 3.5\" IPS + touch, 3.75 mm", at: [57.7, 40, 12.3] },
+  { id: "v_fpc",      g: "board",   color: "#d9a441", name: "Display FPC", detail: "folds back under the panel", at: [20.4, 91.4, 9.6] },
+  { id: "v_zif",      g: "bp",      color: "#3b3f46", name: "50-pin ZIF connector", detail: "the display plugs in here", at: [42.4, 67.0, 10.3] },
+  { id: "v_pcb",      g: "bp",      color: "#2f8f5b", name: "Main board", detail: "0.8 mm, JLCPCB-assembled top side", at: [57.1, 135, 8.8] },
+  { id: "v_switches", g: "bp",      color: "#cfd2d6", name: "Key switches ×14", detail: "each on its own ESP32 GPIO", at: [30.4, 117.3, 10.3] },
+  { id: "v_ics",      g: "bp",      color: "#26282c", name: "TP4056 charger", detail: "USB-C charging, 360 mA", at: [52.7, 155.8, 10.5] },
+  { id: "v_ics",      g: "bp",      color: "#26282c", name: "DRV2605L + MMA8452Q", detail: "haptics, lift-to-wake", at: [8.2, 117.8, 9.9], noMesh: true },
+  { id: "v_ics",      g: "bp",      color: "#26282c", name: "IR receiver", detail: "learns codes from old remotes", at: [19.0, 96.3, 12.8], noMesh: true },
+  { id: "v_ics",      g: "bp",      color: "#26282c", name: "Light sensor", detail: "auto-brightness", at: [13.2, 95.6, 9.5], noMesh: true },
+  { id: "v_irleds",   g: "bp",      color: "#8b5cf6", name: "IR LEDs ×2", detail: "side-view 940 nm, top window", at: [30.4, 4.6, 10.1] },
+  { id: "v_usbc",     g: "bp",      color: "#9aa0a6", name: "USB-C", detail: "charging + flashing", at: [30.4, 177.7, 10.4] },
+  { id: "v_module",   g: "under",   color: "#c9ccd1", name: "ESP32-S3-WROOM-1", detail: "underside, antenna at the right edge", at: [44.3, 103.5, 5.4] },
+  { id: "v_lra",      g: "under",   color: "#b9bccb", name: "Vibration motor", detail: "8 mm coin, underside", at: [7.8, 127.8, 5.0] },
+  { id: "v_screws",   g: "under",   color: "#a7abb3", name: "Board screws ×4", detail: "M2×4 from the underside into the key-area posts", at: [6.3, 103.4, 7.2] },
+  { id: "windows",    g: "shell",   color: "#4a8fe0", name: "IR window", detail: "translucent PETG plug, 940 nm out", at: [30.4, 0.9, 10.0], noMesh: true },
+  { id: "windows",    g: "shell",   color: "#4a8fe0", name: "Sensor window", detail: "translucent PETG plug, glued in from inside", at: [16.4, 96.2, 14.9], noMesh: true },
+  { id: "v_battery",  g: "battery", color: "#e0683a", name: "Li-Po, flat", detail: "EEMB 524261, 1500 mAh, taped to the back plate", at: [30.4, 46.2, 4.5] },
 ];
 const xgroups = { board: new THREE.Group(), under: new THREE.Group(), battery: new THREE.Group(), bp: new THREE.Group() };
 Object.values(xgroups).forEach(g => layers.internals.add(g));

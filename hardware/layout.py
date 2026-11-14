@@ -91,9 +91,12 @@ SWELL = 0.5          # Li-Po swell gap
 # (the pocket locates it; its thickness drives H).
 # 2026-11-10: the cell bought is an EEMB 524261 (1500 mAh), sold as 5.2 x 42 x 61
 # but measured 5.5-6.0 mm thick, which lifted the 13.0 mm shell's back plate.
-# Sized for 6.0 mm: the shell grew 1 mm and the cell sinks BATT_POCKET into the plate.
+# Sized for 6.0 mm: the shell grew 2 mm. (A 1 mm pocket in the plate saved one of
+# those, but left only 0.5 mm of plate under the cell: the user wanted the plate
+# uniform, 2026-11-13, so BATT_POCKET is 0; no corner guides either, at the user's
+# request: the cell lies on the flat plate, held with double-sided tape.)
 BATT = (42.0, 61.0, 6.0)   # (x, y, z): a 524261 at its measured worst thickness
-BATT_POCKET = 1.0          # cell pocket depth in the back plate (leaves BACK_T - this as its floor)
+BATT_POCKET = 0.0          # cell pocket depth in the back plate (0 = flat plate)
 BATT_POCKET_CLR = 0.5      # pocket clearance round the cell, per side
 BP_T = 0.8                 # main board thickness
 

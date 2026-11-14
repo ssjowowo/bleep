@@ -4,10 +4,10 @@
 
 | | |
 |---|---|
-| Size | 60.7 × 182.2 × **14.0 mm** |
+| Size | 60.7 × 182.2 × **15.0 mm** |
 | Display | BuyDisplay ER-TFT035IPS-6 (ILI9488) + ER-TPC035-6 touch (FT6236), 3.75 mm, one 50-pin FPC |
 | ESP32 | ESP32-S3-WROOM-1-N8R2 module (8 MB flash, 2 MB PSRAM) |
-| Battery | flat Li-Po up to 6.0 mm thick and 50.8 × 86.1 mm, under the screen, sunk 1 mm into the back plate (set for the EEMB 524261, 1500 mAh, measured 5.5–6.0 mm thick) |
+| Battery | flat Li-Po up to 6.0 mm thick and 50.8 × 86.1 mm, under the screen, on the flat back plate (set for the EEMB 524261, 1500 mAh, measured 5.5–6.0 mm thick) |
 | You solder | ESP32 module, battery, vibration motor (the display just plugs in) |
 
 Everything is generated from [`layout.py`](layout.py):
@@ -24,14 +24,14 @@ It needs Python 3 (no extra packages) and OpenSCAD 2021.01+, found on the PATH o
 
 | z (mm) | |
 |---|---|
-| 0 – 1.5 | back plate (0.5 mm under the cell: it sits in a 1 mm pocket); its back edges are rounded 4 mm, turning into a 45° chamfer at the print bed |
-| 1.5 – 7.0 | open space: battery (+0.5 swell gap) under the screen; ESP32 module, vibration motor and the heads of the 4 board screws under the keys. The back plate is flat; the board rests on rails along its edges under the screen, a standoff at each of the plate's 2 screws and a 3 mm pillar under each key switch |
-| 7.0 – 7.8 | main board, 0.8 mm |
-| 7.8 – 9.4 | under the LCD: the 50-pin ZIF connector (1.5 mm), the folded display FPC and its parts area, foam pads at the top end |
-| 9.4 – 13.15 | LCD (2.1) + touch glass (1.65) |
-| 13.15 – 13.95 | front frame over the glass edge |
+| 0 – 1.5 | back plate, a uniform 1.5 mm; its back edges are rounded 4 mm, turning into a 45° chamfer at the print bed |
+| 1.5 – 8.0 | open space: battery (+0.5 swell gap) under the screen; ESP32 module, vibration motor and the heads of the 4 board screws under the keys. The back plate is flat; the board rests on rails along its edges under the screen, a standoff at each of the plate's 2 screws and a 3 mm pillar under each key switch |
+| 8.0 – 8.8 | main board, 0.8 mm |
+| 8.8 – 10.4 | under the LCD: the 50-pin ZIF connector (1.5 mm), the folded display FPC and its parts area, foam pads at the top end |
+| 10.4 – 14.15 | LCD (2.1) + touch glass (1.65) |
+| 14.15 – 14.95 | front frame over the glass edge |
 
-The cell thickness sets H (with the 1 mm pocket, `BATT_POCKET`): 5 mm → 13.0, 6 mm → 14.0 mm. Change `BATT` in `layout.py` and rebuild.
+The cell thickness sets H: 5 mm → 14.0, 6 mm → 15.0 mm. Change `BATT` in `layout.py` and rebuild.
 
 ## Main board
 
@@ -87,12 +87,12 @@ The FPC leaves the panel's bottom edge, makes a U-bend down past the glass and r
 ## Assembly order
 
 1. **ESP32 module** (underside, lying across the board below the screen, antenna end at the right edge as the silk shows): tack two corners, then solder the edge pads. Solder the centre GND pad from the top side: feed solder into its four 1 mm holes until each one fills (the module's pad heats slowly, so use a hot, broad tip). Pins 1 and 40 (GND, by the antenna) are also tied to that pad with tracks.
-2. **Battery** leads to BAT+ / BAT− (underside, just below the screen on the left), **motor** leads to its pads (red to +). Cut the battery's plug off and solder the leads straight to the pads, red to BAT+: there's no room for a connector. Stick the motor to the board's underside by its adhesive back, on its spot in the left strip. A bar LRA instead (0619 X-axis, 21.5 × 6 × 3 mm, 170 Hz, 1.2 Vrms: crisper taps): solder thin wires to its two gold pads, lay it lengthwise along the left strip with its outer edge ~5 mm in from the board edge (clear of the shell's side rail), its top end a couple of mm below the top-left board screw and its pads towards the motor pads, and stick it down flat with thin double-sided tape (a firm mount carries the tap; x 5–11, y 108–129.5 in `layout.py` coordinates, clear of the screw heads and the key pillars, 3 mm in the 5.5 mm under the board). Then set Settings > Haptics > Motor to Bar (LRA). The cell goes at the top end, under the screen and as far from the antenna as it goes, in the pocket in the back plate; its leads run down to the pads. A piece of Kapton tape on the board's underside over the cell area keeps via tips off the pouch.
+2. **Battery** leads to BAT+ / BAT− (underside, just below the screen on the left), **motor** leads to its pads (red to +). Cut the battery's plug off and solder the leads straight to the pads, red to BAT+: there's no room for a connector. Stick the motor to the board's underside by its adhesive back, on its spot in the left strip. A bar LRA instead (0619 X-axis, 21.5 × 6 × 3 mm, 170 Hz, 1.2 Vrms: crisper taps): solder thin wires to its two gold pads, lay it lengthwise along the left strip with its outer edge ~5 mm in from the board edge (clear of the shell's side rail), its top end a couple of mm below the top-left board screw and its pads towards the motor pads, and stick it down flat with thin double-sided tape (a firm mount carries the tap; x 5–11, y 108–129.5 in `layout.py` coordinates, clear of the screw heads and the key pillars, 3 mm in the 6.5 mm under the board). Then set Settings > Haptics > Motor to Bar (LRA). The cell goes at the top end, under the screen and as far from the antenna as it goes, on the back plate, held by a strip of double-sided tape (nothing else locates it); its leads run down to the pads. A piece of Kapton tape on the board's underside over the cell area keeps via tips off the pouch.
 3. **Display**: lay the panel face down beyond the board's key end, FPC towards J1. Flip J1's lid up, slide the FPC in with its contacts facing the board, then close the lid. Fold the panel over onto foam pads (two layers of 1 mm foam tape) at the board's top end, so the FPC makes a U-bend under it. Stick the pads left and right of the small IR-driver parts there (they sit under the LCD now), not on them.
 4. Flash over USB-C. esptool resets the ESP32 into download mode over USB by itself. If a broken firmware stops that from working, take the back plate off, hold OK and short the two reset pads below the ESP32 module (a small flat screwdriver across both), then release them while still holding OK. Plugging in USB doesn't reset the ESP32 once the battery is connected.
-5. Key caps into the front shell, face down: the one-piece **D-pad ring** first, with the eye on its arm dropped over the screw post to its right (that's what stops it turning, so it only goes in one way), then the **OK** button into the ring from behind, so its flange rests on the ring's inner edge (the ring holds the OK in; put in first, the OK would drop through the ring's opening), then the other caps.
+5. Key caps into the front shell, face down: the one-piece **D-pad ring** first, with the eye on its arm dropped over the screw post to its right (that's what stops it turning, so it only goes in one way), then the **OK** button into the ring from behind, so its flange rests on the ring's inner edge (the ring holds the OK in; put in first, the OK would drop through the ring's opening), then the other caps. The **volume** key is one bar over both volume switches: it rocks on a post under its middle, so pressing either end presses that switch, and a press in the middle does nothing.
 6. Board into the front shell (glass into its pocket), then screw it to the four posts in the key area with **4 × M2×4** from its underside, into the inserts. Use nylon screws, or at least put a disc of Kapton tape under the head at the top-left hole (H1): a VBAT track passes 1.75 mm from its centre on the underside, under the edge of a 4 mm head, with only solder mask in between.
-7. Battery into its pocket in the back plate. The plate **drops in and slides**: lay it flat on the back about 4.5 mm towards the key end, so the three tabs on each long edge drop through the notches in the side walls, then push it towards the screen end until it stops. The tabs slide under the ledges in the side walls and the two top hooks go into the pockets in the top wall. Then fit **2 × M2×10** through the bottom bosses (they pass through the board too); they stop the plate sliding back. Don't force the plate down: if it doesn't sit flat, the cell is too thick for its pocket.
+7. Battery taped to the back plate. The plate **drops in and slides**: lay it flat on the back about 4.5 mm towards the key end, so the three tabs on each long edge drop through the notches in the side walls, then push it towards the screen end until it stops. The tabs slide under the ledges in the side walls and the two top hooks go into the pockets in the top wall. Then fit **2 × M2×10** through the bottom bosses (they pass through the board too); they stop the plate sliding back. Don't force the plate down: if it doesn't sit flat, the cell is too thick for its pocket.
 
 ## Ordering
 
@@ -143,7 +143,7 @@ Alternative screws: [4000970993800](https://www.aliexpress.com/item/400097099380
 
 Li-Po cells count as dangerous goods for shipping, and the shops that sell them won't send them to Cyprus directly. Eremit ships only within Germany but explicitly allows forwarding services, so order to the forwarder's German address.
 
-Look for a flat Li-Po (pouch) cell, **at most 6.0 mm thick (measured, not the name) and 50.8 × 86.1 mm**, with its leads on a short edge and a protection circuit. Pouch cells are named by size: thickness in tenths of a mm, then width, then length, so **524261** is 5.2 × 42 × 61 mm. Real cells run thicker than their name: the EEMB 524261 (1500 mAh) bought for v1 measures 5.5–6.0 mm. Set `BATT` in `layout.py` to the cell you have and rebuild the back plate, so its pocket fits it.
+Look for a flat Li-Po (pouch) cell, **at most 6.0 mm thick (measured, not the name) and 50.8 × 86.1 mm**, with its leads on a short edge and a protection circuit. Pouch cells are named by size: thickness in tenths of a mm, then width, then length, so **524261** is 5.2 × 42 × 61 mm. Real cells run thicker than their name: the EEMB 524261 (1500 mAh) bought for v1 measures 5.5–6.0 mm. Set `BATT` in `layout.py` to the cell you have and rebuild the back plate, so the shell's height fits it.
 
 ### Rough total
 
@@ -157,7 +157,7 @@ Look for a flat Li-Po (pouch) cell, **at most 6.0 mm thick (measured, not the na
 
 Already on hand (not counted): PLA in two colours for the caps, PETG for the shell, TPU (Creality CR-TPU) for the soft-key springs, solder, flux, solder wick. The second colour prints the key labels and the ring dots.
 
-**Key caps.** `stl/caps.3mf` is a Bambu Studio project with every cap on one plate, face down (X2D 0.4 nozzle, 0.20mm Standard, Bambu PLA Basic, Textured PEI plate). Each cap is one object with two parts: the body on filament 1 and the label inlay on filament 2. The labels are 0.6 mm deep, so they're only in the first three layers. To change a colour, change that filament (or map it to another AMS slot) in the slicer. Both filaments go to the main nozzle. The ring has supports turned on (tree, from the plate only): they hold up its fork arm, which hangs about 3 mm over the bed. A slice takes about 32 min, 6.3 g + 0.9 g. The project comes from `enclosure/build_3mf.py` (run by `build.sh`), with the printer settings in `enclosure/bambu_x2d_project.json` and the filament in `enclosure/bambu_x2d_pla_filament.json` (Bambu's own preset, flattened by `enclosure/flatten_preset.py`). For another slicer, `stl/caps.stl` and `stl/caps_labels.stl` are the same parts, already lined up: load them as one object with two parts.
+**Key caps.** `stl/caps.3mf` is a Bambu Studio project with every cap on one plate, face down (X2D 0.4 nozzle, 0.20mm Standard, Bambu PLA Basic, Textured PEI plate). Each cap is one object with two parts: the body on filament 1 and the label inlay on filament 2. The labels are 0.6 mm deep, so they're only in the first three layers. To change a colour, change that filament (or map it to another AMS slot) in the slicer. Both filaments go to the main nozzle. The ring has supports turned on (tree, from the plate only): they hold up its fork arm, which hangs about 3 mm over the bed. A slice takes about 32 min, 6.3 g + 0.9 g. The project comes from `enclosure/build_3mf.py` (run by `build.sh`), with the printer settings in `enclosure/bambu_x2d_project.json` and the filament in `enclosure/bambu_x2d_pla_filament.json` (Bambu's own preset, flattened by `enclosure/flatten_preset.py`). For another slicer, `stl/caps.stl` and `stl/caps_labels.stl` are the same parts, already lined up: load them as one object with two parts. Every cap's top edge has a 0.6 mm round-over (`EDGE_R` in `remote.scad`); being face down, it's the first three layers and needs no support. The volume rocker's centre post stands 0.05 mm off the board (`VOL_PIVOT_GAP`): if a press in the middle trips a switch, raise it; if the bar sits proud or the ends feel stiff, lower it.
 
 **Soft keys (test).** The bare caps press the switch directly, so every key feels and sounds like the switch's metal dome: short and clicky. The test puts a small TPU spring between cap and switch: a beam across a frame, with a nub under its middle on the plunger. The beam bends before the dome trips (160 gf), so a key travels further (up to about 1.5 mm, then the housing lands on the switch's cover) and the click comes through muffled. Two prints:
 

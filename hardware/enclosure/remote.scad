@@ -79,12 +79,7 @@ module cap2d(k) {
     else if (t == "ok") translate(S(DPAD_C)) circle(r = DPAD_OK_R, $fn = 96);
     else if (t == "round") translate(S(k[2])) circle(r = ROUND_R);
     else if (t == "pill") translate(S(k[2])) pill2d(PILL[0], PILL[1]);
-    else if (t == "volL" || t == "volR")
-        translate(S(VOL_C)) intersection() {
-            pill2d(VOL_BAR[0], VOL_BAR[1]);
-            translate([t == "volL" ? -VOL_BAR[0] / 2 - 1 : VOL_SPLIT / 2, -VOL_BAR[1]])
-                square([VOL_BAR[0] / 2 + 1 - VOL_SPLIT / 2, 2 * VOL_BAR[1]]);
-        }
+    else if (t == "volL" || t == "volR") translate(S(VOL_C)) pill2d(VOL_BAR[0], VOL_BAR[1]);   // one rocker bar
 }
 
 // Outline of the hole in the front wall for a cap (before clearance).
@@ -100,8 +95,7 @@ module flange_mask2d(k) {
     t = k[1];
     if (t == "ring") translate(S(DPAD_C)) annulus2d(DPAD_R_OUT - 1, 60);       // flange only outward
     else if (t == "ok") translate(S(DPAD_C)) circle(r = 0.01);                  // OK has its own flange under the ring
-    else if (t == "volL" || t == "volR")
-        translate(S(VOL_C)) translate([t == "volL" ? -40 - VOL_SPLIT / 2 : VOL_SPLIT / 2, -20]) square([40, 40]);
+    else if (t == "volL" || t == "volR") translate(S(VOL_C)) square([VOL_SEAT_L, 20], center = true);   // seat in the middle only
     else translate(S(k[2])) square(60, center = true);
 }
 
@@ -167,13 +161,14 @@ module cap_label2d(k) {
             translate([(DPAD_R_IN + DPAD_R_OUT) / 2, 0]) circle(r = 0.75, $fn = 24);
     } else if (labels && len(k[4]) > 0 && k[4][0] == "@") {
         translate(S(k[2])) icon2d(k[4]);
-    } else if (labels && (t == "volL" || t == "volR")) {
-        // + / - drawn as bars (font glyphs sit off the cap's centre line)
-        translate(S([VOL_C[0] + (t == "volL" ? -1 : 1) * VOL_BAR[0] / 4, VOL_C[1]])) {
+    } else if (labels && t == "volR") {
+        // + / - drawn as bars (font glyphs sit off the cap's centre line), both
+        // on the one bar, so drawn once with the VOLUP entry
+        for (sd = [-1, 1]) translate(S([VOL_C[0] + sd * VOL_BAR[0] / 4, VOL_C[1]])) {
             square([3.2, 0.75], center = true);
-            if (t == "volR") square([0.75, 3.2], center = true);
+            if (sd > 0) square([0.75, 3.2], center = true);
         }
-    } else if (labels && k[4] != "") {
+    } else if (labels && k[4] != "" && t != "volL") {   // (VOLDN's sign is drawn with VOLUP)
         p = (t == "ok") ? DPAD_C : k[2];
         sz = t == "ok" ? 2.6 : 2.0;
         translate(S(p)) text(k[4], size = sz, font = "Liberation Sans:style=Bold", halign = "center", valign = "center");
@@ -186,7 +181,46 @@ module cap_engrave(k) {   // recess cut into the cap body
 
 module cap_label(k) {     // the inlay that fills the recess, flush with the top
     translate([0, 0, H + CAP_PROTRUDE - LABEL_DEPTH]) linear_extrude(LABEL_DEPTH)
-        intersection() { cap_label2d(k); cap2d(k); }
+        intersection() { cap_label2d(k); offset(r = -EDGE_R) cap2d(k); }
+}
+
+// Rounded top edges (2026-11-14): every cap's top edge has an EDGE_R round-over
+// (the ring's inner edge and the OK's too). The caps print face down, so it is
+// the first few layers; 0.6 mm stays printable without supports.
+EDGE_R = 0.6;
+EDGE_N = 6;            // steps in the round
+// A cap body from z0 up to the key top, its top edge rounded.
+module rounded_body(z0) {
+    zt = H + CAP_PROTRUDE;
+    translate([0, 0, z0]) linear_extrude(zt - EDGE_R - z0 + EPS) children();
+    for (i = [0:EDGE_N - 1]) {
+        hm = (i + 0.5) * EDGE_R / EDGE_N;                       // slice middle, above the round's start
+        translate([0, 0, zt - EDGE_R + i * EDGE_R / EDGE_N]) linear_extrude(EDGE_R / EDGE_N + (i < EDGE_N - 1 ? EPS : 0))
+            offset(r = -(EDGE_R - sqrt(EDGE_R * EDGE_R - hm * hm))) children();
+    }
+}
+
+// Volume rocker (2026-11-14): + and - are one bar with a stem on each switch.
+// It seats under the wall only in its middle (VOL_SEAT_L), where a post under
+// it stands VOL_PIVOT_GAP off the board: the bar see-saws round its middle, so
+// either end presses its switch, and a press in the middle lands the post on
+// the board after VOL_PIVOT_GAP (the switches trip at about 0.25 mm). Rocking
+// fully onto a switch drops the middle by only ~VOL_SEAT_L / 2 x 0.25 / 10.
+// A shallow groove across the middle splits the two halves to the touch.
+VOL_SEAT_L = 3;
+VOL_PIVOT_GAP = 0.05;
+VOL_PIVOT_D = [3.0, 1.6];   // post, its tip
+VOL_GROOVE = [0.8, 0.3];    // groove radius, depth
+module vol_pivot() {
+    z0 = Z_BP_TOP + VOL_PIVOT_GAP; z1 = Z_FRONT_IN - CAP_FLANGE;
+    translate([VOL_C[0], -VOL_C[1], z0]) {
+        cylinder(d1 = VOL_PIVOT_D[1], d2 = VOL_PIVOT_D[0], h = 0.7 + EPS, $fn = 32);
+        translate([0, 0, 0.7]) cylinder(d = VOL_PIVOT_D[0], h = z1 - z0 - 0.7 + EPS, $fn = 32);
+    }
+}
+module vol_groove() {
+    translate([VOL_C[0], -VOL_C[1], H + CAP_PROTRUDE + VOL_GROOVE[0] - VOL_GROOVE[1]])
+        rotate([90, 0, 0]) cylinder(r = VOL_GROOVE[0], h = 20, center = true, $fn = 32);
 }
 
 // Generic cap: body through the wall, 45-degree seat that sits in a matching
@@ -270,8 +304,7 @@ module cap_generic(shape_children_k, stems, sockets = [], springs = []) {
     difference() {
         union() {
             // body
-            translate([0, 0, Z_FRONT_IN + CAP_FLANGE]) linear_extrude(H + CAP_PROTRUDE - Z_FRONT_IN - CAP_FLANGE)
-                offset(delta = -0.0) cap2d(k);
+            rounded_body(Z_FRONT_IN + CAP_FLANGE) cap2d(k);
             // 45-degree seat inside the wall countersink
             for (i = [0:nz - 1]) {
                 f = CAP_FLANGE * (1 - i / nz);
@@ -289,8 +322,10 @@ module cap_generic(shape_children_k, stems, sockets = [], springs = []) {
             // or a housing for a TPU spring insert
             for (s = springs) spring_housing(s, Z_FRONT_IN - CAP_FLANGE);
             if (k[1] == "ring") ring_fork();
+            if (k[1] == "volR") vol_pivot();
         }
         cap_engrave(k);
+        if (k[1] == "volR") vol_groove();
         for (s = springs) spring_pocket(s);
         // soften the top edge a little
     }
@@ -303,7 +338,7 @@ module ok_cap(k) {
     fl_top = Z_FRONT_IN - CAP_FLANGE - DPAD_OK_DROP;
     difference() {
         union() {
-            translate([0, 0, fl_top]) linear_extrude(H + CAP_PROTRUDE - fl_top) cap2d(k);
+            rounded_body(fl_top) cap2d(k);
             translate([DPAD_C[0], -DPAD_C[1], fl_top - CAP_FLANGE]) cylinder(r = DPAD_R_IN + DPAD_OK_LIP, h = CAP_FLANGE + EPS, $fn = 96);
             switch_socket(DPAD_C, fl_top - CAP_FLANGE);
         }
@@ -342,12 +377,15 @@ module ring_fork() {
 }
 
 // The ring is one cap with a stem on each direction switch (built with the
-// UP entry; the other three ring entries add nothing).
+// UP entry; the other three ring entries add nothing). The volume bar likewise,
+// built with VOLUP.
 module cap(k) {
     if (k[1] == "ring") { if (k[0] == "UP") cap_generic(k, [for (kk = KEYS) if (kk[1] == "ring") kk[2]]); }
     else if (k[1] == "ok") ok_cap(k);
     else if (k[1] == "round") cap_generic(k, [], [k[2]]);
     else if (soft && k[1] == "pill") cap_generic(k, [], [], [k[2]]);
+    else if (k[1] == "volR") cap_generic(k, [for (kk = KEYS) if (kk[1] == "volL" || kk[1] == "volR") kk[2]]);
+    else if (k[1] == "volL") { }   // part of the volume bar (built with VOLUP)
     else cap_generic(k, [k[2]]);
 }
 
@@ -358,7 +396,7 @@ module pwr2d() { translate(S(PWR_KEY)) pill2d(PWR_PILL[0], PWR_PILL[1]); }
 module pwr_cap() {
     nz = 4;
     union() {
-        translate([0, 0, Z_FRONT_IN + CAP_FLANGE]) linear_extrude(H + CAP_PROTRUDE - Z_FRONT_IN - CAP_FLANGE) pwr2d();
+        rounded_body(Z_FRONT_IN + CAP_FLANGE) pwr2d();
         for (i = [0:nz - 1]) translate([0, 0, Z_FRONT_IN + CAP_FLANGE * i / nz - EPS])
             linear_extrude(CAP_FLANGE / nz + 2 * EPS) offset(r = CAP_FLANGE * (1 - i / nz)) pwr2d();
         translate([0, 0, Z_FRONT_IN - CAP_FLANGE]) linear_extrude(CAP_FLANGE + EPS) offset(r = CAP_FLANGE) pwr2d();
@@ -611,8 +649,8 @@ module back_plate() {
             top_hooks();
             side_tabs();
         }
-        // the cell's pocket (it locates the cell, so no corner guides)
-        translate([0, 0, BACK_T - BATT_POCKET]) linear_extrude(BATT_POCKET + 1)
+        // the cell's pocket, if any (it then locates the cell instead of the corner guides)
+        if (BATT_POCKET > 0) translate([0, 0, BACK_T - BATT_POCKET]) linear_extrude(BATT_POCKET + EPS)
             rrect([BATT[0] + 2 * BATT_POCKET_CLR, BATT[1] + 2 * BATT_POCKET_CLR], 1.0, BATT_C);
         for (p = PLATE_SCREWS) counterbored_hole(p);
         // (the slot to the EN/GND reset pads was removed 2026-11-10: not needed)
@@ -633,8 +671,7 @@ module cap_on_bed(k, ox, oy, c) {
 // add the labels file as a part) and give the labels the second filament.
 module cap_print_one(k, mode, ox, oy) {
     c = (k[1] == "ring" || k[1] == "ok") ? DPAD_C :
-        (k[1] == "volL") ? [VOL_C[0] - VOL_BAR[0] / 4, VOL_C[1]] :
-        (k[1] == "volR") ? [VOL_C[0] + VOL_BAR[0] / 4, VOL_C[1]] : k[2];
+        (k[1] == "volL" || k[1] == "volR") ? VOL_C : k[2];
     if (mode == "body") cap_on_bed(k, ox, oy, c) cap(k);
     else cap_on_bed(k, ox, oy, c) cap_label(k);
 }

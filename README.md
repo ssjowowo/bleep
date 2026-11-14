@@ -28,7 +28,7 @@ The industrial design comes from a concept pack made in Claude Design (design **
 | Part | State |
 |---|---|
 | Main board v1 | **Ordered** from JLCPCB on 2026-10-08 (5 boards, 2 assembled). The design is locked: the files in `hardware/mainboard/` are the ones in production. |
-| Enclosure | Ready to print. 14.0 mm thick since 2026-11-10: the cell sits in a pocket in the flat back plate, which drops in and slides home under ledges in the side walls; back edges rounded 3 mm. |
+| Enclosure | Ready to print. 15.0 mm thick since 2026-11-13: the cell lies on the flat, uniform 1.5 mm back plate, which drops in and slides home under ledges in the side walls; back edges rounded 3 mm. |
 | Display | BuyDisplay ER-TFT035IPS-6 + capacitive touch, **ordered** 2026-10-09. Its cable fold gets checked on the real panel before assembly. |
 | Battery | EEMB 524261, 1500 mAh (sold as 5.2 mm, measured 5.5–6.0 mm thick); `BATT` in `layout.py` is set for 6.0 mm. |
 | Firmware | App and UI (C + LVGL 9) running in a PC/browser emulator with 53 scripted test scenarios; the ESP-IDF build runs on the first board (since 2026-11-02), with a Home Assistant client tested against a real Home Assistant. [firmware/](firmware/) |
@@ -37,7 +37,7 @@ The industrial design comes from a concept pack made in Claude Design (design **
 
 | | |
 |---|---|
-| Size | 60.7 × 182.2 × 14.0 mm |
+| Size | 60.7 × 182.2 × 15.0 mm |
 | MCU | ESP32-S3-WROOM-1-N8R2 (8 MB flash, 2 MB PSRAM), antenna at the right edge beside the D-pad |
 | Display | 3.5″ IPS 320 × 480, ILI9488 on an 8-bit parallel bus (much faster than SPI), FT6236 capacitive touch |
 | Keys | 14 tactile switches, each on its own wake-capable GPIO |
