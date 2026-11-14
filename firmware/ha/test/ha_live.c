@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "../../hal/hal.h"
 #include "../ha_store.h"
 #include "../ha_ws.h"
@@ -25,6 +26,18 @@ void hal_log(const char *fmt, ...)
     vfprintf(stderr, fmt, ap);
     fputc('\n', stderr);
     va_end(ap);
+}
+
+uint32_t hal_millis(void)
+{
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (uint32_t)(t.tv_sec * 1000 + t.tv_nsec / 1000000);
+}
+
+void ha_server_config(const char *internal_url, const char *location_name)
+{
+    fprintf(stderr, "  config: internal_url \"%s\", name \"%s\"\n", internal_url, location_name);
 }
 
 bool ha_ws_send(const char *json)

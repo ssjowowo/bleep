@@ -152,6 +152,9 @@ typedef struct {
     char ha_url[96];
     char ha_user[32];           /* who signed in; empty = signed out. The refresh token
                                  * itself lives in NVS (encrypted), never in this struct */
+    char ha_local_url[96];      /* the same server on the home network ("http://192.168.0.12:8123"),
+                                 * learnt from HA itself: connected to first (no TLS, no trip out
+                                 * through the router), ha_url if it doesn't answer. "" = not known */
     bool fw_auto_check;         /* daily update check while Wi-Fi is on anyway */
     uint8_t layout_activities;  /* layout_t for activities and routines (grid) */
     uint8_t layout_devices;     /* layout_t for devices (list) */

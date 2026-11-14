@@ -55,9 +55,14 @@ static void join(const wifi_config_t *cfg)
     esp_wifi_connect();
 }
 
+static uint32_t join_t0;               /* the connection timeline in the log */
+
 static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
-    if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
+    if (base == WIFI_EVENT && id == WIFI_EVENT_STA_CONNECTED) {
+        wifi_event_sta_connected_t *c = data;
+        hal_log("wifi: associated (channel %d) in %u ms", c->channel, (unsigned)(hal_millis() - join_t0));
+    } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
         wifi_event_sta_disconnected_t *d = data;
         if (testing) {
             testing = false;
@@ -71,6 +76,7 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
         }
         if (fast_tried && link_state == HAL_LINK_CONNECTING) {
             /* the remembered access point didn't answer: once more, with a scan */
+            hal_log("wifi: the remembered access point didn't answer (reason %d), scanning", d->reason);
             fast_tried = false;
             join(&want);
             return;
@@ -88,6 +94,7 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
             if (want.sta.ssid[0] && strcmp((char *)want.sta.ssid, test_ssid)) join(&want);   /* back to the saved one */
         }
         link_state = HAL_LINK_UP;
+        hal_log("wifi: got an address in %u ms", (unsigned)(hal_millis() - join_t0));
         wifi_ap_record_t ap;
         if (esp_wifi_sta_get_ap_info(&ap) == ESP_OK) {
             memcpy(last_ap.bssid, ap.bssid, 6);
@@ -125,6 +132,7 @@ void hal_wifi_connect(const char *ssid, const char *password)
     want.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
     want.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
     link_state = HAL_LINK_CONNECTING;
+    join_t0 = hal_millis();
     if (last_ap.magic == LAST_AP_MAGIC && !strcmp(last_ap.ssid, ssid)) {
         wifi_config_t fast = want;   /* straight to the remembered access point */
         fast.sta.bssid_set = true;

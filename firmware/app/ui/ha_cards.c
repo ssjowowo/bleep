@@ -52,9 +52,9 @@ static lv_obj_t *head(lv_obj_t *card, const ha_entity_t *e, bool on)
     lv_obj_set_width(n, lv_pct(100));
     w_one_line(n);
     char buf[64];
+    /* never the light's own colour: cyan or pale yellow on a light card can't be read
+     * (the swatches show the colour) */
     lv_color_t sc = e->alert ? T->warning : on ? T->accent : T->text2;
-    if (e->domain == HA_LIGHT && on && (e->features & LIGHT_RGB))
-        sc = lv_color_hex(e->rgb);
     lv_obj_t *s = w_label(col, F_CAPTION, sc, ha_state_text(e, buf, sizeof(buf)));
     lv_obj_set_width(s, lv_pct(100));
     w_one_line(s);
@@ -245,14 +245,27 @@ static void swatches(lv_obj_t *parent, int idx, const ha_entity_t *e, int n, boo
     lv_obj_t *row = w_row(parent, 8);
     lv_obj_set_flex_align(row, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     w_allow_overflow(row, 6);   /* the ring around the chosen colour sits outside its circle */
+    uint32_t cols[6];
+    for (int i = 0; i < n; i++) cols[i] = i == n - 1 && expand_btn ? 0xFFF3DC : favourites[i];
+    /* a colour none of them is (set in HA, or from the wheel): first, in place of
+     * the last favourite, so the row always shows what the light is */
+    bool listed = !e->on;
+    for (int i = 0; i < n && !listed; i++) listed = same_colour(cols[i], e->rgb);
+    if (!listed) {
+        int last = expand_btn ? n - 2 : n - 1;   /* warm white stays */
+        memmove(&cols[1], &cols[0], last * sizeof(cols[0]));
+        cols[0] = e->rgb;
+    }
     for (int i = 0; i < n; i++) {
-        uint32_t c = i == n - 1 && expand_btn ? 0xFFF3DC : favourites[i];
+        uint32_t c = cols[i];
         lv_obj_t *s = w_box(row);
         lv_obj_set_size(s, 32, 32);
         lv_obj_set_style_radius(s, LV_RADIUS_CIRCLE, 0);
         lv_obj_set_style_bg_opa(s, LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(s, lv_color_hex(c), 0);
-        if (e->on && same_colour(c, e->rgb)) {
+        lv_obj_set_style_border_width(s, 1, 0);   /* warm white and pale colours on a light card */
+        lv_obj_set_style_border_color(s, T->line, 0);
+        if (e->on && ((!listed && i == 0) || same_colour(c, e->rgb))) {
             lv_obj_set_style_outline_width(s, 2, 0);
             lv_obj_set_style_outline_pad(s, 2, 0);
             lv_obj_set_style_outline_color(s, T->text, 0);

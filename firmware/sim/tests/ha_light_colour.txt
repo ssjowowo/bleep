@@ -1,0 +1,17 @@
+store fixtures/config-ha.json
+# An RGB light in a colour none of the swatches is (cyan, set in HA): the row
+# shows it first, ringed; the state line stays in the theme's colour
+click Start
+wait 300
+click Home
+wait 800
+click Kitchen
+wait 300
+switch LED strip
+wait 500
+expect On · RGB · 60%
+shot 250_light_custom_colour
+# a favourite picked: it's the ringed one, and the custom swatch is gone
+click Colour 2
+wait 500
+shot 251_light_favourite

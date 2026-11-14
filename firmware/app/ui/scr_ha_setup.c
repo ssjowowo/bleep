@@ -181,6 +181,7 @@ static void set_server(const char *url)
         ui_toast("Signed out of the old server");
     }
     snprintf(s->ha_url, sizeof(s->ha_url), "%s", url);
+    s->ha_local_url[0] = 0;   /* the old server's; the new one's is learnt once connected */
     hal_log("ha: server set to %s", url);
     app_notify(EV_SETTINGS, 0);
 }

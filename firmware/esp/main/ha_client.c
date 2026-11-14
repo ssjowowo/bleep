@@ -23,6 +23,7 @@
 #include "esp_websocket_client.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "ha.h"
 #include "ha_auth.h"
@@ -86,6 +87,17 @@ static ha_auth_t auth;                  /* the worker writes it; the loop reads 
 static bool wifi_up;
 static esp_websocket_client_handle_t ws;
 static QueueHandle_t rx_q;              /* rx_t from the socket's task */
+/* Sending has a task of its own: the WebSocket client keeps its lock while it
+ * reads a message in, which on a slow link is seconds for HA's big ones, and a
+ * send waits for it. On the loop that froze the screen, and gave up after 3 s
+ * (get_config never went). */
+static QueueHandle_t tx_q;              /* tx_t for the sender */
+static SemaphoreHandle_t send_mx;       /* held while sending, and while ws is replaced or destroyed */
+static int live_gen;                    /* which socket is ws: a message queued for an older one isn't sent */
+typedef struct {
+    char *msg;
+    int len, gen;
+} tx_t;
 static QueueHandle_t job_q;             /* job_t for the worker */
 
 typedef struct {
@@ -94,11 +106,11 @@ typedef struct {
     enum { RX_MSG, RX_OPEN, RX_CLOSED } kind;
 } rx_t;
 
-typedef enum { JOB_LOGIN, JOB_MFA, JOB_CONNECT, JOB_REVOKE, JOB_DISCOVER, JOB_STATE, JOB_SAVE } job_kind_t;
+typedef enum { JOB_LOGIN, JOB_MFA, JOB_CONNECT, JOB_REVOKE, JOB_DISCOVER, JOB_LOCAL, JOB_STATE, JOB_SAVE } job_kind_t;
 typedef struct {
     job_kind_t kind;
     char *a, *b;                        /* heap copies the worker frees */
-    int len;
+    int len;                            /* JOB_SAVE: a's length; JOB_CONNECT: 1 = the local address */
 } job_t;
 
 static volatile ha_login_t login = HA_LOGIN_IDLE;
@@ -108,8 +120,22 @@ static volatile int connect_failed;     /* 1: no answer, -1: refused (sign in ag
 static uint32_t retry_at, retry_ms;
 static volatile int n_found = -1;
 static ha_server_t found[4];
+typedef char found_ip_t[40];            /* each one's "http://IP:port", from its address record */
 static bool cache_dirty;
 static uint32_t cache_at;
+
+/* The local address (settings.ha_local_url): tried first, ha_url when it
+ * doesn't answer. Learnt once connected (ha_server_config). */
+static bool via_local;                  /* this socket goes to the local address */
+static bool opened;                     /* this socket got as far as open */
+static bool local_failed;               /* no answer there since Wi-Fi came up: ha_url until it comes up again */
+static char base[96];                   /* the server this socket goes to, for the REST posts */
+static char learnt[96];                 /* the worker's find (JOB_LOCAL) */
+static volatile bool learnt_ready;
+static volatile bool learnt_final;      /* that look had HA's config too: nothing found means none */
+static found_ip_t found_ip[4];
+static int n_held;                      /* taps held until HA is there (hold, below) */
+static void replay_held(void);
 
 static char *dup_str(const char *s)
 {
@@ -170,35 +196,103 @@ static void ws_event(void *arg, esp_event_base_t base, int32_t id, void *data)
     }
 }
 
+/* Queued for the sender: never waits */
 bool ha_ws_send(const char *json)
 {
     if (!ws || !esp_websocket_client_is_connected(ws)) return false;
-    return esp_websocket_client_send_text(ws, json, (int)strlen(json), pdMS_TO_TICKS(3000)) >= 0;
+    int len = (int)strlen(json);
+    tx_t t = {heap_caps_malloc(len + 1, MALLOC_CAP_SPIRAM), len, live_gen};
+    if (!t.msg) return false;
+    memcpy(t.msg, json, len + 1);
+    if (xQueueSend(tx_q, &t, 0) != pdTRUE) {
+        heap_caps_free(t.msg);
+        hal_log("ha: too much waiting to go out, a message dropped");
+        return false;
+    }
+    return true;
+}
+
+static void sender(void *arg)
+{
+    tx_t t;
+    for (;;) {
+        if (xQueueReceive(tx_q, &t, portMAX_DELAY) != pdTRUE) continue;
+        xSemaphoreTake(send_mx, portMAX_DELAY);
+        if (ws && t.gen == live_gen && esp_websocket_client_is_connected(ws) &&
+            esp_websocket_client_send_text(ws, t.msg, t.len, pdMS_TO_TICKS(10000)) < 0)
+            hal_log("ha: a message couldn't go out");
+        xSemaphoreGive(send_mx);
+        heap_caps_free(t.msg);
+    }
+}
+
+/* ws gone, under send_mx so it isn't mid-send. Its task stops: no more events after this. */
+static void ws_destroy(void)
+{
+    xSemaphoreTake(send_mx, portMAX_DELAY);
+    if (ws) esp_websocket_client_destroy(ws);
+    ws = NULL;
+    live_gen++;
+    xSemaphoreGive(send_mx);
 }
 
 static void ws_stop(void)
 {
     if (!ws) return;
-    esp_websocket_client_destroy(ws);   /* stops its task; no more events after this */
-    ws = NULL;
+    ws_destroy();
     ha_ws_closed();
 }
 
-/* The worker: a fresh access token, then the socket */
-static void open_socket(void)
+/* The access token outlives a deep sleep (30 minutes, less the minute in
+ * hand): reused, a wake skips the refresh, a whole HTTP(S) round trip */
+static RTC_NOINIT_ATTR struct {
+    uint32_t magic;
+    char server[96];
+    char access[320];
+    int64_t until;
+} kept;
+#define KEPT_MAGIC 0xB1EE7A0u
+static volatile bool reused;            /* this socket's token is the kept one */
+
+static void keep_token(void)
 {
-    if (ws) {
-        esp_websocket_client_destroy(ws);
-        ws = NULL;
+    kept.magic = 0;
+    snprintf(kept.server, sizeof(kept.server), "%s", auth.server);
+    snprintf(kept.access, sizeof(kept.access), "%s", auth.access);
+    kept.until = auth.access_until;
+    kept.magic = KEPT_MAGIC;
+}
+
+/* The worker: an access token (the one in hand while it's good), then the
+ * socket, to server (the local address, or ha_url) */
+static void open_socket(const char *server, bool local)
+{
+    if (ws) ws_destroy();
+    int64_t now = hal_time();
+    bool clock = now > 1700000000;   /* set (SNTP, or kept through deep sleep) */
+    int r = 1;
+    reused = clock && auth.access[0] && auth.access_until > now;
+    if (!reused) {
+        uint32_t t = hal_millis();
+        /* at the address the socket goes to: on the home network, no trip out */
+        char server_was[sizeof(auth.server)];
+        snprintf(server_was, sizeof(server_was), "%s", auth.server);
+        if (local) snprintf(auth.server, sizeof(auth.server), "%s", server);
+        r = ha_auth_refresh(&auth, now);
+        snprintf(auth.server, sizeof(auth.server), "%s", server_was);
+        if (r > 0 && clock) keep_token();
+        hal_log("ha: token refresh %s in %u ms%s", r > 0 ? "done" : "failed", (unsigned)(hal_millis() - t),
+                clock ? "" : " (no clock yet: can't reuse one)");
+    } else {
+        hal_log("ha: access token still good, reused");
     }
-    int r = ha_auth_refresh(&auth, hal_time());
     if (r <= 0) {
         connect_failed = r < 0 ? -1 : 1;
         connecting = false;
         return;
     }
     char uri[128];
-    const char *s = auth.server;
+    const char *s = server;
     if (!strncmp(s, "https://", 8)) snprintf(uri, sizeof(uri), "wss://%.96s/api/websocket", s + 8);
     else snprintf(uri, sizeof(uri), "ws://%.96s/api/websocket", !strncmp(s, "http://", 7) ? s + 7 : s);
     esp_websocket_client_config_t cfg = {
@@ -206,11 +300,15 @@ static void open_socket(void)
         .buffer_size = 8192,
         .task_stack = 6144,
         .disable_auto_reconnect = true,
-        .network_timeout_ms = 10000,
+        .network_timeout_ms = local ? 3000 : 10000,   /* not home, or HA moved: ha_url soon */
         .ping_interval_sec = 20,
         .crt_bundle_attach = esp_crt_bundle_attach,
     };
-    ws = esp_websocket_client_init(&cfg);
+    esp_websocket_client_handle_t c = esp_websocket_client_init(&cfg);
+    xSemaphoreTake(send_mx, portMAX_DELAY);
+    ws = c;
+    live_gen++;
+    xSemaphoreGive(send_mx);
     if (!ws) {
         connect_failed = 1;
         connecting = false;
@@ -240,9 +338,13 @@ static void discover(void)
                 else if (!strcmp(k, "internal_url") && v[0]) snprintf(s->url, sizeof(s->url), "%s", v);
                 else if (!strcmp(k, "base_url") && v[0] && !s->url[0]) snprintf(s->url, sizeof(s->url), "%s", v);
             }
-            if (!s->url[0] && r->addr) {
-                esp_ip4_addr_t ip = r->addr->addr.u_addr.ip4;
-                snprintf(s->url, sizeof(s->url), "http://" IPSTR ":%u", IP2STR(&ip), r->port);
+            found_ip[n][0] = 0;
+            mdns_ip_addr_t *a = r->addr;   /* its IPv4 one: the first can be IPv6 (fe80::) */
+            while (a && a->addr.type != ESP_IPADDR_TYPE_V4) a = a->next;
+            if (a) {
+                esp_ip4_addr_t ip = a->addr.u_addr.ip4;
+                snprintf(found_ip[n], sizeof(found_ip[n]), "http://" IPSTR ":%u", IP2STR(&ip), r->port);
+                if (!s->url[0]) snprintf(s->url, sizeof(s->url), "%s", found_ip[n]);
             }
             if (!s->name[0]) snprintf(s->name, sizeof(s->name), "%s", r->instance_name ? r->instance_name : "Home Assistant");
             if (s->url[0]) n++;
@@ -251,6 +353,37 @@ static void discover(void)
     }
     hal_log("ha: mDNS found %d server%s", n, n == 1 ? "" : "s");
     n_found = n;
+}
+
+/* The host's name in url ends in .local (mDNS) */
+static bool mdns_name(const char *url)
+{
+    const char *h = strstr(url, "://");
+    h = h ? h + 3 : url;
+    int n = (int)strcspn(h, ":/");
+    return n > 6 && !strncmp(h + n - 6, ".local", 6);
+}
+
+/* "http://homeassistant.local:8123" -> "http://192.168.0.x:8123": looked up
+ * once here, not by every wake's connect (over a second, cold) */
+static void resolve_local(char *url, size_t size)
+{
+    if (!mdns_name(url)) return;
+    const char *h = strstr(url, "://");
+    h = h ? h + 3 : url;
+    int n = (int)strcspn(h, ":/") - 6;
+    char host[64];
+    esp_ip4_addr_t ip;
+    if (n <= 0 || n >= (int)sizeof(host)) return;
+    memcpy(host, h, n);
+    host[n] = 0;
+    if (mdns_query_a(host, 2000, &ip) != ESP_OK) {
+        hal_log("ha: %s.local didn't answer: keeping the name", host);
+        return;
+    }
+    char out[96];
+    snprintf(out, sizeof(out), "%.*s" IPSTR "%s", (int)(h - url), url, IP2STR(&ip), h + n + 6);
+    snprintf(url, size, "%s", out);
 }
 
 static void worker(void *arg)
@@ -264,18 +397,24 @@ static void worker(void *arg)
             snprintf(cid, sizeof(cid), HA_CLIENT_ID, hal_device_id());
             ha_auth_init(&auth, g_model.settings.ha_url, cid);
             ha_login_t r = ha_auth_password(&auth, j.a, j.b ? j.b : "");
-            if (r == HA_LOGIN_OK) hal_secret_set(SECRET_REFRESH, auth.refresh);
+            if (r == HA_LOGIN_OK) {
+                hal_secret_set(SECRET_REFRESH, auth.refresh);
+                kept.magic = 0;   /* never another account's token */
+            }
             login = r;
             break;
         }
         case JOB_MFA: {
             ha_login_t r = ha_auth_mfa(&auth, j.a);
-            if (r == HA_LOGIN_OK) hal_secret_set(SECRET_REFRESH, auth.refresh);
+            if (r == HA_LOGIN_OK) {
+                hal_secret_set(SECRET_REFRESH, auth.refresh);
+                kept.magic = 0;   /* never another account's token */
+            }
             login = r;
             break;
         }
         case JOB_CONNECT:
-            open_socket();
+            open_socket(j.a, j.len == 1);
             break;
         case JOB_REVOKE:
             ha_auth_revoke(&auth);
@@ -284,14 +423,32 @@ static void worker(void *arg)
         case JOB_DISCOVER:
             discover();
             break;
+        case JOB_LOCAL: {
+            /* the server on the home network: its address record from mDNS
+             * (plain IP: nothing to resolve), matched by name when there are
+             * several; else HA's internal_url */
+            discover();
+            const char *pick = NULL;
+            int n = n_found;
+            for (int i = 0; i < n && !pick; i++)
+                if (found_ip[i][0] && (n == 1 || (j.b && !strcmp(found[i].name, j.b)))) pick = found_ip[i];
+            if (!pick && j.a && j.a[0]) pick = j.a;
+            if (!pick && mdns_name(g_model.settings.ha_local_url)) pick = g_model.settings.ha_local_url;
+            char url[96];
+            snprintf(url, sizeof(url), "%s", pick ? pick : "");
+            resolve_local(url, sizeof(url));
+            snprintf(learnt, sizeof(learnt), "%s", url);
+            learnt_final = j.a != NULL;
+            learnt_ready = true;
+            break;
+        }
         case JOB_STATE: {
             /* POST /api/states/<entity_id>: the remote's own sensors (bridge.c) */
             if (auth.access_until <= hal_time() && ha_auth_refresh(&auth, hal_time()) <= 0) break;
-            char url[200], hdr[360], resp[256];
-            snprintf(url, sizeof(url), "%s/api/states/%s", auth.server, j.a);
+            char hdr[360], resp[256];
             snprintf(hdr, sizeof(hdr), "Bearer %s", auth.access);
-            int st = http_post(url, "application/json", hdr, j.b, resp, sizeof(resp));
-            if (st != 200 && st != 201) hal_log("ha: state %s: HTTP %d", j.a, st);
+            int st = http_post(j.a, "application/json", hdr, j.b, resp, sizeof(resp));   /* a: the whole URL */
+            if (st != 200 && st != 201) hal_log("ha: %s: HTTP %d", j.a, st);
             break;
         }
         case JOB_SAVE: {
@@ -330,12 +487,32 @@ static void schedule_retry(void)
     retry_at = hal_millis() + retry_ms;
 }
 
+static uint32_t connect_t0;              /* the connection timeline in the log */
+
 static void connect_now(void)
 {
     if (connecting || !wifi_up || !signed_in()) return;
+    const char *local = g_model.settings.ha_local_url;
+    via_local = local[0] && !local_failed && strcmp(local, auth.server);
+    opened = false;
+    snprintf(base, sizeof(base), "%s", via_local ? local : auth.server);
+    connect_t0 = hal_millis();
+    hal_log("ha: connecting to %s%s", base, via_local ? " (local)" : "");
     connecting = true;
     connect_failed = 0;
-    post_job(JOB_CONNECT, NULL, NULL);
+    job_t j = {JOB_CONNECT, dup_str(base), NULL, via_local};
+    if (xQueueSend(job_q, &j, 0) != pdTRUE) free(j.a), connecting = false;
+}
+
+/* The local address didn't answer: straight on to ha_url */
+static bool local_gave_up(void)
+{
+    if (!via_local || opened) return false;
+    if (local_failed) return true;   /* told already (the timeout, then the close) */
+    hal_log("ha: no answer at %s, using %s", base, auth.server);
+    local_failed = true;
+    retry_at = hal_millis();
+    return true;
 }
 
 void ha_set_wifi(bool up)
@@ -344,6 +521,7 @@ void ha_set_wifi(bool up)
     wifi_up = up;
     if (up) {
         retry_ms = 0;
+        local_failed = false;   /* worth another try */
         connect_now();
     } else {
         ws_stop();
@@ -356,6 +534,9 @@ void ha_init(void)
 {
     rx_q = xQueueCreate(16, sizeof(rx_t));
     job_q = xQueueCreate(8, sizeof(job_t));
+    tx_q = xQueueCreate(24, sizeof(tx_t));
+    send_mx = xSemaphoreCreateMutex();
+    xTaskCreatePinnedToCore(sender, "ha_tx", 6144, NULL, 4, NULL, 0);
     /* internal RAM (it writes NVS and flash, which a PSRAM stack can't); its big buffers are in PSRAM */
     xTaskCreatePinnedToCore(worker, "ha", 10240, NULL, 4, NULL, 0);
     char cid[96];
@@ -363,6 +544,10 @@ void ha_init(void)
     ha_auth_init(&auth, g_model.settings.ha_url, cid);
     if (!g_model.settings.ha_user[0]) return;
     hal_secret_get(SECRET_REFRESH, auth.refresh, sizeof(auth.refresh));
+    if (kept.magic == KEPT_MAGIC && !strcmp(kept.server, auth.server) && kept.access[0]) {
+        snprintf(auth.access, sizeof(auth.access), "%s", kept.access);
+        auth.access_until = kept.until;
+    }
     /* the house as last seen, until HA answers */
     FILE *f = fopen(CACHE_PATH, "rb");
     if (!f) return;
@@ -381,6 +566,8 @@ void ha_poll(void)
     rx_t r;
     while (xQueueReceive(rx_q, &r, 0) == pdTRUE) {
         if (r.kind == RX_OPEN) {
+            hal_log("ha: socket open in %u ms", (unsigned)(hal_millis() - connect_t0));
+            opened = true;
             connecting = false;
             ha_ws_open(auth.access);
         } else if (r.kind == RX_CLOSED) {
@@ -388,7 +575,7 @@ void ha_poll(void)
             connecting = false;
             ws_stop();   /* frees the client so the next try starts clean */
             if (was_ready) hal_log("ha: connection lost");
-            schedule_retry();
+            if (!local_gave_up()) schedule_retry();
             app_notify(EV_HA, -1);
         } else {
             ha_ws_state_t before = ha_ws_state();
@@ -396,8 +583,24 @@ void ha_poll(void)
             heap_caps_free(r.msg);
             if (ha_ws_state() == WS_AUTH_FAILED) {
                 ws_stop();       /* the token ran out between refresh and auth: a fresh one next time */
-                schedule_retry();
+                auth.access[0] = 0;
+                kept.magic = 0;
+                if (reused) {
+                    retry_at = hal_millis();   /* the kept one, revoked: refresh now */
+                } else if (via_local) {
+                    /* a fresh token refused there: another Home Assistant has that address now */
+                    hal_log("ha: %s isn't this Home Assistant any more: forgetting it", base);
+                    g_model.settings.ha_local_url[0] = 0;
+                    local_failed = true;
+                    retry_at = hal_millis();
+                } else {
+                    schedule_retry();
+                }
             } else if (before != WS_READY && ha_ws_state() == WS_READY) {
+                hal_log("ha: ready %u ms after connecting", (unsigned)(hal_millis() - connect_t0));
+                replay_held();
+                /* look for it on the home network now; a .local name: its address */
+                if (!via_local || mdns_name(base)) post_job(JOB_LOCAL, NULL, NULL);
                 retry_ms = 0;
                 cache_dirty = true;
                 cache_at = 0;   /* save the fresh house soon */
@@ -412,10 +615,26 @@ void ha_tick(void)
     hs_tick();
     if (connect_failed) {
         if (connect_failed < 0) hal_log("ha: Home Assistant refused the sign-in token: sign in again");
-        else hal_log("ha: no answer from %s", auth.server);
+        else hal_log("ha: no answer from %s", base);
+        bool local = connect_failed > 0 && local_gave_up();
         connect_failed = 0;
-        schedule_retry();
+        if (!local) schedule_retry();
         app_notify(EV_HA, -1);
+    }
+    if (learnt_ready) {
+        learnt_ready = false;
+        char *cur = g_model.settings.ha_local_url;
+        if (learnt[0] && strcmp(learnt, cur) && strcmp(learnt, auth.server)) {
+            hal_log("ha: on the home network at %s: connecting there from now on", learnt);
+            snprintf(cur, sizeof(g_model.settings.ha_local_url), "%s", learnt);   /* saved with the settings */
+            local_failed = false;
+        } else if (local_failed && cur[0] && (!learnt[0] || !strcmp(learnt, cur))) {
+            /* it didn't answer, and a fresh look found nothing else: not a 3 s wait every wake */
+            hal_log("ha: %s didn't answer and nothing new found: forgetting it", cur);
+            cur[0] = 0;
+        } else if (!learnt[0] && learnt_final && !g_model.settings.ha_local_url[0]) {
+            hal_log("ha: no local address found (mDNS, internal_url): staying on %s", auth.server);
+        }
     }
     if (wifi_up && signed_in() && !ws && !connecting && (int32_t)(hal_millis() - retry_at) >= 0) connect_now();
     /* the cache: soon after HA has answered, then at most every 10 minutes */
@@ -493,11 +712,14 @@ void ha_signed_in(void)
 
 void ha_sign_out(void)
 {
+    kept.magic = 0;
     ws_stop();
     connecting = false;
     post_job(JOB_REVOKE, NULL, NULL);
     remove(CACHE_PATH);
     g_model.settings.ha_user[0] = 0;
+    g_model.settings.ha_local_url[0] = 0;
+    n_held = 0;
     hs_reset();
     hal_log("ha: signed out, refresh token revoked");
     app_notify(EV_HA, -1);
@@ -514,12 +736,80 @@ void ha_set_state(const char *entity_id, const char *state, const char *attribut
     hj_escape(st, sizeof(st), state);
     snprintf(body, sizeof(body), "{\"state\":\"%s\",\"attributes\":%s}", st,
              attributes_json && *attributes_json ? attributes_json : "{}");
-    post_job(JOB_STATE, entity_id, body);
+    char url[200];
+    snprintf(url, sizeof(url), "%s/api/states/%s", base, entity_id);   /* the local address when the socket is there */
+    post_job(JOB_STATE, url, body);
+}
+
+/* Taps while HA isn't there yet (the cached house is shown): held, and sent
+ * once it's ready, if that's within HELD_MS. The same thing done again
+ * replaces the first (a slider dragged); a second toggle undoes the first. */
+#define HELD_MAX 8
+#define HELD_MS 30000
+static struct {
+    char id[64], op[24], text[128];
+    int arg;
+    bool has_text;
+    uint32_t at;
+} held[HELD_MAX];
+
+static void hold(int idx, const char *op, int arg, const char *text)
+{
+    const ha_entity_t *e = ha_get(idx);
+    if (!e) return;
+    for (int i = 0; i < n_held; i++) {
+        if (strcmp(held[i].id, e->id) || strcmp(held[i].op, op)) continue;
+        if (!strcmp(op, "toggle")) {
+            memmove(&held[i], &held[i + 1], (n_held - i - 1) * sizeof(held[0]));
+            n_held--;
+            hal_log("ha: %s toggled back before HA was there: nothing to send", e->id);
+            return;
+        }
+        held[i].arg = arg;
+        held[i].has_text = text != NULL;
+        snprintf(held[i].text, sizeof(held[i].text), "%s", text ? text : "");
+        held[i].at = hal_millis();
+        return;
+    }
+    if (n_held == HELD_MAX) {
+        hal_log("ha: not connected, too many taps held: %s %s dropped", e->id, op);
+        return;
+    }
+    snprintf(held[n_held].id, sizeof(held[n_held].id), "%s", e->id);
+    snprintf(held[n_held].op, sizeof(held[n_held].op), "%s", op);
+    snprintf(held[n_held].text, sizeof(held[n_held].text), "%s", text ? text : "");
+    held[n_held].has_text = text != NULL;
+    held[n_held].arg = arg;
+    held[n_held].at = hal_millis();
+    n_held++;
+    hal_log("ha: not connected yet: %s %s held until it is", e->id, op);
+}
+
+static void replay_held(void)
+{
+    for (int i = 0; i < n_held; i++) {
+        int idx = ha_find(held[i].id);
+        if (hal_millis() - held[i].at > HELD_MS) hal_log("ha: %s %s held too long, dropped", held[i].id, held[i].op);
+        else if (idx >= 0 && ha_ws_call(idx, held[i].op, held[i].arg, held[i].has_text ? held[i].text : NULL))
+            cache_dirty = true;
+    }
+    n_held = 0;
 }
 
 static void call(int idx, const char *op, int arg, const char *text)
 {
+    if (ha_ws_state() != WS_READY) {
+        if (signed_in()) hold(idx, op, arg, text);
+        return;
+    }
     if (ha_ws_call(idx, op, arg, text)) cache_dirty = true;
+}
+
+/* ha_ws.c, once ready: where HA is on the home network. Already there: nothing to learn. */
+void ha_server_config(const char *internal_url, const char *location_name)
+{
+    if (via_local) return;
+    post_job(JOB_LOCAL, internal_url ? internal_url : "", location_name);   /* a set: this one is final */
 }
 
 void ha_toggle(int idx) { call(idx, "toggle", 0, NULL); }

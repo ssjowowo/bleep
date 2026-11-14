@@ -138,6 +138,7 @@ char *config_to_json(const model_t *m)
     cJSON_AddStringToObject(js, "wifi_ssid", s->wifi_ssid);   /* the password: secret store */
     cJSON_AddStringToObject(js, "ha_url", s->ha_url);
     cJSON_AddStringToObject(js, "ha_user", s->ha_user);
+    cJSON_AddStringToObject(js, "ha_local_url", s->ha_local_url);
     cJSON_AddBoolToObject(js, "fw_auto_check", s->fw_auto_check);
     cJSON_AddNumberToObject(js, "fw_checked", (double)s->fw_checked);
     cJSON_AddStringToObject(js, "layout_activities", layout_ids[s->layout_activities < N(layout_ids) ? s->layout_activities : 0]);
@@ -326,6 +327,7 @@ static void read_settings(const cJSON *js, settings_t *s)
     get_str(js, "wifi_ssid", s->wifi_ssid, sizeof(s->wifi_ssid));
     get_str(js, "ha_url", s->ha_url, sizeof(s->ha_url));
     get_str(js, "ha_user", s->ha_user, sizeof(s->ha_user));
+    get_str(js, "ha_local_url", s->ha_local_url, sizeof(s->ha_local_url));
     s->fw_auto_check = get_bool(js, "fw_auto_check", s->fw_auto_check);
     const cJSON *fc = cJSON_GetObjectItemCaseSensitive(js, "fw_checked");
     if (cJSON_IsNumber(fc) && fc->valuedouble >= 0) s->fw_checked = (int64_t)fc->valuedouble;

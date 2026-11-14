@@ -710,6 +710,7 @@ lv_obj_t *w_tile(lv_obj_t *parent, const char *icon, const char *name, const cha
         lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(dot, T->accent, 0);
         lv_obj_t *l = w_label(b, F_LABEL_B, T->accent, sub);
+        lv_obj_set_height(l, lv_font_get_line_height(F_LABEL_B));   /* one line: wrapped, it spilled out of the pill */
         lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);
         lv_obj_set_style_max_width(l, w_col_w(2, GRID_GAP) - 2 * 12 - 2 * 10 - 12, 0);   /* the tile's inside, less the badge's */
     } else {

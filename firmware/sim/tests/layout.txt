@@ -71,3 +71,8 @@ click Shield TV
 wait 300
 expect Shield TV
 expect Active
+# back on the grid: the selected tile's badge says just "Active", on one line
+back
+wait 300
+expect Active
+shot 126_devices_grid_active

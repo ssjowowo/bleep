@@ -61,7 +61,9 @@ static void devices_build(lv_obj_t *root, int arg)
             for (int j = 0; j < a->n_devices; j++) in_run |= a->devices[j] == i;
         }
         char buf[48], sub[64];
-        snprintf(sub, sizeof(sub), "%s%s", active ? "Active · " : "", dev_transport_text(d, buf, sizeof(buf)));
+        /* a tile's badge has room for one word, as an activity's "Running" */
+        if (active && layout == LAYOUT_GRID) snprintf(sub, sizeof(sub), "Active");
+        else snprintf(sub, sizeof(sub), "%s%s", active ? "Active · " : "", dev_transport_text(d, buf, sizeof(buf)));
         lv_obj_t *c = w_item(col, layout, dev_kind_icon(d->kind), d->name, sub, active || in_run, true);
         lv_obj_add_event_cb(c, open_device_cb, LV_EVENT_SHORT_CLICKED, ARG(i));
         dev_reorder.count = g_model.n_devices;

@@ -22,6 +22,9 @@ typedef enum {
 
 /* ---- the platform's side ---- */
 bool ha_ws_send(const char *json);  /* one text frame; false if it couldn't go */
+/* Once ready, HA's own idea of its address on the home network (internal_url,
+ * "" if it has none) and its name: the platform may connect there first */
+void ha_server_config(const char *internal_url, const char *location_name);
 
 /* ---- called by the platform ---- */
 void ha_ws_open(const char *access_token);     /* the socket is open */
