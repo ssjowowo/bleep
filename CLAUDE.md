@@ -9,4 +9,14 @@ Every firmware build (`firmware/esp`, `idf.py build`, natively or in the `espres
 3. **Act on the hook's warnings.** A "bump" warning means step 1 was missed: bump the version and build again. If the link didn't answer, check `tailscale serve status`.
 4. **Report** the new version and the link the user opens: **https://samus-dev.tail23c2ca.ts.net:8443/**. The user flashes over Tailscale, and Web Serial needs https, so plain http on the Tailscale IP won't work. `tailscale serve` already proxies that https address to `127.0.0.1:8081` and keeps that setting across restarts.
 
+## Releasing over Wi-Fi (online update)
+
+The remote's **Settings → Software update** reads `https://bleepremote.com/fw/stable.json` (`firmware/esp/main/ota.c`). bleepremote.com is the Cloudflare Pages project `bleepremote`, serving `build/flasher/`: the web flasher at `/`, the update at `/fw/`. A release:
+
+1. Build it (above), and have the user flash it over USB and try it on the board. **Never publish a build that hasn't run on the board:** every remote that checks, by hand or in its daily check, is offered it.
+2. Add a line for the version to `firmware/esp/release-notes.txt` (at most 159 bytes; the remote shows it under "Version x.y.z is available").
+3. Run `firmware/flasher/deploy.sh` (rebuilds `build/flasher/`, uploads it with wrangler). Then check that `https://bleepremote.com/fw/stable.json` shows the new version.
+
+If wrangler isn't logged in: run `npx wrangler login --browser=false` in the background, give the user the URL, and when their browser fails to load the `localhost:8976/oauth/callback?...` page, `curl` the address they paste back on this PC.
+
 The emulator's version (`firmware/sim/hal_sim.c`, "0.1.0") is a test fixture for the update scenario (`sim/tests/update.txt` offers 0.2.0). It does not follow `version.txt`.
