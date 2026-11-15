@@ -103,6 +103,11 @@
 #define ICON_FORWARD_30       "\xEE\x81\xA3"   /* forward_30 */
 #define ICON_DARK_MODE        "\xEE\x81\xA4"   /* dark_mode */
 #define ICON_PALETTE          "\xEE\x81\xA5"   /* palette */
+#define ICON_ROWS             "\xEE\x81\xA6"   /* view_agenda */
+#define ICON_BED              "\xEE\x81\xA7"   /* bed */
+#define ICON_BATTERY_SAVER    "\xEE\x81\xA8"   /* battery_saver */
+#define ICON_DIALPAD          "\xEE\x81\xA9"   /* dialpad */
+#define ICON_MENU             "\xEE\x81\xAA"   /* menu */
 #define ICON_GRID_FILL        "\xEE\x84\x80"   /* widgets */
 #define ICON_REMOTE_FILL      "\xEE\x84\x81"   /* settings_remote */
 #define ICON_HOME_FILL        "\xEE\x84\x82"   /* home */
@@ -110,6 +115,6 @@
 #define ICON_GEAR_FILL        "\xEE\x84\x84"   /* settings */
 
 #define ICON_FIRST 0xE000
-#define ICON_LAST  0xE065
+#define ICON_LAST  0xE06A
 #define ICON_FIRST_FILL 0xE100
 #define ICON_LAST_FILL  0xE104

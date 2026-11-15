@@ -3,8 +3,11 @@ click Start
 wait 300
 key OK
 wait 100
-expect Select a device or start an activity first
+# nowhere for the keys to go: the keys sheet opens to pick somewhere
+expect Keys go to
 shot 20_no_target
+key BACK
+wait 300
 click Devices
 click Living room TV
 key VOL+

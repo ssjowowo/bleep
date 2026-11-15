@@ -22,13 +22,14 @@ expect Pick up or press any key
 doubletap
 wait 300
 expect-no Pick up or press any key
-# ...and deep sleep: a reboot, the Wake screen
+# ...and deep sleep: a reboot, back where it was
 wait 155000
 expect-log deep sleep: wakes on 14 key(s), touch, lift, tap, USB
 doubletap
 wait 300
 expect-log boot: wake by double tap
-expect Or start
+expect-no Or start
+expect Shield TV · Plex
 shot 81_tap_wake
 # the settings
 tab Settings

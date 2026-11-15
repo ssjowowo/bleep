@@ -107,7 +107,9 @@ static void build(void)
     const page_t *p = ui_current();
     lv_obj_t *scr = lv_screen_active();
     theme_apply(want_light(), g_model.settings.accent);
+    w_dense = g_model.settings.list_rows == ROWS_COMPACT;
     int32_t keep_y = root && last_page == p && last_arg == stack[depth - 1].arg ? lv_obj_get_scroll_y(root) : 0;
+    qs_detach();   /* the drawer is on the screen: it comes back after (qs_reattach) */
     lv_obj_clean(scr);
     lv_obj_set_style_bg_color(scr, T->bg, 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
@@ -166,6 +168,7 @@ static void build(void)
         if (fc.y2 >= rc.y2 && fc.y1 < band_bottom) band_bottom = fc.y1;
     }
     hws_attach(root, rc.y1, band_bottom > SCREEN_H ? SCREEN_H : band_bottom);
+    qs_reattach();
 }
 
 bool ui_touch_active(void)
@@ -323,13 +326,11 @@ void ui_resume(uint8_t tab, uint8_t page, int8_t arg)
 void ui_woke(wake_cause_t cause)
 {
     /* After deep sleep the remote has rebooted and ui_resume has put back
-     * where it was. Touch, lift or USB shows the Wake screen over that; a key
-     * wake goes straight there. */
-    if (cause == WAKE_KEY || cause == WAKE_TIMER) return;   /* the timer: the screen stays off */
-    depth = 1;
-    stack[0].page = &page_wake;
-    stack[0].arg = 0;
-    request_build();
+     * where it was: the last tab and the device or activity page open on it.
+     * Every wake goes straight there (the design review, 2026-11: the Wake
+     * screen used to come up over it after a touch, a lift or USB; the
+     * Activities tab's Now card took over its Resume). */
+    LV_UNUSED(cause);
 }
 
 static void on_event(app_event_t ev, int arg, void *ctx)
@@ -369,7 +370,7 @@ static void on_event(app_event_t ev, int arg, void *ctx)
             ui_toast("%s didn't answer over Bluetooth. Is it on?", g_model.devices[arg].name);
         break;
     case EV_NO_TARGET:
-        if (key_target(arg) == KEYDEV_NONE) ui_toast("Select a device or start an activity first");
+        if (key_target(arg) == KEYDEV_NONE) qs_keys_open();   /* nowhere to go: pick somewhere */
         else ui_toast("%s isn't set up for this key", hal_key_name(arg));
         break;
     default:

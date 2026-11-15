@@ -17,6 +17,9 @@ mark
 key MUTE
 wait 300
 expect-log-no fire_event
+# (no device, no activity: the keys sheet opened)
+key BACK
+wait 300
 # turn them on (Settings > Home Assistant)
 tab Settings
 wait 300

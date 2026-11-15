@@ -44,7 +44,7 @@ void theme_apply(bool light, int accent)
         .line = light ? C(0xC9CBCE) : C(0x3A3C3F),
         .outline = light ? C(0x6F7979) : C(0x7F9599),
         .text = light ? C(0x171D1E) : C(0xDEE3E5),
-        .text2 = light ? C(0x3F484A) : C(0xB6C8CB),
+        .text2 = light ? C(0x3F484A) : C(0xC4D3D6),   /* a step brighter than 0xB6C8CB: 12 px helper lines on the real panel */
         .warning = light ? C(0xC25E00) : C(0xFFA41F),
         .brand = light ? C(0xB8892A) : C(0xE6B54A),   /* darker gold, for contrast on white */
     };

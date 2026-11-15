@@ -60,12 +60,13 @@ static const char *const op_ids[HAOP_COUNT] = {"on", "off", "toggle", "set", "ru
 static const char *const theme_ids[] = {"dark", "light", "auto"};
 static const char *const accent_ids[] = {"cyan", "blue", "violet", "pink", "orange", "amber", "green"};   /* accent_t */
 static const char *const layout_ids[] = {"grid", "list"};
+static const char *const rows_ids[] = {"comfortable", "compact"};   /* list_rows_t */
 static const char *const feel_ids[] = {"crisp", "soft"};   /* haptic_feel_t */
 static const char *const motor_ids[] = {"erm", "lra", "lra_bar"};     /* haptic_motor_t */
 /* settings.haptic_<event>: one bool each, in buzz_ev_t order */
 static const char *const buzz_keys[BUZZ_EV_COUNT] = {"haptic_keys", "haptic_taps", "haptic_sliders",
                                                      "haptic_confirm", "haptic_alerts", "haptic_games"};
-static const char *const size_ids[] = {"full", "compact"};
+static const char *const size_ids[] = {"auto", "compact", "full"};   /* "auto" is never written */
 #define N(a) ((int)(sizeof(a) / sizeof((a)[0])))
 
 static int id_of(const char *const *ids, int n, const char *s, int fallback)
@@ -143,6 +144,8 @@ char *config_to_json(const model_t *m)
     cJSON_AddNumberToObject(js, "fw_checked", (double)s->fw_checked);
     cJSON_AddStringToObject(js, "layout_activities", layout_ids[s->layout_activities < N(layout_ids) ? s->layout_activities : 0]);
     cJSON_AddStringToObject(js, "layout_devices", layout_ids[s->layout_devices < N(layout_ids) ? s->layout_devices : 0]);
+    cJSON_AddBoolToObject(js, "hold_learned", s->hold_learned);
+    cJSON_AddStringToObject(js, "list_rows", rows_ids[s->list_rows < N(rows_ids) ? s->list_rows : 0]);
 
     cJSON *jd = cJSON_AddArrayToObject(root, "devices");
     for (int i = 0; i < m->n_devices; i++) {
@@ -247,7 +250,7 @@ char *config_to_json(const model_t *m)
         cJSON *o = cJSON_AddObjectToObject(jhe, he->id);
         if (he->name[0]) cJSON_AddStringToObject(o, "name", he->name);
         if (he->icon && he->icon <= home_icon_count) cJSON_AddStringToObject(o, "icon", home_icons[he->icon - 1].name);
-        if (he->size) cJSON_AddStringToObject(o, "size", size_ids[he->size < N(size_ids) ? he->size : HOME_FULL]);
+        if (he->size) cJSON_AddStringToObject(o, "size", size_ids[he->size < N(size_ids) ? he->size : HOME_AUTO]);
     }
 
     char *out = cJSON_PrintUnformatted(root);
@@ -333,6 +336,9 @@ static void read_settings(const cJSON *js, settings_t *s)
     if (cJSON_IsNumber(fc) && fc->valuedouble >= 0) s->fw_checked = (int64_t)fc->valuedouble;
     s->layout_activities = id_of(layout_ids, N(layout_ids), get_id(js, "layout_activities"), s->layout_activities);
     s->layout_devices = id_of(layout_ids, N(layout_ids), get_id(js, "layout_devices"), s->layout_devices);
+    s->hold_learned = get_bool(js, "hold_learned", s->hold_learned);
+    /* added in 0.2.8: a file from before it had the comfortable rows */
+    s->list_rows = id_of(rows_ids, N(rows_ids), get_id(js, "list_rows"), ROWS_COMFORTABLE);
 }
 
 static void read_device(const cJSON *o, device_t *d)
@@ -460,8 +466,8 @@ static void read_home(const cJSON *jh, home_layout_t *h)
         int ic = -1;
         for (int k = 0; icon && k < home_icon_count; k++)
             if (!strcmp(home_icons[k].name, icon)) ic = k;
-        int size = id_of(size_ids, N(size_ids), get_id(o, "size"), HOME_FULL);
-        if (!name[0] && ic < 0 && size == HOME_FULL) continue;
+        int size = id_of(size_ids, N(size_ids), get_id(o, "size"), HOME_AUTO);
+        if (!name[0] && ic < 0 && size == HOME_AUTO) continue;
         int k = model_home_id(o->string);
         if (k < 0) continue;
         home_ent_t *he = &h->ents[k];

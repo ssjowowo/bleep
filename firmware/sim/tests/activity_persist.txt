@@ -36,8 +36,10 @@ wait 300
 shot a4_after_sleep
 expect Watch TV
 
-# the pill goes back to the activity page; the volume buttons there go to the receiver
+# the pill's sheet, Open: back to the activity page; the volume buttons there go to the receiver
 pill
+wait 300
+click Open
 wait 300
 expect Sleep timer
 drag ~160 ~380 ~160 ~80

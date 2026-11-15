@@ -31,8 +31,10 @@ usb off
 wait 9500
 expect Pick up or press any key
 expect-no 14° · Cloudy
-# the setting
+# the setting (OK with nothing to control opens the keys sheet: BACK closes it)
 key OK
+wait 300
+key BACK
 wait 300
 tab Settings
 wait 300

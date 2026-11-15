@@ -10,8 +10,13 @@ click Water heater
 click Hallway
 wait 200
 expect Locked
+# a lock's tile: a tap opens its card
+click Front door
+wait 300
 click Hold to unlock
 expect Locked
+back
+wait 200
 click Off
 wait 200
 expect Enter code
@@ -23,6 +28,9 @@ wait 300
 expect Disarmed
 click Bedroom
 wait 200
+# the fan's tile: hold for its card, with the speeds
+press Ceiling fan
+wait 300
 click 3
 wait 200
 expect speed 3

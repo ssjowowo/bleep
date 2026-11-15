@@ -66,7 +66,10 @@ const char *home_card_name(const ha_entity_t *e);   /* the user's, else HA's */
 const char *home_card_icon(const ha_entity_t *e);   /* the user's, else HA's own or its domain's */
 int home_card_icon_idx(const char *entity_id);      /* home_icons index, -1 = HA's */
 bool home_card_compact(const ha_entity_t *e);
+int home_card_size(const ha_entity_t *e);           /* HOME_AUTO, HOME_COMPACT or HOME_FULL */
+bool home_card_tileable(const ha_entity_t *e);      /* a tap can switch it, run it, or there's one state to show */
+bool home_card_tile(const ha_entity_t *e);          /* shown as a tile in the grid (HOME_AUTO and tileable) */
 /* Changes; false if the layout is full. "" or HA's own name, and icon -1, go back to HA's. */
 bool home_set_name(const char *entity_id, const char *name);
 bool home_set_icon(const char *entity_id, int icon);
-bool home_set_compact(const char *entity_id, bool compact);
+bool home_set_size(const char *entity_id, int size);

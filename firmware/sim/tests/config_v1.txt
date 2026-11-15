@@ -45,4 +45,6 @@ click Display
 wait 300
 expect List
 expect Grid
+# from before List rows existed (0.2.8): the rows it had
+@320x480 expect Comfortable
 shot 160_config_v1

@@ -7,9 +7,12 @@ click Home
 wait 800
 click Kitchen
 wait 300
-switch LED strip
+# its tile: a tap switches it on, a hold opens the card with the colours
+click LED strip
 wait 500
 expect On · RGB · 60%
+press LED strip
+wait 500
 shot 250_light_custom_colour
 # a favourite picked: it's the ringed one, and the custom swatch is gone
 click Colour 2
