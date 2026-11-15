@@ -131,6 +131,27 @@ def springs_3mf(out=SPRINGS_OUT):
               colours=["#202020"], object_settings=SPRING_OBJECT_SETTINGS)
 
 
+def keymat_tpu_3mf(out=os.path.join(HERE, "stl", "keymat_tpu.3mf"), springs=((4, 12, "softest"), (3, 3, "2nd softest")),
+                   mat_defines=('part="mat_test"',), title="Bleep v1 keymat TPU parts"):
+    """The keymat's TPU parts in one print (remote.scad, "Keymat test"): the test
+    mat for the current shell (one flat sheet) and rows of spring inserts, enough
+    for every key (14 caps, the volume bar takes two) with a few spare."""
+    with tempfile.TemporaryDirectory() as tmp:
+        def run(name, *defs):
+            stl = os.path.join(tmp, name + ".stl")
+            subprocess.run([OPENSCAD, *[a for d in defs for a in ("-D", d)], "-o", stl, os.path.join(HERE, "remote.scad")],
+                           capture_output=True, text=True, check=True)
+            return read_stl(stl)
+        objects = [("Keymat", [("tpu", run("mat", *mat_defines), 1)])]
+        settings = {}
+        for v, n, label in springs:
+            name = f"Springs {label} (variant {v + 1}, {n}x)"
+            objects.append((name, [("tpu", run(f"s{v}", 'part="spring_row"', f"spr_v={v}", f"spr_n={n}"), 1)]))
+            settings[name] = {"brim_type": "outer_only", "brim_width": "3"}
+    write_3mf(objects, out, title, "TPU keymat + springs", filament=TPU_FILAMENT,
+              colours=["#202020"], object_settings=settings)
+
+
 def write_3mf(objects, out, title, plate_name, filament=PLA_FILAMENT, colours=COLOURS, object_settings=OBJECT_SETTINGS):
     """objects: [(name, [(part name, mesh, filament number), ...]), ...] -> a one-plate
     Bambu Studio project with len(colours) filaments of the preset `filament`
@@ -278,3 +299,20 @@ if __name__ == "__main__":
     caps_3mf([("PLEX", "Plex soft"), ("NFLX", "Netflix soft"), ("YT", "YouTube soft")],
              os.path.join(HERE, "stl", "soft_test_caps.3mf"), ["soft=true"], "Bleep v1 soft-key test caps")
     springs_3mf()
+    # Keymat (remote.scad, "Keymat test" and "Full keymat"): every cap for the
+    # full mat in one PLA print. The round keys, pills and volume bar also fit the
+    # current shell over the test mat (stl/keymat_tpu.3mf, with all the springs);
+    # the four D-pad keys, the OK and PWR need the full-mat shell.
+    caps_3mf([("UP", "Up"), ("RIGHT", "Right"), ("DOWN", "Down"), ("LEFT", "Left"), ("OK", "OK"),
+              ("BACK", "Back"), ("HOME", "Home"), ("MUTE", "Mute"), ("PLEX", "Plex"), ("NFLX", "Netflix"),
+              ("YT", "YouTube"), ("VOLUP", "Volume"), ("PWR", "Power")],
+             os.path.join(HERE, "stl", "keymat_caps.3mf"), ["mat_all=true"], "Bleep v1 keymat caps")
+    keymat_tpu_3mf()
+    # Full keymat: the mat for the new front shell (stl/front_shell_keymat.stl)
+    # and every insert it needs, all softest: 14 caps, the volume bar takes two.
+    keymat_tpu_3mf(os.path.join(HERE, "stl", "keymat_full_tpu.3mf"), ((4, 8, "softest"), (4, 7, "softest")),
+                   ('part="matf"', "mat_all=true"), "Bleep v1 full keymat TPU parts")
+    subprocess.run([OPENSCAD, "-D", 'part="front"', "-D", "mat_all=true", "-o",
+                    os.path.join(HERE, "stl", "front_shell_keymat.stl"), os.path.join(HERE, "remote.scad")],
+                   capture_output=True, text=True, check=True)
+    print("wrote stl/front_shell_keymat.stl")

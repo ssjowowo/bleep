@@ -3,6 +3,7 @@
 //
 // Render a part from the command line:
 //   openscad -D 'part="front"' -o stl/front_shell.stl remote.scad
+//   openscad -D 'part="front"' -D mat_all=true -o stl/front_shell_keymat.stl remote.scad   (full keymat)
 // parts: front, ir_window, sensor_window, back, caps, caps_labels, assembly, interference
 //
 // Coordinates: layout.py uses shell coords with y pointing DOWN from the
@@ -75,8 +76,10 @@ seg_g = DPAD_BRIDGE_W / 2 + CAP_HOLE_CLR;
 // 2D outline of a cap, absolute position. k = [name, type, sw_pos, angle, label]
 module cap2d(k) {
     t = k[1];
-    if (t == "ring") translate(S(DPAD_C)) annulus2d(DPAD_R_IN, DPAD_R_OUT);
-    else if (t == "ok") translate(S(DPAD_C)) circle(r = DPAD_OK_R, $fn = 96);
+    if (t == "ring" && mat_all) translate(S(DPAD_C)) intersection() { annulus2d(DPAD_R_IN2, DPAD_R_OUT); wedge2d(k[3], seg_g); }
+    else if (t == "ring") translate(S(DPAD_C)) annulus2d(DPAD_R_IN, DPAD_R_OUT);
+    else if (t == "ok") translate(S(DPAD_C)) circle(r = mat_all ? DPAD_OK_R2 : DPAD_OK_R, $fn = 96);
+    else if (t == "pwr") pwr2d();
     else if (t == "round") translate(S(k[2])) circle(r = ROUND_R);
     else if (t == "pill") translate(S(k[2])) pill2d(PILL[0], PILL[1]);
     else if (t == "volL" || t == "volR") translate(S(VOL_C)) pill2d(VOL_BAR[0], VOL_BAR[1]);   // one rocker bar
@@ -86,7 +89,7 @@ module cap2d(k) {
 module hole_base2d(k) {
     t = k[1];
     if (t == "volL" || t == "volR") translate(S(VOL_C)) pill2d(VOL_BAR[0], VOL_BAR[1]);
-    else if (t == "ring") translate(S(DPAD_C)) circle(r = DPAD_R_OUT, $fn = 96);     // one hole for ring + OK
+    else if (t == "ring" && !mat_all) translate(S(DPAD_C)) circle(r = DPAD_R_OUT, $fn = 96);     // one hole for ring + OK
     else cap2d(k);
 }
 
@@ -157,7 +160,8 @@ module cap_label2d(k) {
     t = k[1];
     if (t == "ring") {
         // four dots mark the press points (drawn once, with the UP entry)
-        if (k[0] == "UP") translate(S(DPAD_C)) for (a = [0:90:270]) rotate(a)
+        if (mat_all) translate(S(DPAD_C)) rotate(k[3]) translate([(DPAD_R_IN2 + DPAD_R_OUT) / 2, 0]) circle(r = 0.75, $fn = 24);
+        else if (k[0] == "UP") translate(S(DPAD_C)) for (a = [0:90:270]) rotate(a)
             translate([(DPAD_R_IN + DPAD_R_OUT) / 2, 0]) circle(r = 0.75, $fn = 24);
     } else if (labels && len(k[4]) > 0 && k[4][0] == "@") {
         translate(S(k[2])) icon2d(k[4]);
@@ -380,7 +384,9 @@ module ring_fork() {
 // UP entry; the other three ring entries add nothing). The volume bar likewise,
 // built with VOLUP.
 module cap(k) {
-    if (k[1] == "ring") { if (k[0] == "UP") cap_generic(k, [for (kk = KEYS) if (kk[1] == "ring") kk[2]]); }
+    if (mat_all) cap_full(k);
+    else if (mat && in_list(k[0], MAT_KEYS)) cap_mat(k, key_springs(k));
+    else if (k[1] == "ring") { if (k[0] == "UP") cap_generic(k, [for (kk = KEYS) if (kk[1] == "ring") kk[2]]); }
     else if (k[1] == "ok") ok_cap(k);
     else if (k[1] == "round") cap_generic(k, [], [k[2]]);
     else if (soft && k[1] == "pill") cap_generic(k, [], [], [k[2]]);
@@ -389,13 +395,128 @@ module cap(k) {
     else cap_generic(k, [k[2]]);
 }
 
+// Keymat test (2026-11-15). The user: keys rattle and don't click nicely; idea:
+// a TPU membrane across the keys with the caps on top. A web BONDED to the caps
+// would be a second spring beside the soft insert: clamped 2-3 mm from each cap
+// (all the room between keys) it is as stiff as the softest insert or stiffer,
+// so it would undo the soft feel. Instead the mat is a loose TPU gasket: a
+// sheet under the front wall with a hole per cap, each cap's flange under it,
+// pushed up into it by the spring insert's preload (SPR_PRELOAD).
+//  - at rest the preload clamps flange -> mat -> wall: nothing to rattle
+//  - on release the cap lands on TPU, not on the wall: quieter
+//  - a press moves the flange away from the mat, so it adds no force
+//  - the hole's edge can hug the cap body (MAT_LIP by column) against side play
+//  - the caps don't bond to the TPU, so they stay PLA
+// It fits the current shell (its countersinks stay empty): the 3 round keys and
+// the 3 pills, the mat located by the two key-area posts beside them. Round caps
+// lose the socket (it blocked the spring's travel); tabs in notches in the mat
+// stop them turning. -D mat=true swaps these caps in.
+mat = false;
+MAT_T = 0.6;                    // 3 layers at 0.2
+MAT_KEYS = ["MUTE", "HOME", "BACK", "YT", "NFLX", "PLEX", "VOLUP"];   // VOLUP = the whole volume bar
+MAT_FLANGE = 0.8;               // flange beyond the body: the mat rests on it
+MAT_Y = [135.0, 169.8];         // under the ring's flange ... above the bottom bosses (2026-11-15: volume bar added)
+MAT_X = [2.3, W - 2.3];
+MAT_EDGE_R = 1.5;
+MAT_POST_CLR = 0.2;             // per side, round the posts
+// mat hole edge vs the cap body, by column: left touching, middle 0.1 mm
+// interference (a TPU lip that centres the cap), right 0.15 mm clear
+function mat_lip(x) = x < 23 ? 0 : x < 37 ? -0.1 : 0.15;
+MAT_TAB = [0.8, 1.6];           // round caps: anti-turn tabs at +-x, out from the body x wide
+MAT_TAB_CLR = 0.1;
+function mat_z() = Z_FRONT_IN - MAT_T;   // the mat's underside = the flanges' top
+
+module mat_tabs2d(k, c) {
+    r = k[1] == "ok" ? DPAD_OK_R2 : ROUND_R;
+    for (s = [-1, 1]) translate(S(k[2])) mirror([s < 0 ? 1 : 0, 0])
+        translate([r - 0.5, -MAT_TAB[1] / 2 - c]) square([0.5 + MAT_TAB[0] + c, MAT_TAB[1] + 2 * c]);
+}
+module mat2d() {
+    difference() {
+        intersection() {
+            translate([MAT_X[0], -MAT_Y[1]]) offset(r = MAT_EDGE_R) offset(delta = -MAT_EDGE_R)
+                square([MAT_X[1] - MAT_X[0], MAT_Y[1] - MAT_Y[0]]);
+            outline2d(-WALL - 0.5);     // the bottom corners round off
+        }
+        for (p = KEY_HOLES) translate(S(p)) circle(d = POST_D + 2 * MAT_POST_CLR);
+        for (k = KEYS) if (in_list(k[0], MAT_KEYS)) {
+            offset(delta = k[1] == "volR" ? 0 : mat_lip(k[2][0])) cap2d(k);   // the bar spans all columns: touching
+            if (k[1] == "round") mat_tabs2d(k, MAT_TAB_CLR);
+        }
+    }
+}
+module keymat() { translate([0, 0, mat_z()]) linear_extrude(MAT_T) mat2d(); }
+
+// rotate a spring housing/pocket/insert by a about its switch p (the D-pad's left/right keys: beam along y)
+module at_sw(p, a) { translate([p[0], -p[1], 0]) rotate([0, 0, a]) translate([-p[0], p[1], 0]) children(); }
+// springs: [[switch, angle], ...]
+module cap_mat(k, springs = undef) {
+    sp = springs == undef ? [[k[2], 0]] : springs;
+    zf = mat_z(); zb = zf - CAP_FLANGE;
+    difference() {
+        union() {
+            rounded_body(zf) cap2d(k);                                          // straight through mat + wall
+            translate([0, 0, zb]) linear_extrude(CAP_FLANGE + EPS) intersection() {
+                offset(r = MAT_FLANGE) cap2d(k);
+                if (k[1] == "ring") translate(S(DPAD_C)) wedge2d(k[3], 0.15);    // flanges stop short of the diagonals
+                else translate(S(k[2])) square(200, center = true);
+            }
+            if (k[1] == "round" || k[1] == "ok") translate([0, 0, zf - EPS]) linear_extrude(MAT_T - 0.05) mat_tabs2d(k, 0);
+            for (s = sp) at_sw(s[0], s[1]) spring_housing(s[0], zb);
+        }
+        cap_engrave(k);
+        if (k[1] == "volR") vol_groove();
+        for (s = sp) at_sw(s[0], s[1]) spring_pocket(s[0]);
+    }
+}
+// Full keymat (2026-11-15, the user: every key must feel the same). -D mat_all=true:
+//  - D-pad: four separate keys round a fixed centre island that holds the OK,
+//    the island hung on four DPAD_BRIDGE_W bridges at the diagonals. The rocking
+//    ring half-pressed the side switches (heavier, near false presses) and its
+//    tilt pushed the OK, which it also retained (with a gap that rattled).
+//  - volume: still one bar, a spring on each switch, no centre post: pressing
+//    one end pivots the bar on the other end's flange (held up against the mat),
+//    so it feels like any single key; both switches together = a middle press,
+//    which the firmware ignores.
+//  - PWR: same cap, its own small gasket.
+//  - every hole without the countersink; one mat over the whole key area.
+mat_all = false;
+DPAD_R_IN2 = 8.3;     // the arcs' inner edge: leaves 0.65 mm of cap round the spring pocket
+DPAD_OK_R2 = 6.3;     // island wall 1.5 mm between the OK's hole and the arcs' holes
+MAT_LIP_ALL = 0;      // hole edge touching the cap body (the 6-key test: all three fits felt fine)
+MATF_Y = [100.5, 169.8];  // under the D-pad's top ... above the bottom bosses
+function key_springs(k) =
+    k[1] == "volR" ? [for (kk = KEYS) if (kk[1] == "volL" || kk[1] == "volR") [kk[2], 0]] :
+    k[1] == "ring" ? [[k[2], (k[3] == 0 || k[3] == 180) ? 90 : 0]] : [[k[2], 0]];
+module cap_full(k) { if (k[1] != "volL") cap_mat(k, key_springs(k)); }
+module mat_full2d() {
+    difference() {
+        intersection() { outline2d(-WALL - 0.5); translate([0, -MATF_Y[1]]) square([W, MATF_Y[1] - MATF_Y[0]]); }
+        for (p = KEY_HOLES) translate(S(p)) circle(d = POST_D + 2 * MAT_POST_CLR);
+        for (k = KEYS) {
+            offset(delta = MAT_LIP_ALL) cap2d(k);
+            if (k[1] == "round" || k[1] == "ok") mat_tabs2d(k, MAT_TAB_CLR);
+        }
+    }
+    difference() {    // PWR's own gasket
+        translate(S(PWR_KEY)) offset(r = 1.5) offset(delta = -1.5) square([PWR_PILL[0] + 6, PWR_PILL[1] + 5], center = true);
+        offset(delta = MAT_LIP_ALL) pwr2d();
+    }
+}
+module keymat_full() { translate([0, 0, mat_z()]) linear_extrude(MAT_T) mat_full2d(); }
+spr_v = 4; spr_n = 1;      // part "spring_row": spr_n copies of variant spr_v
+
+// the insert in every key: the softest (v4), the 6-key test's winner (2026-11-15)
+function mat_spring(k) = 4;
+
 // PWR key: pill cap in the row under the screen, same seat/flange system.
 PWR_K = ["PWR", "pwr", PWR_KEY, 0, ""];
 module pwr2d() { translate(S(PWR_KEY)) pill2d(PWR_PILL[0], PWR_PILL[1]); }
 
 module pwr_cap() {
     nz = 4;
-    union() {
+    if (mat_all) cap_mat(PWR_K, [[PWR_KEY, 0]]);
+    else union() {
         rounded_body(Z_FRONT_IN + CAP_FLANGE) pwr2d();
         for (i = [0:nz - 1]) translate([0, 0, Z_FRONT_IN + CAP_FLANGE * i / nz - EPS])
             linear_extrude(CAP_FLANGE / nz + 2 * EPS) offset(r = CAP_FLANGE * (1 - i / nz)) pwr2d();
@@ -407,6 +528,7 @@ module pwr_cap() {
 // ---------------------------------------------------------------- front shell
 // Cuts applied after the internal posts/bosses are added (the cavity itself
 // is removed earlier, in front_shell, so it doesn't eat the posts).
+USB_POCKET_Z0 = 6.0;    // USB-C pocket's lowest point, at the wall's inner face (board underside 8.0)
 module front_cuts() {
     // glass pocket (the panel stack sits in the cavity below it)
     translate([0, 0, Z_FRONT_IN - 1]) linear_extrude(Z_LENS_TOP - Z_FRONT_IN + 1)
@@ -422,7 +544,7 @@ module front_cuts() {
     for (k = KEYS) key_hole(k);
     // PWR key hole
     translate([0, 0, Z_FRONT_IN - 1]) linear_extrude(H) offset(delta = CAP_HOLE_CLR) pwr2d();
-    for (i = [0:3]) translate([0, 0, Z_FRONT_IN - EPS + CAP_FLANGE * i / 4])
+    if (!mat_all) for (i = [0:3]) translate([0, 0, Z_FRONT_IN - EPS + CAP_FLANGE * i / 4])
         linear_extrude(CAP_FLANGE / 4 + 2 * EPS) offset(r = CAP_HOLE_CLR + CAP_FLANGE * (1 - i / 4)) pwr2d();
     // IR window through the top end wall (centred on the LED axis), with a
     // recess inside for the clear window's flange
@@ -433,7 +555,17 @@ module front_cuts() {
     // thins the wall to USB_WALL_T so the receptacle face sits close to the outside
     translate([USB_X, -L - 1, USB_Z]) rotate([-90, 0, 0]) linear_extrude(WALL + 2)
         offset(r = USB_OPEN[1] / 2 - 0.01) square([USB_OPEN[0] - USB_OPEN[1], 0.02], center = true);
-    translate([USB_X - 7.0, -(L - USB_WALL_T), BACK_T - 1]) cube([14.0, WALL - USB_WALL_T + 1, min(USB_Z + 4.0, Z_FRONT_IN) - BACK_T + 1]);
+    // The pocket only starts just below the board (USB_POCKET_Z0): under it the
+    // wall is whole. Run down to the back edge it thinned the wall's round-over
+    // to nothing and printed as a slot at the seam (2026-11-15). Its bottom is a
+    // 45 deg slope, so the face-down print needs no support. The board now goes
+    // in USB end first, tilted a few degrees and held back ~1.3 mm, then pushed
+    // home and the far end lowered: the socket swings into the pocket.
+    hull() {
+        translate([USB_X - 7.0, -(L - USB_WALL_T), USB_POCKET_Z0 + (WALL - USB_WALL_T)])
+            cube([14.0, WALL - USB_WALL_T + 1, Z_FRONT_IN - USB_POCKET_Z0 - (WALL - USB_WALL_T)]);
+        translate([USB_X - 7.0, -(L - WALL), USB_POCKET_Z0]) cube([14.0, 1, EPS]);
+    }
     // sensor window under the screen: one pill slot through the front wall over
     // the IR receiver (learning) and the light sensor, with a recess round it on
     // the inside for the clear window's flange
@@ -449,7 +581,7 @@ module front_cuts() {
 
 module key_hole(k) {
     translate([0, 0, Z_FRONT_IN - 1]) linear_extrude(H) offset(delta = CAP_HOLE_CLR) hole_base2d(k);
-    for (i = [0:3]) translate([0, 0, Z_FRONT_IN - EPS + CAP_FLANGE * i / 4])
+    if (!mat_all) for (i = [0:3]) translate([0, 0, Z_FRONT_IN - EPS + CAP_FLANGE * i / 4])
         linear_extrude(CAP_FLANGE / 4 + 2 * EPS) intersection() {
             offset(r = CAP_HOLE_CLR + CAP_FLANGE * (1 - i / 4)) hole_base2d(k);
             offset(delta = CAP_HOLE_CLR) flange_mask2d(k);
@@ -785,6 +917,47 @@ else if (part == "cap_one") {
 else if (part == "soft_springs") spring_plate();
 else if (part == "soft_inplace") {   // the soft pill caps with their inserts (the stiffest), at rest
     for (k = KEYS) if (k[1] == "pill") { cap(k); translate([k[2][0], -k[2][1], SPR_Z]) spring_insert(0); }
+}
+// keymat test (run with -D mat=true for the caps)
+else if (part == "mat_test") translate([0, 0, -mat_z()]) keymat();          // flat on the bed
+else if (part == "mat_inplace") keymat();
+else if (part == "mat_caps_inplace") { for (k = KEYS) if (in_list(k[0], MAT_KEYS)) cap(k); }
+else if (part == "mat_springs_inplace") {
+    for (k = KEYS) if (in_list(k[0], MAT_KEYS)) for (s = key_springs(k)) translate([s[0][0], -s[0][1], SPR_Z]) spring_insert(mat_spring(k));
+}
+else if (part == "mat_vs_shell") {      // mat + test caps + inserts vs the shell: only zero-thickness contacts
+    intersection() { front_shell(); union() { keymat(); for (k = KEYS) if (in_list(k[0], MAT_KEYS)) cap(k); } }
+}
+else if (part == "mat_vs_caps") {       // mat vs every cap (test caps where the mat is): only the middle column's lip
+    intersection() { keymat(); for (k = KEYS) cap(k); }
+}
+else if (part == "mat_vs_parts") {      // test caps + inserts at rest and at the hard stop vs the board (no switches)
+    intersection() {
+        for (dz = [0, -(SPR_NUB_H + 0.3)]) translate([0, 0, dz]) for (k = KEYS) if (in_list(k[0], MAT_KEYS)) {
+            cap(k); for (s = key_springs(k)) translate([s[0][0], -s[0][1], SPR_Z]) spring_insert(mat_spring(k)); }
+        union() { bp_pcb(); bp_irleds(); bp_usbc(); bp_module(); bp_lra(); bp_zif(); bp_ics(); bp_screw_heads(); }
+    }
+}
+else if (part == "matf") translate([0, 0, -mat_z()]) keymat_full();      // -D mat_all=true: flat on the bed
+else if (part == "matf_inplace") keymat_full();
+else if (part == "spring_row") for (c = [0:spr_n - 1]) translate([c * (SPR_RING[0] + 4), 0, SPR_H]) rotate([180, 0, 0]) spring_insert(spr_v);
+else if (part == "matf_vs_shell") {    // -D mat_all=true: mat + caps vs the shell, should be empty
+    intersection() { front_shell(); union() { keymat_full(); for (k = KEYS) cap(k); pwr_cap(); } }
+}
+else if (part == "matf_vs_caps") {     // -D mat_all=true: mat vs caps: only the flanges' zero-thickness contact
+    intersection() { keymat_full(); union() { for (k = KEYS) cap(k); pwr_cap(); } }
+}
+else if (part == "matf_vs_parts") {    // -D mat_all=true: caps + inserts at rest and at the hard stop vs board parts (no switches)
+    intersection() {
+        for (dz = [0, -(SPR_NUB_H + 0.3)]) translate([0, 0, dz]) {
+            for (k = KEYS) { cap(k); if (k[1] != "volL") for (s = key_springs(k)) at_sw(s[0], s[1]) translate([s[0][0], -s[0][1], SPR_Z]) spring_insert(mat_spring(k)); }
+            pwr_cap(); translate([PWR_KEY[0], -PWR_KEY[1], SPR_Z]) spring_insert(mat_spring(PWR_K));
+        }
+        union() { bp_pcb(); bp_irleds(); bp_usbc(); bp_module(); bp_lra(); bp_zif(); bp_ics(); bp_screw_heads(); board_envelope(); battery(); }
+    }
+}
+else if (part == "matf_caps_each") {   // -D mat_all=true: neighbouring caps must not touch
+    for (i = [0:len(KEYS) - 1], j = [0:len(KEYS) - 1]) if (i < j) intersection() { cap(KEYS[i]); cap(KEYS[j]); }
 }
 else if (part == "labels_inplace") { for (k = KEYS) cap_label(k); }
 else if (part == "caps_inplace") { for (k = KEYS) cap(k); pwr_cap(); }
