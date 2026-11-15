@@ -184,6 +184,63 @@ void app_init(void)
     }
 }
 
+/* The volume bar: one cap over VOL+ and VOL-, on springs, rocking on the end
+ * that isn't pressed. A press on its middle closes both switches: that does
+ * nothing. So a volume key waits VOL_PAIR_MS for the other one before it acts;
+ * a tap shorter than that acts on its release. */
+#define VOL_PAIR_MS 60   /* a middle press can close the two switches some ms apart */
+static int vol_wait = -1;               /* the volume key waiting to act */
+static uint32_t vol_wait_at;
+static bool vol_both;                   /* both went down: nothing acts until both are up */
+
+static bool is_vol(bleep_key_t key) { return key == KEY_VOL_UP || key == KEY_VOL_DOWN; }
+
+static void key_act(bleep_key_t key, bool early)
+{
+    if (!early && ui_key_intercept(key)) return;
+    /* keys always act, even when they wake the screen (IR goes out at once,
+     * BLE is queued until the link is back) */
+    if (key == KEY_PWR) key_press(key);
+    else key_down(key, early);
+}
+
+static void vol_press(bleep_key_t key)
+{
+    bleep_key_t other = key == KEY_VOL_UP ? KEY_VOL_DOWN : KEY_VOL_UP;
+    if (vol_both) return;
+    if (vol_wait == (int)other || hal_key_down(other)) {
+        hal_log("volume: both keys (the middle of the bar), ignored");
+        vol_wait = -1;
+        key_up(other);   /* if it was already acting: it stops */
+        vol_both = true;
+        return;
+    }
+    vol_wait = key;
+    vol_wait_at = hal_millis() + VOL_PAIR_MS;
+}
+
+/* True if the release is dealt with here */
+static bool vol_release(bleep_key_t key)
+{
+    if (vol_both) {
+        if (!hal_key_down(KEY_VOL_UP) && !hal_key_down(KEY_VOL_DOWN)) vol_both = false;
+        return true;
+    }
+    if (vol_wait != (int)key) return false;
+    vol_wait = -1;   /* a quick tap */
+    key_act(key, false);
+    key_up(key);
+    return true;
+}
+
+static void vol_tick(void)
+{
+    if (vol_wait < 0 || (int32_t)(hal_millis() - vol_wait_at) < 0) return;
+    bleep_key_t key = (bleep_key_t)vol_wait;
+    vol_wait = -1;
+    key_act(key, false);
+}
+
 void app_key(bleep_key_t key, bool pressed)
 {
     if (power_state() == PWR_OFF) {
@@ -203,6 +260,7 @@ void app_key(bleep_key_t key, bool pressed)
             if (!act) return;   /* the hold asked to power off instead */
         }
     } else if (!pressed) {
+        if (is_vol(key) && vol_release(key)) return;
         key_up(key);   /* ends a hold: IR repeats, Bluetooth key up */
         return;
     }
@@ -212,11 +270,11 @@ void app_key(bleep_key_t key, bool pressed)
         bridge_key(key);   /* a key event for Home Assistant, if wanted */
         if (key == KEY_PWR) return;   /* acts on release */
     }
-    if (!early && ui_key_intercept(key)) return;
-    /* keys always act, even when they wake the screen (IR goes out at once,
-     * BLE is queued until the link is back) */
-    if (key == KEY_PWR) key_press(key);
-    else key_down(key, early);
+    if (is_vol(key) && !early) {   /* waits for the other volume key (the bar's middle) */
+        vol_press(key);
+        return;
+    }
+    key_act(key, early);
 }
 
 void app_save_now(void)
@@ -338,6 +396,7 @@ void app_tick(void)
     power_tick();
     if (power_state() != before) radio_update();
     radio_tick();
+    vol_tick();
     key_tick();
     activity_tick();
     routine_tick();

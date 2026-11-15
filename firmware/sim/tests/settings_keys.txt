@@ -1,0 +1,41 @@
+# In Settings the remote's keys drive the screen (keynav.c), even with an activity running:
+# the D-pad moves a highlight, OK presses, BACK goes back, HOME goes to Activities.
+# Volume still goes to the activity.
+click Start
+wait 300
+click Watch TV
+wait 3000
+tab Settings
+wait 300
+mark
+key DOWN
+wait 200
+shot s0_settings_highlight
+key DOWN
+wait 200
+key DOWN
+wait 200
+shot s1_settings_highlight_3
+expect-log-no IR  >
+key OK
+wait 400
+shot s2_settings_ok
+expect-log-no IR  >
+key DOWN
+wait 200
+key DOWN
+wait 200
+shot s3_sub_highlight
+key BACK
+wait 400
+shot s4_back
+expect-log-no IR  >
+key VOL+
+wait 200
+expect-log IR  >
+mark
+key HOME
+wait 400
+expect-log-no IR  >
+expect Watch TV
+shot s5_home

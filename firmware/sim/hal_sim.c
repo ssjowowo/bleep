@@ -289,7 +289,7 @@ void hal_ir_stop(void)
     if (!ir_on) return;
     ir_on = false;
     /* frame period: NEC-style repeat codes ~108 ms, Sony 45 ms, RC5/RC6 ~114 ms, Kaseikyo ~130 ms */
-    static const uint8_t period[IR_PROTO_COUNT] = {108, 108, 108, 45, 114, 107, 100, 130, 45, 45};
+    static const uint8_t period[IR_PROTO_COUNT] = {108, 108, 108, 45, 114, 107, 100, 130, 45, 45, 108};
     uint32_t held = hal_millis() - ir_t0;
     unsigned frames = held / period[ir_proto < IR_PROTO_COUNT ? ir_proto : IR_RAW];
     if (frames) hal_log("IR    held %u ms: %u repeat frame(s)", (unsigned)held, frames);

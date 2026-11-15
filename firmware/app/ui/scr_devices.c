@@ -160,7 +160,13 @@ static void trackpad_cb(lv_event_t *e) { ui_open(&page_trackpad, ARG_INT(e)); }
 static void keyboard_cb(lv_event_t *e) { ui_type_on(ARG_INT(e)); }
 static void keypad_cb(lv_event_t *e) { qs_keypad_open(ARG_INT(e)); }
 
-void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(void))
+/* Where an on-screen copy of one of the remote's keys goes: the key's own device in an activity */
+static int key_to(const int8_t *key_dev, bleep_key_t key, int dflt)
+{
+    return key_dev && key_dev[key] >= 0 ? key_dev[key] : dflt;
+}
+
+void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, const int8_t *key_dev, void (*on_power)(void))
 {
     power_override = on_power;
     lv_obj_set_style_pad_gap(root, UI_PICK(8, 6), 0);
@@ -207,46 +213,56 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(v
 
     /* The remote's own keys, on screen too: Back, Home, Menu and Info or
      * subtitles; power and volume; the apps. Four across, in slimmer rows. */
-    if (d) {
+    {
         static const struct { const char *t, *i; fn_t fn; } nav[] = {
             {NULL, ICON_BACK, FN_BACK}, {NULL, ICON_HOME, FN_HOME}, {NULL, ICON_MENU, FN_MENU},
             {NULL, ICON_INFO, FN_INFO}, {NULL, ICON_SUBS, FN_SUBTITLES}, {NULL, ICON_AUDIO, FN_AUDIO},
         };
-        static const fn_t nav_fns[] = {FN_BACK, FN_HOME, FN_MENU, FN_INFO, FN_SUBTITLES, FN_AUDIO};
-        lv_obj_t *kr = fn_section(root, "Keys", dev, nav_fns, 6);
+        int nd[6];
+        for (int i = 0; i < 6; i++)
+            nd[i] = nav[i].fn == FN_BACK ? key_to(key_dev, KEY_BACK, dev) : nav[i].fn == FN_HOME ? key_to(key_dev, KEY_HOME, dev) : dev;
         int n = 0;
-        for (int i = 0; i < 6; i++) n += has_fn(dev, nav_fns[i]);
+        for (int i = 0; i < 6; i++) n += has_fn(nd[i], nav[i].fn);
+        lv_obj_t *kr = NULL;
+        if (n) {
+            lv_obj_set_style_pad_hor(w_section(root, "Keys"), PAD, 0);
+            kr = wrap_row(root, 8);
+        }
         int w = n ? w_col_w(n <= 5 ? n : 3, 8) : 0;   /* one row up to five, else two of three */
         for (int i = 0; kr && i < 6; i++) {
-            lv_obj_t *b = fn_button(kr, dev, nav[i].t, nav[i].i, nav[i].fn, w, KEY_H_SLIM);
+            lv_obj_t *b = fn_button(kr, nd[i], nav[i].t, nav[i].i, nav[i].fn, w, KEY_H_SLIM);
             if (b) w_name(b, fn_name(nav[i].fn));
         }
     }
 
     /* power is the device's, volume the activity's volume device */
-    bool any = has_fn(dev, FN_POWER) || has_fn(vol_dev, FN_VOL_DOWN) || has_fn(vol_dev, FN_MUTE) ||
+    int mute_dev = key_to(key_dev, KEY_MUTE, vol_dev);
+    bool any = has_fn(dev, FN_POWER) || has_fn(vol_dev, FN_VOL_DOWN) || has_fn(mute_dev, FN_MUTE) ||
                has_fn(vol_dev, FN_VOL_UP);
     if (any) {
         lv_obj_t *pv = wrap_row(root, 8);
         int w = w_col_w(4, 8);
         fn_button(pv, dev, NULL, ICON_POWER, FN_POWER, w, KEY_H_SLIM);
-        fn_button(pv, vol_dev, NULL, ICON_MUTE, FN_MUTE, w, KEY_H_SLIM);
+        fn_button(pv, mute_dev, NULL, ICON_MUTE, FN_MUTE, w, KEY_H_SLIM);
         fn_button(pv, vol_dev, NULL, ICON_VOLUME_LOW, FN_VOL_DOWN, w, KEY_H_SLIM);
         fn_button(pv, vol_dev, NULL, ICON_VOLUME, FN_VOL_UP, w, KEY_H_SLIM);
     }
 
-    if (d) {
-        static const struct { const char *t; fn_t fn; } apps[] = {
-            {"Netflix", FN_NETFLIX}, {"YouTube", FN_YOUTUBE}, {"Plex", FN_PLEX}};
+    {
+        static const struct { const char *t; fn_t fn; bleep_key_t key; } apps[] = {
+            {"Netflix", FN_NETFLIX, KEY_NFLX}, {"YouTube", FN_YOUTUBE, KEY_YT}, {"Plex", FN_PLEX, KEY_PLEX}};
         int n = 0;
-        for (int i = 0; i < 3; i++) n += has_fn(dev, apps[i].fn);
+        for (int i = 0; i < 3; i++) n += has_fn(key_to(key_dev, apps[i].key, dev), apps[i].fn);
         if (n) {
             lv_obj_t *ar = wrap_row(root, 8);
-            for (int i = 0; i < 3; i++) fn_button(ar, dev, apps[i].t, NULL, apps[i].fn, w_col_w(n, 8), KEY_H_SLIM);
+            for (int i = 0; i < 3; i++)
+                fn_button(ar, key_to(key_dev, apps[i].key, dev), apps[i].t, NULL, apps[i].fn, w_col_w(n, 8), KEY_H_SLIM);
         }
+    }
+    if (d) {
         static const struct { const char *i; fn_t fn; } media[] = {
             {ICON_REW, FN_REW}, {ICON_PLAY, FN_PLAY_PAUSE}, {ICON_FWD, FN_FWD}};
-        n = 0;
+        int n = 0;
         for (int i = 0; i < 3; i++) n += has_fn(dev, media[i].fn);
         if (n) {
             lv_obj_t *mr = wrap_row(root, 8);
@@ -303,7 +319,7 @@ static void dv_build(lv_obj_t *root, int idx)
     }
     lv_obj_add_event_cb(edit, dv_edit_cb, LV_EVENT_CLICKED, NULL);
 
-    ui_device_controls(root, idx, idx, NULL);
+    ui_device_controls(root, idx, idx, NULL, NULL);
 
     if (g_model.active_dev == idx) {
         lv_obj_t *n = w_label(root, F_CAPTION, T->text2, "Active: the remote's keys control this device on every screen.");

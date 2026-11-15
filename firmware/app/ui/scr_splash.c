@@ -23,6 +23,7 @@ static void go_activities(void) { ui_tab(TAB_ACTIVITIES); }
  * - the splash: OK starts, the rest do nothing;
  * - a sheet ("Discard changes?", "Power off?"): BACK is Cancel;
  * - a page with its own key handler (the games): all of them;
+ * - the Settings tab: the D-pad, OK, BACK and HOME drive the screen (keynav.c);
  * - pages that aren't for controlling something (editors, settings pages,
  *   the keyboard, pickers): BACK goes back, HOME to Activities;
  * - anywhere, when no device is selected and no activity runs: the same,
@@ -35,6 +36,8 @@ bool ui_key_intercept(bleep_key_t key)
         if (key == KEY_OK) start();
         return true;
     }
+    /* Settings: the keys drive the screen (keynav.c), but a game there has them all */
+    if (!p->key && !qs_open() && keynav_active()) return keynav_key(key);
     if (ov_sheet_open()) {
         if (key != KEY_BACK) return false;
         ov_sheet_cancel();

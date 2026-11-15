@@ -54,7 +54,7 @@ static const char *const fn_ids[FN_COUNT] = {
 };
 static const char *const kind_ids[] = {"tv", "streamer", "avr", "speaker", "media_box", "other"};
 static const char *const proto_ids[IR_PROTO_COUNT] = {"nec", "necext", "samsung32", "sirc", "rc5", "rc6", "raw",
-                                                      "kaseikyo", "sirc15", "sirc20"};
+                                                      "kaseikyo", "sirc15", "sirc20", "samsung36"};
 static const char *const step_ids[] = {"device", "ha", "activity_start", "activity_end"};
 static const char *const op_ids[HAOP_COUNT] = {"on", "off", "toggle", "set", "run", "open", "close", "lock"};
 static const char *const theme_ids[] = {"dark", "light", "auto"};
@@ -62,6 +62,7 @@ static const char *const accent_ids[] = {"cyan", "blue", "violet", "pink", "oran
 static const char *const layout_ids[] = {"grid", "list"};
 static const char *const rows_ids[] = {"comfortable", "compact"};   /* list_rows_t */
 static const char *const feel_ids[] = {"crisp", "soft"};   /* haptic_feel_t */
+static const char *const own_key_ids[N_OWN_KEYS] = {"back", "home", "mute", "netflix", "youtube", "plex"};   /* act_own_keys */
 static const char *const motor_ids[] = {"erm", "lra", "lra_bar"};     /* haptic_motor_t */
 /* settings.haptic_<event>: one bool each, in buzz_ev_t order */
 static const char *const buzz_keys[BUZZ_EV_COUNT] = {"haptic_keys", "haptic_taps", "haptic_sliders",
@@ -186,6 +187,18 @@ char *config_to_json(const model_t *m)
         cJSON_AddNumberToObject(o, "input_dev", a->input_dev);
         cJSON_AddStringToObject(o, "input_fn", fn_ids[a->input_fn < FN_COUNT ? a->input_fn : FN_NONE]);
         cJSON_AddNumberToObject(o, "np_dev", a->np_dev);
+        if (a->keep_power) {   /* devices left as they are on start */
+            cJSON *kp = cJSON_AddArrayToObject(o, "keep_power");
+            for (int d = 0; d < MAX_DEVICES; d++)
+                if (a->keep_power & (1u << d)) cJSON_AddItemToArray(kp, cJSON_CreateNumber(d));
+        }
+        cJSON *keys = NULL;   /* only the keys with a device of their own */
+        for (int k = 0; k < N_OWN_KEYS; k++) {
+            int set = a->key_set[act_own_keys[k]];
+            if (!set) continue;
+            if (!keys) keys = cJSON_AddObjectToObject(o, "keys");
+            cJSON_AddNumberToObject(keys, own_key_ids[k], set - 1);
+        }
         cJSON_AddItemToArray(ja, o);
     }
 
@@ -382,6 +395,14 @@ static void read_activity(const cJSON *o, activity_t *a, int n_devices)
     a->input_dev = get_ref(o, "input_dev", n_devices);
     a->input_fn = id_of(fn_ids, FN_COUNT, get_id(o, "input_fn"), FN_NONE);
     a->np_dev = get_ref(o, "np_dev", n_devices);
+    a->keep_power = 0;   /* added in 0.2.11, like "keys" */
+    cJSON_ArrayForEach(d, cJSON_GetObjectItemCaseSensitive(o, "keep_power"))
+        if (cJSON_IsNumber(d) && d->valuedouble >= 0 && d->valuedouble < n_devices) a->keep_power |= 1u << (int)d->valuedouble;
+    const cJSON *keys = cJSON_GetObjectItemCaseSensitive(o, "keys");
+    for (int k = 0; k < N_OWN_KEYS; k++) {
+        int dev = keys ? get_ref(keys, own_key_ids[k], n_devices) : -1;
+        a->key_set[act_own_keys[k]] = dev >= 0 ? dev + 1 : 0;
+    }
 }
 
 static void read_routine(const cJSON *o, routine_t *r, int n_devices, int n_activities)

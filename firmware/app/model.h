@@ -46,7 +46,10 @@ fn_t key_default_fn(bleep_key_t key);
  * 12-bit form, SIRC15/SIRC20 the longer ones (newer Sony TVs, Blu-ray);
  * Kaseikyo is Panasonic's 48-bit one (address = vendor id and device). */
 enum { IR_NEC, IR_NECEXT, IR_SAMSUNG32, IR_SIRC, IR_RC5, IR_RC6, IR_RAW, IR_KASEIKYO, IR_SIRC15, IR_SIRC20,
-       IR_PROTO_COUNT };
+       IR_SAMSUNG36, IR_PROTO_COUNT };
+/* SAMSUNG36: Samsung's soundbars and Blu-ray players: 16 bits (a), a 4.5 ms
+ * gap, 20 bits (b), both MSB first as IRremoteESP8266 writes them. Learned only:
+ * Flipper-IRDB has no such codes (Flipper can't decode it). */
 const char *ir_proto_name(uint8_t proto);
 
 typedef struct {
@@ -89,6 +92,10 @@ typedef struct {
     int8_t input_dev;           /* device switched to an input on start, e.g. the TV */
     uint8_t input_fn;           /* FN_INPUT_n */
     int8_t np_dev;              /* device whose HA media_player feeds Now playing, -1 = none */
+    uint16_t keep_power;        /* bit = device index: no Power on start, left as it is (and taken
+                                 * to be on, so ending still switches it off) */
+    uint8_t key_set[KEY_COUNT]; /* a key of its own (ACT_OWN_KEYS): device + 1; 0 = with the D-pad
+                                 * (Back, Home, the apps) or the volume (Mute) */
     /* Derived by model_activity_rebuild() */
     step_t start[MAX_STEPS];
     uint8_t n_start;
@@ -121,6 +128,12 @@ typedef struct {
     rstep_t steps[MAX_RSTEPS];
     uint8_t n_steps;
 } routine_t;
+
+/* The keys an activity can send to a device of their own instead of the
+ * D-pad's (or, for Mute, the volume's) */
+#define N_OWN_KEYS 6
+extern const bleep_key_t act_own_keys[N_OWN_KEYS];
+bleep_key_t act_key_group(bleep_key_t key);    /* KEY_OK (the D-pad) or KEY_VOL_UP */
 
 #define KEYDEV_NONE (-1)
 #define KEYDEV_END  (-2)        /* PWR in an activity ends it */

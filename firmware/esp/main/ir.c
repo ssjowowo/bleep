@@ -8,7 +8,9 @@
  * frame). stop never cuts a frame and keeps Sony's minimum of 3. Codes are
  * as Flipper-IRDB writes them (app/ir_library.c).
  * In: the receiver is powered from GPIO1 only while learning; its output is
- * demodulated and active low. NEC, NECext, Samsung32 and SIRC are decoded.
+ * demodulated and active low. NEC, NECext, Samsung32, Samsung36 and SIRC are
+ * decoded; a frame that doesn't match one exactly (its length too) is turned
+ * down rather than stored as something it isn't.
  *
  * Not on the board yet, so checked against the protocols' specs only.
  * IR_RAW codes (no timings stored) aren't sent.
@@ -83,6 +85,14 @@ static void pulse_bits(frame_t *f, uint32_t v, int bits, uint32_t mark, uint32_t
     }
 }
 
+static void pulse_bits_msb(frame_t *f, uint32_t v, int bits, uint32_t mark, uint32_t zero, uint32_t one)
+{
+    for (int i = bits - 1; i >= 0; i--) {
+        put(f, true, mark);
+        put(f, false, (v >> i) & 1 ? one : zero);
+    }
+}
+
 static void width_bits(frame_t *f, uint32_t v, int bits, uint32_t space, uint32_t zero, uint32_t one)
 {
     for (int i = 0; i < bits; i++) {   /* Sony: the mark's width is the bit, LSB first */
@@ -133,6 +143,16 @@ static bool build(uint8_t proto, uint32_t a, uint32_t b)
         put(&frame, true, 4500), put(&frame, false, 4500);
         pulse_bits(&frame, (a & 0xFF) | ((a & 0xFF) << 8) | ((b & 0xFF) << 16) | ((~b & 0xFF) << 24), 32, 560, 560,
                    1690);
+        put(&frame, true, 560);
+        finish(&frame, 46000);
+        repeat = frame;
+        cur.period_ms = 108;
+        return true;
+    case IR_SAMSUNG36:   /* 16 bits, a header-long gap, 20 bits */
+        put(&frame, true, 4500), put(&frame, false, 4500);
+        pulse_bits_msb(&frame, a & 0xFFFF, 16, 560, 560, 1690);
+        put(&frame, true, 560), put(&frame, false, 4500);
+        pulse_bits_msb(&frame, b & 0xFFFFF, 20, 560, 560, 1690);
         put(&frame, true, 560);
         finish(&frame, 46000);
         repeat = frame;
@@ -266,7 +286,17 @@ static bool decode(const rmt_symbol_word_t *s, int n, uint8_t *proto, uint32_t *
 {
     if (n < 2) return false;
     uint32_t m0 = s[0].duration0, s0 = s[0].duration1;
-    if ((near(m0, 9000) || near(m0, 4500)) && near(s0, 4500) && n >= 33) {
+    /* Samsung36 (soundbars): the 4.5 ms header, 16 bits, a 4.5 ms gap, 20 bits.
+     * Read as Samsung32 it gave a wrong code (the gap taken for a bit). */
+    if (near(m0, 4500) && near(s0, 4500) && n >= 38 && near(s[17].duration0, 560) && near(s[17].duration1, 4500)) {
+        uint32_t a = 0, b = 0;
+        for (int i = 0; i < 16; i++) a = a << 1 | (s[1 + i].duration1 > 1120);
+        for (int i = 0; i < 20; i++) b = b << 1 | (s[18 + i].duration1 > 1120);
+        *proto = IR_SAMSUNG36, *addr = a, *cmd = b;
+        return true;
+    }
+    /* 32 bits and the stop mark, nothing more (the RX ends a frame on its gap) */
+    if ((near(m0, 9000) || near(m0, 4500)) && near(s0, 4500) && n >= 33 && n <= 35) {
         uint32_t v = 0;
         for (int i = 0; i < 32; i++) v |= (uint32_t)(s[1 + i].duration1 > 1120) << i;
         uint8_t a0 = v, a1 = v >> 8, c0 = v >> 16, c1 = v >> 24;

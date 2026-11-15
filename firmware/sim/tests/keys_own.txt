@@ -1,0 +1,64 @@
+store fixtures/config-keys.json
+# An activity's keys of their own, its devices left as they are on start, and
+# the volume bar's middle (both keys) doing nothing. From a saved file.
+click Start
+wait 300
+mark
+click Movies
+wait 2000
+# the TV is left as it is (no Power toggle, cmd 0x08); the streamer is switched on
+expect-log-no NEC addr 0x04 cmd 0x08
+expect-log NEC addr 0x07 cmd 0x05
+expect Netflix: Old TV
+shot k0_activity_keys
+# Netflix and Back go to the TV, Home stays with the D-pad's streamer
+mark
+key NFLX
+wait 200
+expect-log NEC addr 0x04 cmd 0x56
+key BACK
+wait 200
+expect-log NEC addr 0x04 cmd 0x28
+key HOME
+wait 200
+expect-log NEC addr 0x07 cmd 0x03
+# the volume bar pressed in the middle: both switches, nothing goes out
+mark
+keydown VOL+
+keydown VOL-
+wait 300
+keyup VOL+
+keyup VOL-
+wait 200
+expect-log volume: both keys
+expect-log-no NEC addr 0x04 cmd 0x02
+expect-log-no NEC addr 0x04 cmd 0x03
+# one end: a tap acts, and so does a hold
+mark
+key VOL-
+wait 200
+expect-log NEC addr 0x04 cmd 0x03
+mark
+keydown VOL+
+wait 300
+expect-log NEC addr 0x04 cmd 0x02
+keyup VOL+
+wait 200
+# ending: the TV was taken to be on, so it's switched off
+mark
+key PWR
+wait 2000
+expect-log NEC addr 0x04 cmd 0x08
+# the editor: Other keys and Switch on at start
+press Movies
+wait 300
+expect Other keys
+expect With the D-pad
+expect With the volume
+expect Switch on at start
+shot k1_edit_keys
+drag 120 295 120 55
+wait 400
+drag 120 295 120 55
+wait 400
+shot k2_edit_keys_more

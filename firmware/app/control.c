@@ -378,6 +378,8 @@ void activity_start(int idx)
                 if (!in_activity(a, old->devices[i])) add_power_off(old->devices[i]);
         }
         add_start_steps(a);
+        for (int i = 0; i < a->n_devices; i++)   /* left as they are: taken to be on, so ending switches them off */
+            if (a->keep_power & (1u << a->devices[i])) g_model.devices[a->devices[i]].on = true;
         g_model.running = idx;
         g_model.last_activity = idx;
     }

@@ -1,0 +1,17 @@
+{
+ "version": 1,
+ "devices": [
+  {"name": "Old TV", "kind": "tv", "transports": ["ir"],
+   "codes": {"power": {"via": "ir", "proto": "nec", "a": 4, "b": 8}, "vol_up": {"via": "ir", "proto": "nec", "a": 4, "b": 2},
+             "vol_down": {"via": "ir", "proto": "nec", "a": 4, "b": 3}, "mute": {"via": "ir", "proto": "nec", "a": 4, "b": 9},
+             "back": {"via": "ir", "proto": "nec", "a": 4, "b": 40}, "netflix": {"via": "ir", "proto": "nec", "a": 4, "b": 86}}},
+  {"name": "Streamer", "kind": "streamer", "transports": ["ir"],
+   "codes": {"power": {"via": "ir", "proto": "nec", "a": 7, "b": 5}, "ok": {"via": "ir", "proto": "nec", "a": 7, "b": 1},
+             "back": {"via": "ir", "proto": "nec", "a": 7, "b": 2}, "home": {"via": "ir", "proto": "nec", "a": 7, "b": 3},
+             "netflix": {"via": "ir", "proto": "nec", "a": 7, "b": 4}}}
+ ],
+ "activities": [
+  {"name": "Movies", "icon": "TV", "devices": [0, 1], "nav_dev": 1, "vol_dev": 0, "input_dev": -1, "np_dev": -1,
+   "keep_power": [0], "keys": {"back": 0, "netflix": 0}}
+ ]
+}

@@ -295,6 +295,7 @@ void ov_power(pwr_state_t s)
 /* ---- sheets (low battery, confirm) ---- */
 
 bool ov_sheet_open(void) { return sheet != NULL; }
+lv_obj_t *ov_sheet_obj(void) { return sheet; }
 
 void ov_sheet_cancel(void)
 {

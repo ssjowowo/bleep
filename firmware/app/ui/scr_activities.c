@@ -702,12 +702,17 @@ static void ap_build(lv_obj_t *root, int idx)
     }
     lv_obj_add_event_cb(end, ap_end_cb, LV_EVENT_CLICKED, NULL);
 
-    char keys[96];
+    static const char *const own_names[N_OWN_KEYS] = {"Back", "Home", "Mute", "Netflix", "YouTube", "Plex"};
+    char keys[200];
     int n = 0;
     keys[0] = 0;
     if (a->nav_dev >= 0) n += snprintf(keys + n, sizeof(keys) - n, "D-pad: %s", g_model.devices[a->nav_dev].name);
-    if (a->vol_dev >= 0)
-        snprintf(keys + n, sizeof(keys) - n, "%sVolume: %s", n ? " · " : "", g_model.devices[a->vol_dev].name);
+    if (a->vol_dev >= 0 && n < (int)sizeof(keys))
+        n += snprintf(keys + n, sizeof(keys) - n, "%sVolume: %s", n ? " · " : "", g_model.devices[a->vol_dev].name);
+    for (int i = 0; i < N_OWN_KEYS && n < (int)sizeof(keys); i++)   /* the keys with a device of their own */
+        if (a->key_set[act_own_keys[i]])
+            n += snprintf(keys + n, sizeof(keys) - n, "%s%s: %s", n ? " · " : "", own_names[i],
+                          g_model.devices[a->key_set[act_own_keys[i]] - 1].name);
     if (keys[0]) {
         lv_obj_t *l = w_label(root, F_CAPTION, T->text2, keys);
         lv_obj_set_style_pad_hor(l, PAD, 0);
@@ -721,7 +726,7 @@ static void ap_build(lv_obj_t *root, int idx)
         if (sleep_timer_at()) lv_obj_set_style_text_color(lv_obj_get_child(r, 2), T->accent, 0);
         w_on_click(r, sleep_cb, 0);
     }
-    ui_device_controls(root, a->nav_dev, a->vol_dev, ap_end);
+    ui_device_controls(root, a->nav_dev, a->vol_dev, a->key_dev, ap_end);
 }
 
 static void ap_event(app_event_t ev, int arg)
@@ -842,7 +847,28 @@ static void ed_dev_cb(lv_event_t *e)
     ui_refresh();
 }
 
-/* role pickers: 0 = D-pad, 1 = volume, 2 = now playing, 3 = input */
+static void ed_keep_cb(lv_event_t *e)
+{
+    int dev = ARG_INT(e);
+    activity_t *a = ed_act();
+    if (lv_obj_has_state(lv_event_get_target_obj(e), LV_STATE_CHECKED)) a->keep_power &= ~(1u << dev);
+    else a->keep_power |= 1u << dev;
+    ed_changed();
+}
+
+/* role pickers: 0 = D-pad, 1 = volume, 2 = now playing, 3 = input,
+ * 4 + i = act_own_keys[i] (a key that can go to a device of its own) */
+static const struct { const char *icon, *name; } own_keys[N_OWN_KEYS] = {
+    {ICON_BACK, "Back"}, {ICON_HOME, "Home"}, {ICON_MUTE, "Mute"},
+    {ICON_GRID, "Netflix"}, {ICON_GRID, "YouTube"}, {ICON_GRID, "Plex"},
+};
+
+/* "With the D-pad", or "With the volume" for Mute */
+static const char *own_key_follow(bleep_key_t key)
+{
+    return act_key_group(key) == KEY_VOL_UP ? "With the volume" : "With the D-pad";
+}
+
 static int pick_role;
 static int pick_map[MAX_ACT_DEVICES * 4 + 1][2];
 
@@ -851,7 +877,8 @@ static void ed_pick_done(int idx, void *ctx)
     LV_UNUSED(ctx);
     activity_t *a = ed_act();
     int dev = pick_map[idx][0], fn = pick_map[idx][1];
-    if (pick_role == 0) a->nav_dev = dev;
+    if (pick_role >= 4) a->key_set[act_own_keys[pick_role - 4]] = dev >= 0 ? dev + 1 : 0;
+    else if (pick_role == 0) a->nav_dev = dev;
     else if (pick_role == 1) a->vol_dev = dev;
     else if (pick_role == 2) a->np_dev = dev;
     else a->input_dev = dev, a->input_fn = fn;
@@ -866,7 +893,13 @@ static void ed_pick_cb(lv_event_t *e)
     activity_t *a = ed_act();
     pick_role = ARG_INT(e);
     int n = 0, sel = 0;
-    snprintf(labels[n], sizeof(labels[n]), "None");
+    bleep_key_t own = pick_role >= 4 ? act_own_keys[pick_role - 4] : KEY_COUNT;
+    if (own < KEY_COUNT) {
+        int g = act_key_group(own) == KEY_VOL_UP ? a->vol_dev : a->nav_dev;
+        snprintf(labels[n], sizeof(labels[n]), "%s%s%.20s%s", own_key_follow(own), g >= 0 ? " (" : "",
+                 g >= 0 ? g_model.devices[g].name : "", g >= 0 ? ")" : "");
+    } else
+        snprintf(labels[n], sizeof(labels[n]), "None");
     pick_map[n][0] = -1, pick_map[n][1] = 0, n++;
     for (int i = 0; i < a->n_devices; i++) {
         int d = a->devices[i];
@@ -883,12 +916,14 @@ static void ed_pick_cb(lv_event_t *e)
         }
         snprintf(labels[n], sizeof(labels[n]), "%s", dv->name);
         pick_map[n][0] = d, pick_map[n][1] = 0;
-        int cur = pick_role == 0 ? a->nav_dev : pick_role == 1 ? a->vol_dev : a->np_dev;
+        int cur = own < KEY_COUNT ? a->key_set[own] - 1 : pick_role == 0 ? a->nav_dev : pick_role == 1 ? a->vol_dev : a->np_dev;
         if (cur == d) sel = n;
         n++;
     }
     for (int i = 0; i < n; i++) opts[i] = labels[i];
-    ui_choice(a->name, titles[pick_role], opts, n, sel, ed_pick_done, NULL);
+    char title[32];
+    if (own < KEY_COUNT) snprintf(title, sizeof(title), "%s key", own_keys[pick_role - 4].name);
+    ui_choice(a->name, own < KEY_COUNT ? title : titles[pick_role], opts, n, sel, ed_pick_done, NULL);
 }
 
 static void ed_delete_yes(void *ctx)
@@ -944,6 +979,30 @@ static void ed_build(lv_obj_t *root, int arg)
     for (int i = 0; i < 4; i++) {
         lv_obj_t *row = w_list_row(col, roles[i].icon, roles[i].label, roles[i].val, NULL);
         w_on_click(row, ed_pick_cb, i);
+    }
+
+    /* Back, Home, Mute and the apps: with the D-pad (Mute: the volume), or a device of their own */
+    w_section(col, "Other keys");
+    for (int i = 0; i < N_OWN_KEYS; i++) {
+        int set = a->key_set[act_own_keys[i]];
+        lv_obj_t *row = w_list_row(col, own_keys[i].icon, own_keys[i].name,
+                                   set ? g_model.devices[set - 1].name : own_key_follow(act_own_keys[i]), NULL);
+        w_on_click(row, ed_pick_cb, 4 + i);
+    }
+
+    /* a device that's often on already (a TV with only a Power toggle): leave it */
+    if (a->n_devices) {
+        w_section(col, "Switch on at start");
+        for (int i = 0; i < a->n_devices; i++) {
+            int d = a->devices[i];
+            lv_obj_t *row = w_list_row(col, dev_kind_icon(g_model.devices[d].kind), g_model.devices[d].name, NULL, NULL);
+            lv_obj_set_clickable(row, false);
+            lv_obj_t *sw = w_switch(row, !(a->keep_power & (1u << d)));
+            lv_obj_add_event_cb(sw, ed_keep_cb, LV_EVENT_VALUE_CHANGED, ARG(d));
+        }
+        lv_obj_t *kn = w_label(col, F_CAPTION, T->text2,
+                               "Off: it's left as it is, for one that's often on already. Ending still switches it off.");
+        lv_obj_set_width(kn, lv_pct(100));
     }
 
     w_section(col, "Start sequence");

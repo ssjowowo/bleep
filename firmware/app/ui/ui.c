@@ -28,6 +28,8 @@ static const page_t *const tab_pages[TAB_COUNT] = {&page_activities, &page_devic
 
 const page_t *ui_current(void) { return depth ? stack[depth - 1].page : NULL; }
 int ui_current_arg(void) { return depth ? stack[depth - 1].arg : 0; }
+const page_t *ui_base(void) { return depth ? stack[0].page : NULL; }
+int ui_depth(void) { return depth; }
 lv_obj_t *ui_root(void) { return root; }
 
 static bool want_light(void)
@@ -169,6 +171,7 @@ static void build(void)
     }
     hws_attach(root, rc.y1, band_bottom > SCREEN_H ? SCREEN_H : band_bottom);
     qs_reattach();
+    keynav_built();
 }
 
 bool ui_touch_active(void)

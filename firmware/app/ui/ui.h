@@ -45,6 +45,12 @@ void ui_rebuild(void);                          /* after a theme change: page an
 void ui_refresh(void);                          /* rebuild the current page on the next tick */
 bool ui_touch_active(void);                     /* a finger is on the screen */
 const page_t *ui_current(void);
+const page_t *ui_base(void);                    /* the page at the bottom of the stack (a tab) */
+int ui_depth(void);                             /* pages in the stack */
+/* The remote's keys driving the Settings tab's screen (keynav.c) */
+bool keynav_active(void);
+bool keynav_key(bleep_key_t key);               /* true if the key was used */
+void keynav_built(void);                        /* after a page is built: the highlight comes back */
 int ui_current_arg(void);
 lv_obj_t *ui_root(void);
 void ui_woke(wake_cause_t cause);
@@ -67,8 +73,10 @@ void ui_pick_icon_from(const char *sub, const activity_icon_t *icons, int n, con
 void ui_routine_edit(int idx);                  /* -1 = a new routine */
 
 /* The input / keypad / controls / power-and-volume block of a device page.
- * vol_dev gets the volume buttons; on_power (if set) replaces Power. */
-void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(void));
+ * vol_dev gets the volume buttons; on_power (if set) replaces Power. key_dev
+ * (an activity's key table, or NULL): the on-screen copies of Back, Home, Mute
+ * and the apps go where the remote's own keys do. */
+void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, const int8_t *key_dev, void (*on_power)(void));
 extern const page_t page_devices, page_device, page_device_edit, page_add_device;
 extern const page_t page_pair_ble, page_ir_brands, page_ir_detect, page_ir_test, page_ir_learn;
 extern const page_t page_home, page_ha_detail;
@@ -147,6 +155,7 @@ void ov_volume(int dir);
 void ov_toast(const char *msg);
 void ov_toast_clear(void);                     /* hide it now */
 void ov_power_off_ask(void);
+lv_obj_t *ov_sheet_obj(void);                   /* the sheet up, or NULL */
 bool ov_sheet_open(void);                       /* a confirm / low-battery sheet is up */
 void ov_sheet_cancel(void);                     /* BACK: as Cancel */
 void ov_factory_reset_ask(void);                /* "Reset to factory settings?" (Settings) */                    /* "Power off?" (PWR held 5 s, Settings > Power off) */

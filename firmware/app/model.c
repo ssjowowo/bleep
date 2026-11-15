@@ -40,7 +40,7 @@ fn_t key_default_fn(bleep_key_t key)
 const char *ir_proto_name(uint8_t proto)
 {
     static const char *const n[IR_PROTO_COUNT] = {"NEC", "NECext", "Samsung32", "SIRC", "RC5", "RC6", "Raw",
-                                                  "Kaseikyo", "SIRC15", "SIRC20"};
+                                                  "Kaseikyo", "SIRC15", "SIRC20", "Samsung36"};
     return proto < sizeof(n) / sizeof(n[0]) ? n[proto] : "?";
 }
 
@@ -211,6 +211,12 @@ void model_delete_device(int idx)
             if (*refs[r] == idx) *refs[r] = -1;
             else if (*refs[r] > idx) (*refs[r])--;
         }
+        uint16_t lo = a->keep_power & ((1u << idx) - 1), hi = a->keep_power >> (idx + 1);
+        a->keep_power = lo | (uint16_t)(hi << idx);
+        for (int k = 0; k < KEY_COUNT; k++) {
+            if (a->key_set[k] == idx + 1) a->key_set[k] = 0;
+            else if (a->key_set[k] > idx + 1) a->key_set[k]--;
+        }
     }
     routines_drop(RS_DEVICE, idx);
     if (g_model.active_dev == idx) g_model.active_dev = -1;
@@ -289,6 +295,12 @@ void model_move_device(int from, int to)
         for (int j = 0; j < a->n_devices; j++) a->devices[j] = model_moved_index(a->devices[j], from, to);
         int8_t *refs[] = {&a->nav_dev, &a->vol_dev, &a->input_dev, &a->np_dev};
         for (int r = 0; r < 4; r++) *refs[r] = model_moved_index(*refs[r], from, to);
+        for (int k = 0; k < KEY_COUNT; k++)
+            if (a->key_set[k]) a->key_set[k] = model_moved_index(a->key_set[k] - 1, from, to) + 1;
+        uint16_t keep = 0;
+        for (int d = 0; d < n; d++)
+            if (a->keep_power & (1u << d)) keep |= 1u << model_moved_index(d, from, to);
+        a->keep_power = keep;
     }
     for (int r = 0; r < g_model.n_routines; r++)
         for (int i = 0; i < g_model.routines[r].n_steps; i++) {
@@ -352,6 +364,13 @@ static bool act_has(const activity_t *a, int dev)
     return false;
 }
 
+const bleep_key_t act_own_keys[N_OWN_KEYS] = {KEY_BACK, KEY_HOME, KEY_MUTE, KEY_NFLX, KEY_YT, KEY_PLEX};
+
+bleep_key_t act_key_group(bleep_key_t key)
+{
+    return key == KEY_MUTE || key == KEY_VOL_UP || key == KEY_VOL_DOWN ? KEY_VOL_UP : KEY_OK;
+}
+
 void model_activity_rebuild(activity_t *a)
 {
     if (a->nav_dev >= 0 && !act_has(a, a->nav_dev)) a->nav_dev = -1;
@@ -361,7 +380,11 @@ void model_activity_rebuild(activity_t *a)
 
     /* start: power on every device (TVs need time to boot), then select the input */
     a->n_start = 0;
+    uint16_t keep = 0;
+    for (int i = 0; i < a->n_devices; i++) keep |= a->keep_power & (1u << a->devices[i]);
+    a->keep_power = keep;   /* only devices it has */
     for (int i = 0; i < a->n_devices && a->n_start < MAX_STEPS - 1; i++) {
+        if (keep & (1u << a->devices[i])) continue;   /* left as it is */
         const device_t *d = &g_model.devices[a->devices[i]];
         fn_t fn = d->fn[FN_POWER_ON].transport ? FN_POWER_ON : FN_POWER;
         a->start[a->n_start++] = (step_t){a->devices[i], fn, d->kind == DEV_TV ? 1500 : 300};
@@ -376,6 +399,12 @@ void model_activity_rebuild(activity_t *a)
     for (unsigned i = 0; i < sizeof(nav) / sizeof(nav[0]); i++) a->key_dev[nav[i]] = a->nav_dev;
     a->key_dev[KEY_VOL_UP] = a->key_dev[KEY_VOL_DOWN] = a->key_dev[KEY_MUTE] = a->vol_dev;
     a->key_dev[KEY_PWR] = KEYDEV_END;
+    for (int k = 0; k < KEY_COUNT; k++) {
+        bool own = false;
+        for (int i = 0; i < N_OWN_KEYS; i++) own |= (int)act_own_keys[i] == k;
+        if (!own || (a->key_set[k] && !act_has(a, a->key_set[k] - 1))) a->key_set[k] = 0;
+        if (a->key_set[k]) a->key_dev[k] = a->key_set[k] - 1;
+    }
 }
 
 void model_init_defaults(void)
