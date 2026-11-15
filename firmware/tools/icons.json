@@ -508,5 +508,30 @@
   "name": "palette",
   "symbol": "palette",
   "style": "outline"
+ },
+ {
+  "name": "rows",
+  "symbol": "view_agenda",
+  "style": "outline"
+ },
+ {
+  "name": "bed",
+  "symbol": "bed",
+  "style": "outline"
+ },
+ {
+  "name": "battery_saver",
+  "symbol": "battery_saver",
+  "style": "outline"
+ },
+ {
+  "name": "dialpad",
+  "symbol": "dialpad",
+  "style": "outline"
+ },
+ {
+  "name": "menu",
+  "symbol": "menu",
+  "style": "outline"
  }
 ]

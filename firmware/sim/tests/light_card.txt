@@ -3,17 +3,23 @@ click Start
 wait 300
 tab Home
 wait 900
-drag ~160 ~400 ~160 ~160
-wait 300
+press LED strip
+wait 400
 shot 76_rgb_card
+back
+wait 300
 click Kitchen
 wait 300
+press LED strip
+wait 400
 shot 77_rgb_card_kitchen
+back
+wait 300
 # colour temperature: drag the knob to the cool end
 click Living room
 wait 300
-drag ~160 ~300 ~160 ~400
-wait 300
+press Ceiling light
+wait 400
 shot 78_ct_before
 expect 3000 K
 knob 1 100

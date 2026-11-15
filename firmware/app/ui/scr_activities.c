@@ -121,6 +121,7 @@ static void routines_build(lv_obj_t *root)
         w_reorderable(t, &routine_reorder);
     }
     lv_obj_add_event_cb(w_items_add(g, "New routine"), new_routine_cb, LV_EVENT_CLICKED, NULL);
+    if (g_model.n_routines && g_model.settings.hold_learned) return;   /* shown until it's been used */
     lv_obj_t *hint = w_label(root, F_CAPTION, T->text2,
                              g_model.n_routines ? "Tap to run. Hold to edit, or hold and drag to move."
                                                 : "A routine runs several steps with one tap: dim the lights, switch "
@@ -129,10 +130,119 @@ static void routines_build(lv_obj_t *root)
     lv_obj_set_style_pad_hor(hint, PAD, 0);
 }
 
+/* ---- the running activity, on top of the tab ---- */
+
+static int card_ent = -1;   /* the HA media player the card shows, -1 = none */
+
+static void now_open_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+    if (g_model.running < 0) return;
+    control_select_device(-1);   /* back to the activity: it takes the keys again */
+    ui_open_activity(g_model.running);
+}
+
+static void now_end_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+    activity_end();
+}
+
+static void now_play_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+    int r = g_model.running;
+    if (r < 0) return;
+    const activity_t *a = &g_model.activities[r];
+    int dev = a->nav_dev >= 0 ? a->nav_dev : a->np_dev;
+    if (dev < 0 || !device_send(dev, FN_PLAY_PAUSE)) return;
+#ifdef BLEEP_SIM
+    ha_entity_t *m = card_ent >= 0 ? ha_get(card_ent) : NULL;   /* as on Now playing */
+    if (m && !(g_model.devices[dev].transports & TR_HA)) {
+        m->on = !m->on;
+        app_notify(EV_HA, card_ent);
+    }
+#endif
+}
+
+/* "NOW · SHIELD TV", the title (or the activity) and where it's at, End and
+ * play/pause. Tap it for the activity's page. */
+static void now_card(lv_obj_t *root)
+{
+    card_ent = -1;
+    int r = g_model.running;
+    if (r < 0 || g_model.activities[r].all_off) return;
+    const activity_t *a = &g_model.activities[r];
+    ha_entity_t *m = np_entity(r, &card_ent);
+    lv_obj_t *wrap = w_col(root, 0);
+    lv_obj_set_style_pad_hor(wrap, PAD, 0);
+    lv_obj_t *c = w_card(wrap, false, false);
+    lv_obj_set_style_radius(c, R_CARD, 0);
+    lv_obj_set_style_pad_all(c, UI_PICK(14, 10), 0);
+    lv_obj_set_style_pad_gap(c, UI_PICK(8, 6), 0);
+    lv_obj_set_clickable(c, true);
+    lv_obj_set_style_bg_color(c, theme_pressed(T->surface, T->text), LV_STATE_PRESSED);
+    w_name(c, "Now");
+    lv_obj_add_event_cb(c, now_open_cb, LV_EVENT_CLICKED, NULL);
+    char buf[96], tb[16], td[16];
+    snprintf(buf, sizeof(buf), "NOW · %s", a->name);
+    for (char *p = buf; *p; p++)
+        if (*p >= 'a' && *p <= 'z') *p -= 32;
+    lv_obj_t *cap = w_label(c, F_CAPTION, T->accent, buf);
+    lv_obj_set_style_text_letter_space(cap, 1, 0);
+    lv_obj_set_width(cap, lv_pct(100));
+    w_one_line(cap);
+    lv_obj_t *row = w_row(c, UI_PICK(8, 6));
+    lv_obj_set_style_flex_cross_place(row, LV_FLEX_ALIGN_CENTER, 0);
+    lv_obj_t *col = w_col(row, 2);
+    lv_obj_set_flex_grow(col, 1);
+    lv_obj_set_width(col, LV_SIZE_CONTENT);
+    bool media = m && m->title[0] && ha_link() == HA_CONNECTED;
+    /* the name is in the line above already: without a title, what it runs */
+    lv_obj_t *t = w_label(col, F_TITLE, T->text, media ? m->title : a->sub[0] ? a->sub : "Running");
+    lv_obj_set_width(t, lv_pct(100));
+    w_one_line(t);
+    if (media && m->dur) {
+        fmt_time(tb, sizeof(tb), m->pos);
+        fmt_time(td, sizeof(td), m->dur);
+        snprintf(buf, sizeof(buf), "%s / %s", tb, td);
+    } else if (sleep_timer_left_min()) {
+        snprintf(buf, sizeof(buf), "Switches off in %d min", sleep_timer_left_min());
+    } else {
+        snprintf(buf, sizeof(buf), "Tap for its controls");
+    }
+    lv_obj_t *sl = w_label(col, F_LABEL, T->text2, buf);
+    lv_obj_set_width(sl, lv_pct(100));
+    w_one_line(sl);
+    int bs = UI_PICK(44, 36);
+    lv_obj_t *end = w_icon_button(row, ICON_STOP, bs, BTN_NEUTRAL);
+    w_name(end, "End");
+    lv_obj_add_event_cb(end, now_end_cb, LV_EVENT_CLICKED, NULL);
+    int dev = a->nav_dev >= 0 ? a->nav_dev : a->np_dev;
+    if (media && dev >= 0 && g_model.devices[dev].fn[FN_PLAY_PAUSE].transport) {
+        lv_obj_t *pp = w_icon_button(row, m->on ? ICON_PAUSE : ICON_PLAY, bs, BTN_NEUTRAL);
+        w_name(pp, "Play/pause");
+        lv_obj_add_event_cb(pp, now_play_cb, LV_EVENT_CLICKED, NULL);
+    }
+    if (media && m->dur) {
+        lv_obj_t *bar = lv_bar_create(c);
+        lv_obj_set_size(bar, lv_pct(100), 4);
+        lv_bar_set_range(bar, 0, m->dur);
+        lv_bar_set_value(bar, m->pos, LV_ANIM_OFF);
+        lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, 0);
+        lv_obj_set_style_bg_color(bar, T->surface_top, 0);
+        lv_obj_set_style_bg_color(bar, T->accent, LV_PART_INDICATOR);
+        lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, LV_PART_INDICATOR);
+        lv_obj_set_style_radius(bar, 2, 0);
+        lv_obj_set_style_radius(bar, 2, LV_PART_INDICATOR);
+    }
+}
+
 static void activities_build(lv_obj_t *root, int arg)
 {
     LV_UNUSED(arg);
     w_header(root, NULL, view ? "Routines" : "Activities", NULL);
+    if (!view) now_card(root);
     lv_obj_t *sw = w_col(root, 0);
     lv_obj_set_style_pad_hor(sw, PAD, 0);
     w_segmented(sw, "Activities\nRoutines", view, view_cb);
@@ -155,6 +265,7 @@ static void activities_build(lv_obj_t *root, int arg)
     lv_obj_add_event_cb(w_items_add(g, "New activity"), new_activity_cb, LV_EVENT_CLICKED, NULL);
     bool any = false;
     for (int i = 0; i < g_model.n_activities; i++) any |= !g_model.activities[i].all_off;
+    if (any && g_model.settings.hold_learned) return;   /* "Hold to edit": shown until it's been used */
     lv_obj_t *hint = w_label(root, F_CAPTION, T->text2,
                              !any ? "An activity switches on the devices for one thing, like watching TV, and gives "
                                     "them the keys. Add your devices first, then create one."
@@ -169,6 +280,18 @@ static void activities_event(app_event_t ev, int arg)
     LV_UNUSED(arg);
     if (ev == EV_ACTIVITY && !activity_busy()) ui_refresh();
     if (ev == EV_DEVICES) ui_refresh();
+    /* the card's player: a new title, play/pause (not every position tick while it plays) */
+    if (ev == EV_HA && card_ent >= 0 && arg == card_ent && !view && ui_current() == &page_activities) {
+        static char last[64];
+        static bool last_on;
+        ha_entity_t *m = ha_get(card_ent);
+        if (m && (strcmp(last, m->title) || last_on != m->on)) {
+            snprintf(last, sizeof(last), "%s", m->title);
+            last_on = m->on;
+            ui_refresh();
+        }
+    }
+    if (ev == EV_CLOCK && card_ent >= 0 && !view && ui_current() == &page_activities) ui_refresh();   /* the position */
     /* the running routine's tile: only when one starts or ends, not on every countdown tick */
     if (ev == EV_ROUTINE && view && routine_busy() != shown_busy) ui_refresh();
 }
@@ -283,14 +406,19 @@ static void sleep_pick_done(int i, void *ctx)
     if (sleep_mins[i]) ui_toast("Everything in it switches off in %s", sleep_opts[i]);
 }
 
-static void sleep_cb(lv_event_t *e)
+void ui_sleep_timer_pick(void)
 {
-    LV_UNUSED(e);
     if (g_model.running < 0) return;
     int left = sleep_timer_left_min(), sel = 0;
     for (int i = 1; i < 7; i++)
         if (left && left <= sleep_mins[i] && !sel) sel = i;
     ui_choice(g_model.activities[g_model.running].name, "Sleep timer", sleep_opts, 7, sel, sleep_pick_done, NULL);
+}
+
+static void sleep_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+    ui_sleep_timer_pick();
 }
 
 /* "In 25 min", "In 1 h 10 min"; short: "25 min", "1 h 10" */

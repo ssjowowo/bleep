@@ -407,11 +407,31 @@ bool home_set_icon(const char *entity_id, int icon)
     return true;
 }
 
-bool home_set_compact(const char *entity_id, bool compact)
+bool home_set_size(const char *entity_id, int size)
 {
-    if (!compact && !look(entity_id)) return true;
+    if (size == HOME_AUTO && !look(entity_id)) return true;
     home_ent_t *l = ent_for(entity_id);
     if (!l) return false;
-    l->size = compact ? HOME_COMPACT : HOME_FULL;
+    l->size = size;
     return true;
 }
+
+int home_card_size(const ha_entity_t *e)
+{
+    const home_ent_t *l = look(e->id);
+    return l ? l->size : HOME_AUTO;
+}
+
+bool home_card_tileable(const ha_entity_t *e)
+{
+    switch (e->domain) {
+    case HA_LIGHT: case HA_SWITCH: case HA_INPUT_BOOLEAN: case HA_AUTOMATION: case HA_FAN: case HA_HUMIDIFIER:
+    case HA_COVER: case HA_VALVE: case HA_LOCK: case HA_CLIMATE: case HA_SENSOR: case HA_BINARY:
+    case HA_SCENE: case HA_SCRIPT: case HA_BUTTON: case HA_PERSON:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool home_card_tile(const ha_entity_t *e) { return home_card_size(e) == HOME_AUTO && home_card_tileable(e); }

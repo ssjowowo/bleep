@@ -52,7 +52,8 @@ wait 300
 # routines follow the same setting
 click Routines
 wait 300
-expect Tap to run
+# the "Hold to edit" line has done its job (a row was held above): it's gone
+expect-no Tap to run
 shot 124_routines_list
 pressdrag Louder | Movie night
 wait 300

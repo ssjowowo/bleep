@@ -859,7 +859,10 @@ int script_run(const char *path, const char *shot_dir)
                 lv_area_t A, B;
                 lv_obj_get_coords(la, &A);
                 lv_obj_get_coords(lb, &B);
-                ok = A.y1 < B.y1 - 4 || (A.y1 <= B.y1 + 4 && A.x1 < B.x1);
+                /* side by side (their heights overlap: a two-line name beside a one-line
+                 * one starts higher), left to right; otherwise top to bottom */
+                bool row = A.y1 <= B.y2 && B.y1 <= A.y2;
+                ok = row ? A.x1 < B.x1 : A.y1 < B.y1;
             }
             printf("%s: expect-before \"%s\" | \"%s\"\n", ok ? "ok  " : "FAIL", rest, bar ? bar + 3 : "?");
             if (!ok) failures++;

@@ -404,6 +404,7 @@ void model_init_defaults(void)
     s->fw_auto_check = true;
     s->layout_activities = LAYOUT_GRID;
     s->layout_devices = LAYOUT_LIST;
+    s->list_rows = ROWS_COMPACT;
 }
 
 void ir_library_fill(device_t *d, const ir_brand_t *brand, int set)

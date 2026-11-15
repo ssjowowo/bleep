@@ -509,7 +509,84 @@ static lv_obj_t *compact_card(lv_obj_t *parent, int idx, ha_entity_t *e)
     return c;
 }
 
+/* ---- tiles: the two-column grid (HOME_AUTO) ---- */
+
+static void tile_tap_cb(lv_event_t *ev)
+{
+    int idx = ent_of(ev);
+    ha_entity_t *e = ha_get(idx);
+    if (!e) return;
+    if (lv_event_get_code(ev) == LV_EVENT_LONG_PRESSED) {
+        ha_card_open_detail(idx);
+        return;
+    }
+    switch (e->domain) {
+    case HA_LIGHT: case HA_SWITCH: case HA_INPUT_BOOLEAN: case HA_AUTOMATION: case HA_FAN: case HA_HUMIDIFIER:
+        ha_toggle(idx);
+        break;
+    case HA_COVER: ha_action(idx, e->value > 0 ? "close" : "open"); break;
+    case HA_VALVE: ha_action(idx, e->on ? "close" : "open"); break;
+    case HA_SCENE: ha_action(idx, "turn_on"); break;
+    case HA_SCRIPT: ha_action(idx, "run"); break;
+    case HA_BUTTON: ha_action(idx, "press"); break;
+    default: ha_card_open_detail(idx); return;   /* a lock, a thermostat, a sensor: its card */
+    }
+    app_buzz(HAPTIC_TICK);
+}
+
+/* An icon over the name and the state. On: tinted, a light warm like its
+ * bulb, the rest in the accent. Tap switches it (or runs it); hold opens the
+ * full card. */
+static lv_obj_t *tile_card(lv_obj_t *parent, int idx, ha_entity_t *e)
+{
+    bool on = e->domain == HA_COVER ? e->value > 0 : e->on;
+    if (!switches(e) && e->domain != HA_COVER && e->domain != HA_VALVE && e->domain != HA_LOCK &&
+        e->domain != HA_BINARY && e->domain != HA_CLIMATE)
+        on = false;
+    lv_color_t tint = e->domain == HA_LIGHT ? lv_color_hex(0xFFB020) : T->accent;
+    lv_color_t bg = on && !e->alert ? lv_color_mix(tint, T->surface, theme_is_light() ? 60 : 48) : T->surface;
+    lv_obj_t *c = w_card(parent, on, e->alert);
+    lv_obj_set_size(c, w_col_w(2, UI_PICK(8, 6)), UI_PICK(76, 58));
+    lv_obj_set_style_pad_all(c, UI_PICK(12, 8), 0);
+    lv_obj_set_style_pad_gap(c, 0, 0);
+    lv_obj_set_style_radius(c, UI_PICK(18, 12), 0);
+    lv_obj_set_flex_align(c, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_set_style_bg_color(c, bg, 0);
+    lv_obj_set_style_bg_color(c, theme_pressed(bg, T->text), LV_STATE_PRESSED);
+    lv_obj_set_clickable(c, true);
+    lv_obj_t *top = w_row(c, 4);
+    lv_obj_set_style_flex_cross_place(top, LV_FLEX_ALIGN_CENTER, 0);
+    const char *icon = home_card_icon(e);
+    if (on && icon && !strcmp(icon, ICON_BULB)) icon = ICON_BULB_FILL;
+    lv_color_t ic = e->alert ? T->warning : on ? (e->domain == HA_LIGHT && !theme_is_light() ? lv_color_hex(0xFFC56B) : T->text) : T->text2;
+    w_icon(top, icon, UI_PICK(20, 16), ic);
+    w_spacer(top);
+    char buf[64];
+    if (e->domain == HA_CLIMATE) {   /* the room's temperature, big enough to read at a glance */
+        snprintf(buf, sizeof(buf), "%d.%d°", e->current / 10, abs(e->current % 10));
+        w_label(top, F_BODY_B, T->text, buf);
+    }
+    lv_obj_t *txt = w_col(c, 0);
+    lv_obj_t *n = w_label(txt, F_LABEL_B, T->text, home_card_name(e));
+    lv_obj_set_width(n, lv_pct(100));
+    w_one_line(n);
+    lv_obj_t *st = w_label(txt, F_CAPTION, e->alert ? T->warning : T->text2, ha_state_text(e, buf, sizeof(buf)));
+    lv_obj_set_width(st, lv_pct(100));
+    w_one_line(st);
+    w_name(c, home_card_name(e));
+    lv_obj_add_event_cb(c, tile_tap_cb, LV_EVENT_SHORT_CLICKED, ARG(idx));
+    lv_obj_add_event_cb(c, tile_tap_cb, LV_EVENT_LONG_PRESSED, ARG(idx));
+    return c;
+}
+
 lv_obj_t *ha_card_create(lv_obj_t *parent, int idx)
+{
+    ha_entity_t *e = ha_get(idx);
+    if (home_card_tile(e)) return tile_card(parent, idx, e);
+    return ha_card_create_full(parent, idx);
+}
+
+lv_obj_t *ha_card_create_full(lv_obj_t *parent, int idx)
 {
     ha_entity_t *e = ha_get(idx);
     if (home_card_compact(e)) return compact_card(parent, idx, e);

@@ -234,7 +234,9 @@ void w_button_set_kind(lv_obj_t *b, btn_kind_t kind)
     switch (kind) {
     case BTN_PRIMARY:
     case BTN_SELECTED: bg = T->accent, fg = icon = T->on_accent; break;
-    case BTN_TONAL: bg = T->tonal, fg = icon = T->on_tonal; break;
+    /* tonal: a container a step above the page, the icon in the accent. Only
+     * the one primary action on a screen is filled (the design review, 2026-11) */
+    case BTN_TONAL: bg = T->surface_top, fg = T->text, icon = T->accent; break;
     case BTN_NEUTRAL: bg = T->surface_top; break;   /* sheets are surface_hi: a step above it */
     case BTN_OUTLINE: bg = T->bg, opa = LV_OPA_TRANSP, icon = T->accent; break;
     case BTN_DISABLED: bg = theme_disabled_bg(), fg = icon = theme_disabled_fg(); break;
@@ -694,6 +696,10 @@ lv_obj_t *w_tile(lv_obj_t *parent, const char *icon, const char *name, const cha
     if (!UI->compact) {
         lv_obj_set_width(n, 1);
         lv_obj_set_flex_grow(n, 1);
+        /* beside the icon there's room for two lines: a long name wraps
+         * ("Movie night") instead of ending in "…" */
+        int room = w_col_w(2, GRID_GAP) - 2 * 12 - 36 - 10;
+        if (text_w(name, F_BODY_B) > room) lv_obj_set_height(n, 2 * lv_font_get_line_height(F_BODY_B));
     }
     lv_label_set_long_mode(n, LV_LABEL_LONG_MODE_DOTS);
     if (running && !UI->compact) {
@@ -761,7 +767,7 @@ lv_obj_t *w_list_row(lv_obj_t *parent, const char *icon, const char *text, const
     lv_obj_set_flex_flow(r, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(r, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_gap(r, UI_PICK(10, 6), 0);
-    if (icon) w_icon_circle(r, icon, UI_PICK(32, 24), false);
+    if (icon) w_icon_circle(r, icon, UI_PICK(w_dense ? 28 : 32, 24), false);
     lv_obj_t *t = w_label(r, F_BODY, T->text, text);
     lv_obj_set_flex_grow(t, 1);
     w_one_line(t);
@@ -821,34 +827,57 @@ lv_obj_t *w_ring(lv_obj_t *parent, int size, int width, int percent)
 
 /* ---- status bar ---- */
 
+/* A swipe down that starts on the status bar, or a tap on it away from the
+ * pill, opens the quick-settings drawer (quick.c). Only from the bar, so it
+ * never fights a list's scrolling. */
+static lv_coord_t bar_y0;
+static bool bar_opened;
+
+static void bar_cb(lv_event_t *e)
+{
+    lv_indev_t *in = lv_indev_active();
+    lv_point_t p = {0, 0};
+    if (in) lv_indev_get_point(in, &p);
+    switch (lv_event_get_code(e)) {
+    case LV_EVENT_PRESSED:
+        bar_y0 = p.y;
+        bar_opened = false;
+        break;
+    case LV_EVENT_PRESSING:
+        if (!bar_opened && p.y - bar_y0 > UI_PICK(12, 10)) {
+            bar_opened = true;
+            if (in) lv_indev_wait_release(in);
+            qs_drawer_pull(p.x, bar_y0);   /* it follows the finger from here */
+        }
+        break;
+    case LV_EVENT_CLICKED:
+        if (!bar_opened) qs_drawer_open();
+        break;
+    default:
+        break;
+    }
+}
+
 lv_obj_t *w_status_bar(lv_obj_t *parent)
 {
     lv_obj_t *bar = w_row(parent, 4);
     lv_obj_set_height(bar, STATUS_H);
     lv_obj_set_style_pad_hor(bar, PAD, 0);
+    lv_obj_set_clickable(bar, true);
+    lv_obj_set_scrollable(bar, false);
+    w_name(bar, "Status bar");
+    lv_obj_add_event_cb(bar, bar_cb, LV_EVENT_PRESSED, NULL);
+    lv_obj_add_event_cb(bar, bar_cb, LV_EVENT_PRESSING, NULL);
+    lv_obj_add_event_cb(bar, bar_cb, LV_EVENT_CLICKED, NULL);
     w_status_bar_update(bar);
     return bar;
 }
 
-/* Tapping the active device or activity in the status bar goes back to it
- * (after asking, if a page in the way has unsaved changes) */
-static void target_go(void)
-{
-    if (g_model.active_dev >= 0) {
-        if (ui_current() == &page_device && ui_current_arg() == g_model.active_dev) return;
-        ui_tab(TAB_DEVICES);
-        ui_open(&page_device, g_model.active_dev);
-    } else if (g_model.running >= 0) {
-        const page_t *p = ui_current();
-        if ((p == &page_now_playing || p == &page_activity_page) && ui_current_arg() == g_model.running) return;
-        ui_open_activity(g_model.running);
-    }
-}
-
+/* Tapping the pill opens the keys sheet (quick.c): where the keys go */
 static void target_cb(lv_event_t *e)
 {
     LV_UNUSED(e);
-    ui_leave(target_go);
+    qs_keys_open();
 }
 
 /* The keys' target, as a pill after the clock: "[tv] Living room TV" */
@@ -856,24 +885,33 @@ static void target_pill(lv_obj_t *bar)
 {
     const char *icon = NULL;
     const char *name = control_target_name(&icon);
-    if (!name) return;
+    bool none = !name;
+    if (none) name = "No device";   /* still a pill: it's how to pick one */
     lv_obj_t *p = w_row(bar, UI_PICK(4, 3));
     lv_obj_set_size(p, LV_SIZE_CONTENT, UI_PICK(24, 20));
     lv_obj_set_style_pad_left(p, UI_PICK(6, 5), 0);
     lv_obj_set_style_pad_right(p, UI_PICK(10, 7), 0);
     lv_obj_set_style_radius(p, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_opa(p, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(p, T->tonal, 0);
-    lv_obj_set_style_bg_color(p, theme_pressed(T->tonal, T->on_tonal), LV_STATE_PRESSED);
+    lv_color_t bg = none ? T->bg : T->tonal, fg = none ? T->text2 : T->on_tonal;
+    lv_obj_set_style_bg_color(p, bg, 0);
+    lv_obj_set_style_bg_color(p, theme_pressed(bg, fg), LV_STATE_PRESSED);
+    if (none) {
+        lv_obj_set_style_border_width(p, 1, 0);
+        lv_obj_set_style_border_color(p, T->line, 0);
+    }
     lv_obj_set_style_flex_cross_place(p, LV_FLEX_ALIGN_CENTER, 0);
-    w_icon(p, icon ? icon : ICON_REMOTE, 16, T->on_tonal);
-    lv_obj_t *l = w_label(p, F_LABEL_B, T->on_tonal, name);
+    w_icon(p, icon ? icon : ICON_REMOTE, 16, fg);
+    lv_obj_t *l = w_label(p, F_LABEL_B, fg, name);
     lv_point_t sz;
     lv_text_get_size(&sz, name, F_LABEL_B, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
     int max = UI_PICK(104, 76);
     lv_obj_set_size(l, sz.x < max ? sz.x + 1 : max, lv_font_get_line_height(F_LABEL_B));
     lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_DOTS);   /* long names end in "…" */
+    w_icon(p, ICON_CHEV_DOWN, 16, fg);
+    lv_obj_set_style_pad_right(p, UI_PICK(6, 4), 0);
     lv_obj_set_ext_click_area(p, UI_PICK(10, 8));   /* 24 px pill, 44 px of taps (20, 36) */
+    w_name(p, "Where the keys go");
     w_on_click(p, target_cb, 0);
 }
 
@@ -1052,6 +1090,10 @@ static void reorder_end(void)
     int from = rd.from, to = rd.cur;
     bool out = rd.out;
     memset(&rd, 0, sizeof(rd));
+    if (!g_model.settings.hold_learned) {   /* the "Hold to edit" lines have done their job */
+        g_model.settings.hold_learned = true;
+        app_notify(EV_SETTINGS, 0);
+    }
     if (!out) d->edit(from);
     else if (to != from) d->moved(from, to);
 }
@@ -1140,6 +1182,8 @@ lv_obj_t *w_items(lv_obj_t *root, int layout)
     return box;
 }
 
+bool w_dense;
+
 lv_obj_t *w_item(lv_obj_t *box, int layout, const char *icon, const char *name, const char *sub, bool on, bool chevron)
 {
     if (layout == LAYOUT_GRID) {
@@ -1152,16 +1196,17 @@ lv_obj_t *w_item(lv_obj_t *box, int layout, const char *icon, const char *name, 
     lv_obj_t *c = w_card(box, false, false);
     lv_obj_set_style_radius(c, R_KEY, 0);
     lv_obj_set_style_pad_all(c, UI_PICK(10, 8), 0);
+    if (w_dense && !UI->compact) lv_obj_set_style_pad_ver(c, 6, 0);   /* Compact rows: 52 px */
     lv_obj_set_clickable(c, true);
     lv_obj_set_style_bg_color(c, bg, 0);
     lv_obj_set_style_bg_color(c, theme_pressed(bg, fg), LV_STATE_PRESSED);
     lv_obj_t *row = w_row(c, UI_PICK(12, 10));
-    lv_obj_t *ic = w_icon_circle(row, icon, ICON_CIRCLE, false);
+    lv_obj_t *ic = w_icon_circle(row, icon, UI_PICK(w_dense ? 30 : 36, 30), false);
     if (on) {
         lv_obj_set_style_bg_color(ic, T->on_accent, 0);
         lv_obj_set_style_text_color(lv_obj_get_child(ic, 0), T->accent, 0);
     }
-    lv_obj_t *txt = w_col(row, 2);
+    lv_obj_t *txt = w_col(row, w_dense && !UI->compact ? 0 : 2);
     lv_obj_set_flex_grow(txt, 1);
     lv_obj_set_width(txt, LV_SIZE_CONTENT);
     lv_obj_t *n = w_label(txt, F_BODY_B, fg, name);

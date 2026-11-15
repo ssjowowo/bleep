@@ -127,6 +127,7 @@ typedef struct {
 
 typedef enum { THEME_DARK, THEME_LIGHT, THEME_AUTO } theme_pref_t;
 typedef enum { LAYOUT_GRID, LAYOUT_LIST } layout_t;     /* Settings > Display: tiles or rows */
+typedef enum { ROWS_COMFORTABLE, ROWS_COMPACT } list_rows_t;   /* Settings > Display > List rows */
 typedef enum { FEEL_CRISP, FEEL_SOFT } haptic_feel_t;   /* Settings > Haptics: clicks or bumps */
 typedef enum { MOTOR_COIN_ERM, MOTOR_COIN_LRA, MOTOR_BAR_LRA } haptic_motor_t;   /* Settings > Haptics > Motor */
 /* What a buzz is for: each can be switched off (Settings > Haptics) */
@@ -169,6 +170,11 @@ typedef struct {
     uint16_t snake_best;        /* the games' best scores */
     uint32_t blocks_best;
     uint8_t accent;             /* the colour (accent_t: theme.h), Settings > Display */
+    bool hold_learned;          /* held a tile or row once (to edit or move it): the "Hold to
+                                 * edit" help lines under the lists stop showing */
+    uint8_t list_rows;          /* list_rows_t: row height in lists (Settings > Display). A fresh
+                                 * setup starts compact; a file saved before the setting existed
+                                 * loads as comfortable, the rows it had */
 } settings_t;
 
 /* The Home tab's layout (REQUIREMENTS.md section 8): only what the user
@@ -190,12 +196,16 @@ typedef struct {
 } home_room_t;
 
 /* An entity the layout names, with how its card looks wherever it shows */
-enum { HOME_FULL, HOME_COMPACT };
+/* HOME_AUTO: a tile in the two-column grid for what a tap can switch or
+ * run (a light, a switch, a scene), the full card for the rest; never saved.
+ * HOME_FULL was the unsaved default before tiles (0.2.8): files from then
+ * never name "full", so it's free for the explicit choice. */
+enum { HOME_AUTO, HOME_COMPACT, HOME_FULL };
 typedef struct {
     char id[HA_ID_LEN];         /* entity_id */
     char name[28];              /* the user's name for it; "" = HA's */
     uint8_t icon;               /* home_icons[] index + 1; 0 = HA's */
-    uint8_t size;               /* HOME_FULL or HOME_COMPACT */
+    uint8_t size;               /* HOME_AUTO, HOME_COMPACT or HOME_FULL */
 } home_ent_t;
 
 typedef struct {

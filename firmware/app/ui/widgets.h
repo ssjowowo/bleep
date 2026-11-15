@@ -36,6 +36,10 @@ typedef struct {
 } ui_profile_t;
 
 extern const ui_profile_t *UI;
+/* Settings > Display > List rows: Compact (set before each build, ui.c).
+ * Slimmer list rows and list-layout items on the 320 x 480 panel; the small
+ * screen is compact already and doesn't change. */
+extern bool w_dense;
 void ui_profile_init(int w, int h);   /* before anything is built (ui_init); sets the fonts too */
 
 #define SCREEN_W (UI->w)
@@ -57,7 +61,7 @@ void ui_profile_init(int w, int h);   /* before anything is built (ui_init); set
 /* Sizes that follow the profile */
 #define TOUCH_MIN   UI_PICK(44, 36)   /* the smallest touch target */
 #define BTN_H       UI_PICK(44, 36)   /* buttons (w_button) and key-style buttons */
-#define ROW_H       UI_PICK(45, 38)   /* list rows (w_list_row) */
+#define ROW_H       UI_PICK(w_dense ? 40 : 45, 38)   /* list rows (w_list_row) */
 #define ICON_CIRCLE UI_PICK(36, 30)   /* the icon circle on cards and list items */
 #define PAGE_GAP    UI_PICK(12, 8)    /* between a page's blocks */
 #define ROW_GAP     UI_PICK(4, 3)     /* between list rows, each a rounded card of its own */

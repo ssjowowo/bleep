@@ -1,0 +1,124 @@
+# The 2026-11 rework: the keys sheet from the pill, the quick-settings drawer
+# from the status bar, compact list rows, Home's tiles, the Now card
+click Start
+wait 300
+# a new remote's rows are compact; Settings > Display can make them comfortable
+tab Settings
+wait 300
+click Display
+wait 300
+@320x480 expect List rows
+@320x480 expect Compact
+# the pill with nothing selected: "No device", and its sheet lists every device
+expect No device
+pill
+wait 400
+expect Keys go to
+expect Living room TV
+expect Shield TV
+shot 300_keys_sheet
+click Shield TV
+wait 400
+expect-no Keys go to
+expect-log device: Shield TV selected
+# the sheet again: Open goes to its page
+pill
+wait 400
+click Open
+wait 400
+@320x480 expect Devices · Bluetooth
+# the drawer: a swipe down from the status bar
+drag 200 12 200 220
+wait 400
+expect Haptics
+expect Nightstand
+expect Home Assistant
+shot 301_drawer
+# a tile toggles: haptics off and on again
+click Haptics
+wait 400
+expect Off
+click Haptics
+wait 400
+expect Medium
+# BACK closes it (sliding out)
+key BACK
+wait 400
+expect-no Nightstand
+# a short, slow pull from the status bar: it follows, then springs back shut
+drag 200 12 200 50
+wait 400
+expect-no Nightstand
+# a quick flick, let go with it half out: it opens the rest of the way
+drag 200 12 200 140
+wait 500
+expect Nightstand
+key BACK
+wait 500
+expect-no Nightstand
+# pulled most of the way: open; then dragged back up from a tile: shut
+drag 200 12 200 300
+wait 400
+expect Nightstand
+drag 160 150 160 10
+wait 400
+expect-no Nightstand
+# the keys sheet: dragged down from its title, it closes
+pill
+wait 400
+expect Keys go to
+drag 100 130 100 420
+wait 400
+expect-no Keys go to
+# the keypad: a sheet from 123 on the TV's page
+tab Devices
+wait 300
+click Living room TV
+wait 400
+mark
+click 123
+wait 400
+click 7
+wait 200
+expect-log IR  >
+shot 302_keypad
+key BACK
+wait 300
+# Home: tiles; a tap switches a light, a hold opens its card
+tab Home
+wait 1500
+mark
+click Floor lamp
+wait 400
+expect-log ha: light.floor_lamp
+press Floor lamp
+wait 400
+expect 40%
+shot 303_tile_card
+back
+wait 300
+# an activity running: the Now card on Activities, End ends it
+tab Activities
+wait 300
+click Watch TV
+wait 3500
+tab Activities
+wait 300
+expect NOW · WATCH TV
+shot 304_now_card
+click End
+wait 3000
+expect-no NOW · WATCH TV
+# typing: the text box doesn't scroll up and down with each character
+tab Devices
+wait 300
+click Living room TV
+wait 300
+click Edit device
+wait 300
+click Name
+wait 400
+shot 305_type_before
+type xyz
+wait 200
+shot 305_type_after

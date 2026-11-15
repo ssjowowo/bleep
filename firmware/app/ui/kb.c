@@ -325,7 +325,14 @@ static void text_build(lv_obj_t *root, int arg)
         lv_obj_set_style_pad_left(tx.ta, UI_PICK(14, 12), 0);
         bool masked = tx.mode == KB_PASSWORD || tx.mode == KB_SECRET;
         lv_obj_set_style_pad_right(tx.ta, masked ? UI_PICK(44, 40) : UI_PICK(14, 12), 0);
-        lv_obj_set_style_pad_ver(tx.ta, UI_PICK(14, 10), 0);
+        /* the line fits the box exactly: with 14 px above and below, the 2 px
+         * border and the 19 px line left it 3 px short, so the box scrolled up
+         * and down to keep the cursor in view as each character went in */
+        int box_h = UI_PICK(48, 40), lh = lv_font_get_line_height(F_BODY);
+        int pv = (box_h - 2 * 2 - lh) / 2;
+        lv_obj_set_style_pad_top(tx.ta, pv, 0);
+        lv_obj_set_style_pad_bottom(tx.ta, box_h - 2 * 2 - lh - pv, 0);
+        lv_obj_set_scroll_dir(tx.ta, LV_DIR_HOR);   /* one line: it only ever scrolls sideways */
         lv_obj_set_style_text_font(tx.ta, F_BODY, 0);
         lv_obj_set_style_text_color(tx.ta, T->text, 0);
         lv_obj_set_style_border_width(tx.ta, 2, LV_PART_CURSOR);

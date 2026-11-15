@@ -14,7 +14,9 @@ shot 11_warm_off
 wait 125000
 lift
 wait 300
-expect Or start
+# straight back where it was: Now playing
+expect-no Or start
+expect Shield TV · Plex
 shot 12_wake
 usb on
 wait 300

@@ -96,11 +96,16 @@ wait 300
 shot s21_home_2
 click Kitchen
 wait 600
+# a light's tile, held: its full card
+press LED strip
+wait 600
 clickin LED strip | expand
 wait 600
 drag ~160 ~380 ~160 ~200
 wait 300
 shot s22_colour_wheel
+back
+wait 300
 click Edit
 wait 300
 shot s23_home_edit

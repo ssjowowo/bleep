@@ -5,9 +5,10 @@ click Start
 wait 300
 tab Home
 wait 900
-drag ~160 ~400 ~160 ~160
-wait 300
 expect LED strip
+# its tile, held: the full card
+press LED strip
+wait 600
 mark
 click Colour 2
 wait 600

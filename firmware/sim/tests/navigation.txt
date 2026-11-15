@@ -13,7 +13,10 @@ click Icon
 wait 300
 click Music
 wait 300
+# (the pill opens the keys sheet; its Open goes to the activity)
 pill
+wait 300
+click Open
 wait 300
 expect Discard changes to this activity?
 # BACK on a sheet is Cancel
@@ -41,7 +44,10 @@ wait 300
 expect Watch TV
 expect-log-no IR  >
 # on a control page the keys still go to the device: BACK reaches the TV
-click Watch TV
+# (the pill's sheet, Open: the activity's page)
+pill
+wait 300
+click Open
 wait 3000
 mark
 key BACK

@@ -602,12 +602,17 @@ void ov_volume(int dir)
     if (dev < 0) return;
     const device_t *d = &g_model.devices[dev];
     if (volume) lv_obj_delete(volume);
+    /* a slim bar over the status bar, so the page's title stays in view */
     volume = w_card(layer(), false, false);
-    lv_obj_set_width(volume, CONTENT_W);
-    lv_obj_align(volume, LV_ALIGN_TOP_MID, 0, UI_PICK(40, STATUS_H + 4));
-    lv_obj_set_style_pad_ver(volume, UI_PICK(10, 8), 0);
-    lv_obj_set_style_pad_hor(volume, UI_PICK(14, 12), 0);
-    lv_obj_t *r = w_row(volume, UI_PICK(12, 10));
+    lv_obj_set_size(volume, SCREEN_W, STATUS_H);
+    lv_obj_align(volume, LV_ALIGN_TOP_MID, 0, 0);
+    lv_obj_set_style_radius(volume, 0, 0);
+    lv_obj_set_style_bg_color(volume, T->bg, 0);
+    lv_obj_set_style_pad_ver(volume, 0, 0);
+    lv_obj_set_style_pad_hor(volume, PAD, 0);
+    lv_obj_set_flex_align(volume, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_t *r = w_row(volume, UI_PICK(10, 8));
+    lv_obj_set_style_flex_cross_place(r, LV_FLEX_ALIGN_CENTER, 0);
     w_icon(r, dir == 0 ? ICON_MUTE : ICON_VOLUME, 18, T->text);
 
     /* Only an HA media player reports a level (open item 5) */
@@ -624,9 +629,9 @@ void ov_volume(int dir)
         lv_obj_set_style_bg_color(bar, T->accent, LV_PART_INDICATOR);
         char b[8];
         snprintf(b, sizeof(b), "%d", m->value);
-        w_label(r, F_BODY_B, T->text, b);
+        w_label(r, F_LABEL_B, T->text, b);
     } else {
-        w_label(r, F_BODY_B, T->text, dir > 0 ? "Volume +" : dir < 0 ? "Volume −" : "Mute");
+        w_label(r, F_LABEL_B, T->text, dir > 0 ? "Volume +" : dir < 0 ? "Volume −" : "Mute");
         lv_obj_t *n = w_label(r, F_CAPTION, T->text2, d->name);   /* the device's name, at the right */
         lv_obj_set_flex_grow(n, 1);
         w_one_line(n);

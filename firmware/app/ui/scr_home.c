@@ -285,6 +285,7 @@ static void home_build(lv_obj_t *root, int arg)
         lv_obj_t *l = w_label(list, F_LABEL, T->text2, "Nothing to show here.");
         lv_obj_set_width(l, lv_pct(100));
     }
+    lv_obj_t *grid = NULL;   /* tiles side by side, two to a row, until a full card */
     for (int i = 0; i < n; i++) {
         if (ha_get(ents[i])->domain == HA_SCENE) {
             int group[6], g = 0;
@@ -292,11 +293,23 @@ static void home_build(lv_obj_t *root, int arg)
             i--;
             if (g > 1) {
                 ha_scene_row(list, group, g);
+                grid = NULL;
                 continue;
             }
         }
+        lv_obj_t *into = list;
+        if (home_card_tile(ha_get(ents[i]))) {
+            if (!grid) {
+                grid = w_row(list, UI_PICK(8, 6));
+                lv_obj_set_flex_flow(grid, LV_FLEX_FLOW_ROW_WRAP);
+                lv_obj_set_style_pad_row(grid, UI_PICK(8, 6), 0);
+            }
+            into = grid;
+        } else {
+            grid = NULL;
+        }
         cards[n_cards].ent = ents[i];
-        cards[n_cards].obj = ha_card_create(list, ents[i]);
+        cards[n_cards].obj = ha_card_create(into, ents[i]);
         cards[n_cards].dirty = false;
         n_cards++;
     }
@@ -558,9 +571,15 @@ static ha_entity_t *card_ent(void)
     return i >= 0 ? ha_get(i) : NULL;
 }
 
+/* The size choice: Tile, Compact, Full for what can be a tile; Full, Compact for the rest */
 static void full_cb(lv_event_t *e)
 {
-    if (!home_set_compact(card_id, ARG_INT(e) == 1)) ui_toast("Can't change more cards");
+    const ha_entity_t *en = card_ent();
+    if (!en) return;
+    int pick = ARG_INT(e);
+    static const int tiles[] = {HOME_AUTO, HOME_COMPACT, HOME_FULL}, cards_[] = {HOME_AUTO, HOME_COMPACT};
+    int size = home_card_tileable(en) ? tiles[pick < 3 ? pick : 0] : cards_[pick < 2 ? pick : 0];
+    if (!home_set_size(card_id, size)) ui_toast("Can't change more cards");
     ui_refresh();
 }
 
@@ -656,10 +675,15 @@ static void card_build(lv_obj_t *root, int arg)
     lv_obj_t *sc = w_col(root, 8);
     lv_obj_set_style_pad_hor(sc, PAD, 0);
     w_section(sc, "Size");
-    w_segmented(sc, "Full\nCompact", home_card_compact(en), full_cb);
+    int size = home_card_size(en);
+    bool tileable = home_card_tileable(en);
+    if (tileable) w_segmented(sc, "Tile\nCompact\nFull", size == HOME_COMPACT ? 1 : size == HOME_FULL ? 2 : 0, full_cb);
+    else w_segmented(sc, "Full\nCompact", size == HOME_COMPACT, full_cb);
     lv_obj_t *l = w_label(sc, F_CAPTION, T->text2,
-                          home_card_compact(en) ? "One line: the name, the state and the main switch or button."
-                                                : "All its controls: sliders, colours, modes.");
+                          size == HOME_COMPACT ? "One line: the name, the state and the main switch or button."
+                          : tileable && size == HOME_AUTO
+                              ? "Half width, beside another: tap to switch it, hold for all its controls."
+                              : "All its controls: sliders, colours, modes.");
     lv_obj_set_width(l, lv_pct(100));
 
     char about[HA_ID_LEN + 40];
@@ -714,3 +738,38 @@ static void card_rooms_build(lv_obj_t *root, int arg)
 }
 
 static const page_t page_card_rooms = {"Card rooms", TAB_HOME, card_rooms_build, NULL, NULL};
+
+/* ---- A tile's page: its full card (hold a tile) ---- */
+
+static char detail_id[HA_ID_LEN];
+
+void ha_card_open_detail(int idx)
+{
+    const ha_entity_t *e = ha_get(idx);
+    if (!e) return;
+    snprintf(detail_id, sizeof(detail_id), "%s", e->id);
+    ui_open(&page_ha_detail, 0);
+}
+
+static void detail_build(lv_obj_t *root, int arg)
+{
+    LV_UNUSED(arg);
+    int idx = ha_find(detail_id);
+    const ha_entity_t *e = idx >= 0 ? ha_get(idx) : NULL;
+    /* "Home" over the room: the card below has the entity's name */
+    w_header(root, "Home", home_room_name(cur_room()), ui_back_cb);
+    lv_obj_t *col = w_col(root, 8);
+    lv_obj_set_style_pad_hor(col, PAD, 0);
+    if (!e) {
+        w_label(col, F_LABEL, T->warning, "Not in Home Assistant right now.");
+        return;
+    }
+    ha_card_create_full(col, idx);
+}
+
+static void detail_event(app_event_t ev, int arg)
+{
+    if (ev == EV_HA && (arg < 0 || arg == ha_find(detail_id))) ui_refresh();
+}
+
+const page_t page_ha_detail = {"Card", TAB_HOME, detail_build, detail_event, NULL};

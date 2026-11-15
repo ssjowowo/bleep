@@ -100,10 +100,12 @@ static void wifi_page_open(void);
  * power & reset. The battery card stays on top. */
 
 static const char *const layout_names[] = {"Grid", "List"};
+static const char *const rows_names[] = {"Comfortable", "Compact"};   /* list_rows_t */
 
 static void theme_done(int i, void *ctx) { LV_UNUSED(ctx); g_model.settings.theme = i; settings_changed(true); }
 static void layout_acts_done(int i, void *ctx) { LV_UNUSED(ctx); g_model.settings.layout_activities = i; settings_changed(false); }
 static void layout_devs_done(int i, void *ctx) { LV_UNUSED(ctx); g_model.settings.layout_devices = i; settings_changed(false); }
+static void rows_done(int i, void *ctx) { LV_UNUSED(ctx); g_model.settings.list_rows = i; settings_changed(false); }
 
 static void row_cb(lv_event_t *e)
 {
@@ -126,6 +128,7 @@ static void row_cb(lv_event_t *e)
     case 11: ov_factory_reset_ask(); break;
     case 12: ui_open(&page_fun_zone, 0); break;
     case 13: ui_open(&page_haptics, 0); break;
+    case 14: ui_choice("Settings · Layout", "List rows", rows_names, 2, s->list_rows, rows_done, NULL); break;
     }
 }
 
@@ -311,6 +314,8 @@ static void display_build(lv_obj_t *root, int arg)
     w_section(col, "Layout");
     w_on_click(w_list_row(col, ICON_GRID, "Activities & routines", layout_names[s->layout_activities], NULL), row_cb, 8);
     w_on_click(w_list_row(col, ICON_REMOTE, "Devices", layout_names[s->layout_devices], NULL), row_cb, 9);
+    if (!UI->compact)   /* the small screen's rows are compact already */
+        w_on_click(w_list_row(col, ICON_ROWS, "List rows", rows_names[s->list_rows < 2 ? s->list_rows : 0], NULL), row_cb, 14);
 }
 
 static void sub_event(app_event_t ev, int arg)

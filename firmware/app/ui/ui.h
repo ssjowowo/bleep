@@ -71,7 +71,7 @@ void ui_routine_edit(int idx);                  /* -1 = a new routine */
 void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(void));
 extern const page_t page_devices, page_device, page_device_edit, page_add_device;
 extern const page_t page_pair_ble, page_ir_brands, page_ir_detect, page_ir_test, page_ir_learn;
-extern const page_t page_home;
+extern const page_t page_home, page_ha_detail;
 extern const page_t page_settings, page_display, page_haptics, page_power, page_brightness, page_wifi_settings, page_ha_settings,
     page_about, page_update;
 extern const page_t page_ha_server, page_ha_phone, page_ha_password;
@@ -83,6 +83,22 @@ extern const page_t page_splash;
 /* A physical key the UI wants for itself (the splash screen's Start).
  * Returns true if the key was used and must not go to a device. */
 bool ui_key_intercept(bleep_key_t key);
+
+/* The running activity's sleep timer: a choice of Off, 15 min .. 2 h */
+void ui_sleep_timer_pick(void);
+
+/* The panels from the status bar (quick.c): the keys sheet (tap the pill)
+ * and the quick-settings drawer (swipe down) */
+void qs_keys_open(void);
+void qs_drawer_open(void);
+void qs_keypad_open(int dev);   /* 0-9 for a device (its page's "123") */
+void qs_drawer_pull(int x, int y);   /* a swipe down from the status bar, from (x, y): it follows the finger */
+bool qs_open(void);
+void qs_close(void);                 /* now */
+void qs_dismiss(void);               /* sliding out */
+/* Around a page rebuild, which clears the screen the panels are on (ui.c) */
+void qs_detach(void);
+void qs_reattach(void);
 
 /* Opens the page that belongs to a running activity, under the Activities
  * tab: Now playing if it has a now-playing source, otherwise its own page

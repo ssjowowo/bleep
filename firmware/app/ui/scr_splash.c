@@ -40,6 +40,11 @@ bool ui_key_intercept(bleep_key_t key)
         ov_sheet_cancel();
         return true;
     }
+    if (qs_open()) {   /* the keys sheet or the drawer: BACK closes it, the rest work as usual */
+        if (key != KEY_BACK) return false;
+        qs_dismiss();
+        return true;
+    }
     if (p->key) return p->key(key);   /* a game: the whole remote is the controller */
     if (key != KEY_BACK && key != KEY_HOME) return false;
     bool control = p->tab >= 0 || p == &page_device || p == &page_activity_page || p == &page_now_playing ||

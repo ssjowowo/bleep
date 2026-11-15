@@ -70,6 +70,7 @@ static void devices_build(lv_obj_t *root, int arg)
         w_reorderable(c, &dev_reorder);
     }
     lv_obj_add_event_cb(w_items_add(col, "Add device"), add_cb, LV_EVENT_CLICKED, NULL);
+    if (g_model.n_devices && g_model.settings.hold_learned) return;   /* "Hold to edit": until it's been used */
     lv_obj_t *hint = w_label(root, F_CAPTION, T->text2,
                              g_model.n_devices ? "Tap to control it. Hold to edit, or hold and drag to move it."
                                                : "Add the TV, receiver or streamer you want to control: it can pair "
@@ -143,6 +144,7 @@ static lv_obj_t *fn_button(lv_obj_t *parent, int dev, const char *text, const ch
 /* Key-style buttons: 48 px for the inputs, 44 for the rest (40 and 38 on the small screen) */
 #define KEY_H_BIG UI_PICK(48, 40)
 #define KEY_H UI_PICK(44, 38)
+#define KEY_H_SLIM UI_PICK(40, 36)   /* the on-screen copies of the remote's keys */
 
 /* A section only if it has a button: its title, then a row of them */
 static lv_obj_t *fn_section(lv_obj_t *root, const char *title, int dev, const fn_t *fns, int n)
@@ -156,29 +158,13 @@ static lv_obj_t *fn_section(lv_obj_t *root, const char *title, int dev, const fn
 
 static void trackpad_cb(lv_event_t *e) { ui_open(&page_trackpad, ARG_INT(e)); }
 static void keyboard_cb(lv_event_t *e) { ui_type_on(ARG_INT(e)); }
+static void keypad_cb(lv_event_t *e) { qs_keypad_open(ARG_INT(e)); }
 
 void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(void))
 {
     power_override = on_power;
     lv_obj_set_style_pad_gap(root, UI_PICK(8, 6), 0);
     const device_t *d = dev >= 0 ? &g_model.devices[dev] : NULL;
-
-    /* the trackpad (any D-pad) and typing on the TV (Bluetooth) */
-    bool pad = d && d->fn[FN_UP].transport, kb = device_can_type(dev);
-    if (pad || kb) {
-        lv_obj_t *r = w_row(root, 8);
-        lv_obj_set_style_pad_hor(r, PAD, 0);
-        if (pad) {
-            lv_obj_t *b = w_button(r, "Trackpad", ICON_TOUCHPAD, BTN_KEY);
-            lv_obj_set_flex_grow(b, 1);
-            lv_obj_add_event_cb(b, trackpad_cb, LV_EVENT_CLICKED, ARG(dev));
-        }
-        if (kb) {
-            lv_obj_t *b = w_button(r, "Type", ICON_KEYBOARD, BTN_KEY);
-            lv_obj_set_flex_grow(b, 1);
-            lv_obj_add_event_cb(b, keyboard_cb, LV_EVENT_CLICKED, ARG(dev));
-        }
-    }
 
     /* Only what the device can do: a button it hasn't got isn't shown, and a
      * section with none isn't either */
@@ -197,48 +183,94 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, void (*on_power)(v
                   !n ? w_col_w(2, 8) : !left ? CONTENT_W : UI->compact ? CONTENT_W - left * (in_w + 8) : in_w, KEY_H_BIG);
     }
 
-    if (d && d->fn[FN_DIGIT_1].transport) {
-        lv_obj_set_style_pad_hor(w_section(root, "Keypad"), PAD, 0);
-        lv_obj_t *pad = wrap_row(root, 8);
-        static const char *const keys[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "Guide", "0", "Menu"};
-        static const fn_t fns[] = {FN_DIGIT_1, FN_DIGIT_2, FN_DIGIT_3, FN_DIGIT_4, FN_DIGIT_5, FN_DIGIT_6,
-                                   FN_DIGIT_7, FN_DIGIT_8, FN_DIGIT_9, FN_GUIDE, FN_DIGIT_0, FN_MENU};
-        for (int i = 0; i < 12; i++)
-            if (!fn_button(pad, dev, keys[i], NULL, fns[i], w_col_w(3, 8), KEY_H)) {
-                lv_obj_t *gap = w_box(pad);   /* the digits stay where they are on a phone */
-                lv_obj_set_size(gap, w_col_w(3, 8), KEY_H);
-            }
-    } else if (d) {
-        static const struct { const char *t, *i; fn_t fn; } c[] = {
-            {"Home", ICON_HOME, FN_HOME}, {"Back", ICON_BACK, FN_BACK}, {"Menu", ICON_DOTS, FN_MENU},
-            {"Netflix", NULL, FN_NETFLIX}, {"YouTube", NULL, FN_YOUTUBE}, {"Info", ICON_INFO, FN_INFO},
-            {NULL, ICON_REW, FN_REW}, {NULL, ICON_PLAY, FN_PLAY_PAUSE}, {NULL, ICON_FWD, FN_FWD},
-        };
-        fn_t fns[9];
-        for (int i = 0; i < 9; i++) fns[i] = c[i].fn;
-        lv_obj_t *pad = fn_section(root, "Controls", dev, fns, 9);
-        for (int i = 0; pad && i < 9; i++) fn_button(pad, dev, c[i].t, c[i].i, c[i].fn, w_col_w(3, 8), KEY_H);
+    /* Channel: down, the keypad (a sheet: quick.c), up, the guide */
+    bool digits = d && d->fn[FN_DIGIT_1].transport;
+    static const fn_t ch_fns[] = {FN_CH_DOWN, FN_CH_UP, FN_GUIDE};
+    lv_obj_t *ch = d ? fn_section(root, "Channel", dev, ch_fns, 3) : NULL;
+    if (!ch && digits) {
+        lv_obj_set_style_pad_hor(w_section(root, "Channel"), PAD, 0);
+        ch = wrap_row(root, 8);
+    }
+    if (ch) {
+        int n = has_fn(dev, FN_CH_DOWN) + has_fn(dev, FN_CH_UP) + has_fn(dev, FN_GUIDE) + digits;
+        int w = w_col_w(n, 8);
+        fn_button(ch, dev, "Ch", ICON_MINUS, FN_CH_DOWN, w, KEY_H);
+        if (digits) {
+            lv_obj_t *k = w_button(ch, "123", ICON_DIALPAD, BTN_KEY);
+            lv_obj_set_size(k, w, KEY_H);
+            lv_obj_set_style_pad_hor(k, 4, 0);
+            lv_obj_add_event_cb(k, keypad_cb, LV_EVENT_CLICKED, ARG(dev));
+        }
+        fn_button(ch, dev, "Ch", ICON_PLUS, FN_CH_UP, w, KEY_H);
+        fn_button(ch, dev, "Guide", NULL, FN_GUIDE, w, KEY_H);
     }
 
-    static const fn_t ch_fns[] = {FN_CH_DOWN, FN_CH_UP};
-    lv_obj_t *ch = d ? fn_section(root, "Channel", dev, ch_fns, 2) : NULL;
-    if (ch) {
-        fn_button(ch, dev, "Channel", ICON_CHEV_DOWN, FN_CH_DOWN, w_col_w(2, 8), KEY_H);
-        fn_button(ch, dev, "Channel", ICON_CHEV_UP, FN_CH_UP, w_col_w(2, 8), KEY_H);
+    /* The remote's own keys, on screen too: Back, Home, Menu and Info or
+     * subtitles; power and volume; the apps. Four across, in slimmer rows. */
+    if (d) {
+        static const struct { const char *t, *i; fn_t fn; } nav[] = {
+            {NULL, ICON_BACK, FN_BACK}, {NULL, ICON_HOME, FN_HOME}, {NULL, ICON_MENU, FN_MENU},
+            {NULL, ICON_INFO, FN_INFO}, {NULL, ICON_SUBS, FN_SUBTITLES}, {NULL, ICON_AUDIO, FN_AUDIO},
+        };
+        static const fn_t nav_fns[] = {FN_BACK, FN_HOME, FN_MENU, FN_INFO, FN_SUBTITLES, FN_AUDIO};
+        lv_obj_t *kr = fn_section(root, "Keys", dev, nav_fns, 6);
+        int n = 0;
+        for (int i = 0; i < 6; i++) n += has_fn(dev, nav_fns[i]);
+        int w = n ? w_col_w(n <= 5 ? n : 3, 8) : 0;   /* one row up to five, else two of three */
+        for (int i = 0; kr && i < 6; i++) {
+            lv_obj_t *b = fn_button(kr, dev, nav[i].t, nav[i].i, nav[i].fn, w, KEY_H_SLIM);
+            if (b) w_name(b, fn_name(nav[i].fn));
+        }
     }
 
     /* power is the device's, volume the activity's volume device */
     bool any = has_fn(dev, FN_POWER) || has_fn(vol_dev, FN_VOL_DOWN) || has_fn(vol_dev, FN_MUTE) ||
                has_fn(vol_dev, FN_VOL_UP);
     if (any) {
-        lv_obj_set_style_pad_hor(w_section(root, "Power and volume"), PAD, 0);
         lv_obj_t *pv = wrap_row(root, 8);
         int w = w_col_w(4, 8);
-        fn_button(pv, dev, NULL, ICON_POWER, FN_POWER, w, KEY_H);
-        fn_button(pv, vol_dev, NULL, ICON_VOLUME_LOW, FN_VOL_DOWN, w, KEY_H);
-        fn_button(pv, vol_dev, NULL, ICON_MUTE, FN_MUTE, w, KEY_H);
-        fn_button(pv, vol_dev, NULL, ICON_VOLUME, FN_VOL_UP, w, KEY_H);
+        fn_button(pv, dev, NULL, ICON_POWER, FN_POWER, w, KEY_H_SLIM);
+        fn_button(pv, vol_dev, NULL, ICON_MUTE, FN_MUTE, w, KEY_H_SLIM);
+        fn_button(pv, vol_dev, NULL, ICON_VOLUME_LOW, FN_VOL_DOWN, w, KEY_H_SLIM);
+        fn_button(pv, vol_dev, NULL, ICON_VOLUME, FN_VOL_UP, w, KEY_H_SLIM);
     }
+
+    if (d) {
+        static const struct { const char *t; fn_t fn; } apps[] = {
+            {"Netflix", FN_NETFLIX}, {"YouTube", FN_YOUTUBE}, {"Plex", FN_PLEX}};
+        int n = 0;
+        for (int i = 0; i < 3; i++) n += has_fn(dev, apps[i].fn);
+        if (n) {
+            lv_obj_t *ar = wrap_row(root, 8);
+            for (int i = 0; i < 3; i++) fn_button(ar, dev, apps[i].t, NULL, apps[i].fn, w_col_w(n, 8), KEY_H_SLIM);
+        }
+        static const struct { const char *i; fn_t fn; } media[] = {
+            {ICON_REW, FN_REW}, {ICON_PLAY, FN_PLAY_PAUSE}, {ICON_FWD, FN_FWD}};
+        n = 0;
+        for (int i = 0; i < 3; i++) n += has_fn(dev, media[i].fn);
+        if (n) {
+            lv_obj_t *mr = wrap_row(root, 8);
+            for (int i = 0; i < 3; i++) fn_button(mr, dev, NULL, media[i].i, media[i].fn, w_col_w(n, 8), KEY_H_SLIM);
+        }
+    }
+
+    /* last: the trackpad (any D-pad) and typing on the TV (Bluetooth) */
+    bool pad = d && d->fn[FN_UP].transport, kb = device_can_type(dev);
+    if (pad || kb) {
+        lv_obj_t *r = w_row(root, 8);
+        lv_obj_set_style_pad_hor(r, PAD, 0);
+        if (pad) {
+            lv_obj_t *b = w_button(r, "Trackpad", ICON_TOUCHPAD, BTN_KEY);
+            lv_obj_set_flex_grow(b, 1);
+            lv_obj_add_event_cb(b, trackpad_cb, LV_EVENT_CLICKED, ARG(dev));
+        }
+        if (kb) {
+            lv_obj_t *b = w_button(r, "Type", ICON_KEYBOARD, BTN_KEY);
+            lv_obj_set_flex_grow(b, 1);
+            lv_obj_add_event_cb(b, keyboard_cb, LV_EVENT_CLICKED, ARG(dev));
+        }
+    }
+
 }
 
 static void dv_select_cb(lv_event_t *e)
@@ -265,6 +297,7 @@ static void dv_build(lv_obj_t *root, int idx)
         edit = w_header_action(hdr, "Edit device", ICON_GEAR, BTN_DEFAULT);
     } else {
         edit = w_icon_button(hdr, ICON_GEAR, 40, BTN_DEFAULT);
+        w_name(edit, "Edit device");
         lv_obj_set_ext_click_area(edit, 2);   /* taps: 44 px */
         lv_obj_set_style_margin_right(edit, 10, 0);
     }
