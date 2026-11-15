@@ -2,7 +2,8 @@
 # Assemble the web flasher into build/flasher/: the page, esptool-js, and the
 # firmware from the last ESP-IDF build (firmware/esp/build), with a manifest
 # the page reads. The folder is self-contained: serve it as it is (serve.sh),
-# or upload it to any HTTPS host (bleepremote.com/flash/, say).
+# or upload it to any HTTPS host. Its fw/ is what the remote's online update
+# reads: the folder goes at the root of https://bleepremote.com/.
 #
 #   firmware/flasher/build.sh            (build the firmware first: firmware/esp/README.md)
 set -euo pipefail
@@ -67,4 +68,28 @@ manifest = {
 json.dump(manifest, open(os.path.join(out, "firmware", "manifest.json"), "w"), indent=2)
 print(f"Bleep {version}: " + ", ".join(f"{os.path.basename(p['path'])} @ 0x{p['offset']:x}" for p in parts))
 EOF
+# What the remote's own update check reads (esp/main/ota.c fetches
+# https://bleepremote.com/fw/stable.json): the version, the app image's URL
+# and size, and the notes for its screen (esp/release-notes.txt)
+python3 - "$ESP" "$OUT" "$ROOT/firmware/esp/release-notes.txt" <<'EOF2'
+import json, os, shutil, sys
+esp, out, notes_file = sys.argv[1:4]
+version = json.load(open(os.path.join(esp, "project_description.json")))["project_version"]
+notes = ""
+if os.path.exists(notes_file):
+    for line in open(notes_file, encoding="utf-8"):
+        v, sep, text = line.partition(":")
+        if sep and not v.startswith("#") and v.strip() == version:
+            notes = text.strip()
+if len(notes.encode()) > 159:
+    sys.exit(f"release-notes.txt: the {version} line is {len(notes.encode())} bytes, the remote shows at most 159")
+fw = os.path.join(out, "fw")
+os.makedirs(fw)
+name = f"bleep-{version}.bin"
+shutil.copy(os.path.join(esp, "bleep.bin"), os.path.join(fw, name))
+stable = {"version": version, "url": f"https://bleepremote.com/fw/{name}",
+          "size": os.path.getsize(os.path.join(fw, name)), "notes": notes}
+json.dump(stable, open(os.path.join(fw, "stable.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+print(f"Online update: fw/stable.json -> {name}" + ("" if notes else " (no notes for this version in release-notes.txt)"))
+EOF2
 echo "Flasher ready in $OUT"

@@ -1,0 +1,5 @@
+# What the remote shows under "Version x.y.z is available" (Settings > Software update):
+# one line per version, "version: a sentence or two", at most 159 bytes of UTF-8.
+# A version without a line here ships with no notes.
+0.2.19: Software updates over Wi-Fi now finish while Home Assistant is loading.
+0.2.18: Now playing shows artwork, more sources to pick from, and Greek text.

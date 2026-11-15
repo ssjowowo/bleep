@@ -70,3 +70,8 @@ CONFIG_LWIP_DHCP_RESTORE_LAST_IP=y
 # each one slow with Bluetooth sharing the radio. 32 KB (lwIP's buffers are in PSRAM).
 CONFIG_LWIP_TCP_WND_DEFAULT=32768
 CONFIG_LWIP_TCP_RECVMBOX_SIZE=32
+# Software AES for TLS: hardware AES bounces every record that sits in PSRAM
+# (MBEDTLS_EXTERNAL_MEM_ALLOC) through internal DMA RAM, and while Home Assistant's
+# big answers arrive that allocation fails ("esp-aes: Failed to allocate memory")
+# and the update check or download drops. Software AES is far faster than Wi-Fi.
+CONFIG_MBEDTLS_HARDWARE_AES=n

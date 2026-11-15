@@ -13,3 +13,4 @@ firmware/tools/fonts/
 firmware/esp/sdkconfig
 firmware/esp/sdkconfig.old
 firmware/esp/managed_components/
+.wrangler/
