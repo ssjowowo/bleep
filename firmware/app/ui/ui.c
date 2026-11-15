@@ -108,7 +108,9 @@ static void build(void)
 {
     const page_t *p = ui_current();
     lv_obj_t *scr = lv_screen_active();
-    theme_apply(want_light(), g_model.settings.accent);
+    /* the artwork behind Now playing: dark, its text light, in either theme */
+    bool light = want_light() && !(p == &page_now_playing && np_full_art(stack[depth - 1].arg));
+    theme_apply(light, g_model.settings.accent);
     w_dense = g_model.settings.list_rows == ROWS_COMPACT;
     int32_t keep_y = root && last_page == p && last_arg == stack[depth - 1].arg ? lv_obj_get_scroll_y(root) : 0;
     qs_detach();   /* the drawer is on the screen: it comes back after (qs_reattach) */
@@ -290,8 +292,9 @@ void ui_rebuild(void)
 void ui_open_activity(int idx)
 {
     if (idx < 0 || idx >= g_model.n_activities) return;
-    const activity_t *a = &g_model.activities[idx];
-    ui_open(a->np_dev >= 0 ? &page_now_playing : &page_activity_page, idx);
+    bool np;
+    activity_np_ent(idx, &np);
+    ui_open(np ? &page_now_playing : &page_activity_page, idx);
 }
 
 void ui_toast(const char *fmt, ...)

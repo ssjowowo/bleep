@@ -106,7 +106,7 @@ typedef struct {
     enum { RX_MSG, RX_OPEN, RX_CLOSED } kind;
 } rx_t;
 
-typedef enum { JOB_LOGIN, JOB_MFA, JOB_CONNECT, JOB_REVOKE, JOB_DISCOVER, JOB_LOCAL, JOB_STATE, JOB_SAVE } job_kind_t;
+typedef enum { JOB_LOGIN, JOB_MFA, JOB_CONNECT, JOB_REVOKE, JOB_DISCOVER, JOB_LOCAL, JOB_STATE, JOB_SAVE, JOB_ART } job_kind_t;
 typedef struct {
     job_kind_t kind;
     char *a, *b;                        /* heap copies the worker frees */
@@ -319,6 +319,83 @@ static void open_socket(const char *server, bool local)
     /* else connecting stays true until RX_OPEN or RX_CLOSED */
 }
 
+/* ---- artwork (ha_artwork): fetched and decoded on the worker ---- */
+
+#define ART_MAX_BYTES (1536 * 1024)
+static art_img_t art;                   /* the loop's: the picture for art_url */
+static char art_url[256];               /* entity_picture it is (or is being fetched) for */
+static int art_ent = -1;
+static volatile bool art_busy;          /* JOB_ART queued or running */
+static art_img_t art_new;               /* the worker's result... */
+static volatile int art_done;           /* ...1 when it's in art_new, -1 when it failed */
+
+/* The worker: GET the picture (a path on HA, with the access token, or a
+ * full URL), then decode it */
+static void art_fetch(const char *pic)
+{
+    static char url[400], hdr[360];   /* not on the worker's stack: TLS needs it (an https picture) */
+    bool on_ha = strncmp(pic, "http://", 7) && strncmp(pic, "https://", 8);
+    snprintf(url, sizeof(url), "%s%s", on_ha ? base : "", pic);
+    esp_http_client_config_t cfg = {
+        .url = url,
+        .timeout_ms = 8000,
+        .buffer_size = 4096,
+        .crt_bundle_attach = esp_crt_bundle_attach,
+    };
+    esp_http_client_handle_t c = esp_http_client_init(&cfg);
+    uint8_t *buf = NULL;
+    int n = 0, status = -1;
+    if (c) {
+        if (on_ha) {
+            snprintf(hdr, sizeof(hdr), "Bearer %s", auth.access);
+            esp_http_client_set_header(c, "Authorization", hdr);
+        }
+        if (esp_http_client_open(c, 0) == ESP_OK) {
+            int64_t len = esp_http_client_fetch_headers(c);
+            status = esp_http_client_get_status_code(c);
+            int cap = len > 0 && len <= ART_MAX_BYTES ? (int)len : ART_MAX_BYTES;
+            buf = status == 200 && len <= ART_MAX_BYTES ? hal_big_alloc(cap) : NULL;
+            int r;
+            while (buf && n < cap && (r = esp_http_client_read(c, (char *)buf + n, cap - n)) > 0) n += r;
+        }
+        esp_http_client_close(c);
+        esp_http_client_cleanup(c);
+    }
+    uint32_t t = hal_millis();
+    bool ok = buf && n > 0 && art_decode(buf, n, &art_new);
+    if (buf) hal_big_free(buf);
+    if (ok) hal_log("ha: artwork %u bytes, %ux%u, decoded in %u ms", (unsigned)n, art_new.w, art_new.h,
+                    (unsigned)(hal_millis() - t));
+    else hal_log("ha: artwork not shown (HTTP %d, %d bytes: not a baseline JPEG?)", status, n);
+    art_done = ok ? 1 : -1;
+}
+
+const art_img_t *ha_artwork(int idx)
+{
+    const char *pic = ha_picture(idx);
+    if (!pic[0]) return NULL;
+    if (art_ent == idx && !strcmp(pic, art_url)) return art.px ? &art : NULL;
+    if (art_busy || ha_ws_state() != WS_READY) return NULL;   /* asked again when that one's in (EV_HA) */
+    art_free(&art);
+    snprintf(art_url, sizeof(art_url), "%s", pic);
+    art_ent = idx;
+    art_busy = true;
+    art_done = 0;
+    post_job(JOB_ART, pic, NULL);
+    return NULL;
+}
+
+/* The loop: the worker's picture in */
+static void art_poll(void)
+{
+    if (!art_busy || !art_done) return;
+    if (art_done > 0) art = art_new;
+    memset(&art_new, 0, sizeof(art_new));
+    art_done = 0;
+    art_busy = false;
+    app_notify(EV_HA, art_ent);   /* shown now, or another one asked for meanwhile is fetched */
+}
+
 /* ---- the worker task ---- */
 
 static void discover(void)
@@ -451,6 +528,9 @@ static void worker(void *arg)
             if (st != 200 && st != 201) hal_log("ha: %s: HTTP %d", j.a, st);
             break;
         }
+        case JOB_ART:
+            art_fetch(j.a);
+            break;
         case JOB_SAVE: {
             FILE *f = fopen(CACHE_PATH, "wb");
             bool ok = f && (int)fwrite(j.a, 1, j.len, f) == j.len;
@@ -563,6 +643,7 @@ void ha_init(void)
 
 void ha_poll(void)
 {
+    art_poll();
     rx_t r;
     while (xQueueReceive(rx_q, &r, 0) == pdTRUE) {
         if (r.kind == RX_OPEN) {

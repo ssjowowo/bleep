@@ -57,10 +57,7 @@ static void ambient_click(lv_event_t *e)
 
 static ha_entity_t *running_media(int *idx)
 {
-    if (g_model.running < 0) return NULL;
-    const activity_t *a = &g_model.activities[g_model.running];
-    if (a->np_dev < 0) return NULL;
-    int e = ha_find(g_model.devices[a->np_dev].ha_entity);
+    int e = activity_np_ent(g_model.running, NULL);
     if (idx) *idx = e;
     return e >= 0 ? ha_get(e) : NULL;
 }
@@ -129,7 +126,8 @@ static void show_lock(void)
     lv_obj_align(date_lbl, LV_ALIGN_TOP_MID, 0, top + UI_PICK(98, 74));
     update_clock();
 
-    ha_entity_t *m = running_media(NULL);
+    int m_idx = -1;
+    ha_entity_t *m = running_media(&m_idx);
     if (m && ha_link() == HA_CONNECTED) {
         const activity_t *a = &g_model.activities[g_model.running];
         lv_obj_t *c = w_card(ambient, false, false);
@@ -138,7 +136,7 @@ static void show_lock(void)
         lv_obj_set_style_pad_all(c, UI_PICK(12, 10), 0);
         lv_obj_set_style_pad_gap(c, UI_PICK(10, 8), 0);
         lv_obj_t *r = w_row(c, UI_PICK(12, 10));
-        w_artwork(r, UI_PICK(48, 40), UI_PICK(48, 40), UI_PICK(10, 8), false);
+        w_artwork_of(r, UI_PICK(48, 40), UI_PICK(48, 40), UI_PICK(10, 8), false, m_idx);
         lv_obj_t *col = w_col(r, 2);
         lv_obj_set_flex_grow(col, 1);
         lv_obj_set_width(col, LV_SIZE_CONTENT);

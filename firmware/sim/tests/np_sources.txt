@@ -1,0 +1,54 @@
+# Now playing from more than one player: the Apple TV's player has no title
+# (like a Google TV's cast player while Plex plays), so Plex's own player is
+# added; Now playing shows its title and poster. Artwork is decoded (JPEG).
+click Start
+wait 300
+press Apple TV
+wait 300
+expect Also from
+click Also from
+wait 300
+expect Now playing also from
+switch Plex (Living room TV)
+wait 300
+shot n0_np_sources
+back
+wait 300
+expect Plex (Living room TV)
+click Update
+wait 300
+mark
+click Apple TV
+wait 3000
+expect Plex film: Ο ταχυδρόμος του Ψηλορείτη
+expect-log ha: artwork 400x600 for media_player.plex_living_room
+shot n1_np_plex
+# the Shield's own player: its title and a video thumbnail
+tab Activities
+wait 300
+mark
+click Shield TV
+wait 3000
+expect Film title
+expect-log ha: artwork 480x360 for media_player.shield
+shot n2_np_shield
+# the artwork as a card above the title (Settings > Display)
+tab Settings
+wait 300
+click Display
+wait 300
+click Now playing artwork
+wait 300
+click Card
+wait 300
+back
+wait 300
+tab Activities
+wait 300
+# the status bar's pill: the keys sheet, then Open
+click Shield TV
+wait 300
+click Open
+wait 1000
+expect Film title
+shot n3_np_card

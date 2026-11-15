@@ -1,0 +1,8 @@
+# Now playing with no picture (the Apple TV's player has no title, so no
+# artwork): no placeholder; the title and keys at the bottom
+click Start
+wait 300
+click Apple TV
+wait 3000
+expect Nothing playing
+shot n4_np_noart

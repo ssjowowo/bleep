@@ -21,8 +21,8 @@ get MaterialSymbolsOutlined-VF.ttf "$MS.ttf"
 get MaterialSymbolsOutlined.codepoints "$MS.codepoints"
 
 CONV="npx --yes lv_font_conv@1.5.3"
-# Basic Latin, Latin-1, dashes, quotes, bullet, ellipsis, subscript 2, euro, minus
-TEXT=0x20-0x7E,0xA0-0xFF,0x2013-0x2014,0x2018-0x201D,0x2022,0x2026,0x20AC,0x2212
+# Basic Latin, Latin-1, Greek (song and film titles), dashes, quotes, bullet, ellipsis, subscript 2, euro, minus
+TEXT=0x20-0x7E,0xA0-0xFF,0x370-0x3FF,0x2013-0x2014,0x2018-0x201D,0x2022,0x2026,0x20AC,0x2212
 
 # name size weight
 FONTS="

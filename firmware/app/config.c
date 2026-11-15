@@ -61,6 +61,7 @@ static const char *const theme_ids[] = {"dark", "light", "auto"};
 static const char *const accent_ids[] = {"cyan", "blue", "violet", "pink", "orange", "amber", "green"};   /* accent_t */
 static const char *const layout_ids[] = {"grid", "list"};
 static const char *const rows_ids[] = {"comfortable", "compact"};   /* list_rows_t */
+static const char *const np_art_ids[] = {"full", "card"};           /* np_art_t */
 static const char *const feel_ids[] = {"crisp", "soft"};   /* haptic_feel_t */
 static const char *const own_key_ids[N_OWN_KEYS] = {"back", "home", "mute", "netflix", "youtube", "plex"};   /* act_own_keys */
 static const char *const motor_ids[] = {"erm", "lra", "lra_bar"};     /* haptic_motor_t */
@@ -147,6 +148,7 @@ char *config_to_json(const model_t *m)
     cJSON_AddStringToObject(js, "layout_devices", layout_ids[s->layout_devices < N(layout_ids) ? s->layout_devices : 0]);
     cJSON_AddBoolToObject(js, "hold_learned", s->hold_learned);
     cJSON_AddStringToObject(js, "list_rows", rows_ids[s->list_rows < N(rows_ids) ? s->list_rows : 0]);
+    cJSON_AddStringToObject(js, "np_artwork", np_art_ids[s->np_artwork < N(np_art_ids) ? s->np_artwork : 0]);
 
     cJSON *jd = cJSON_AddArrayToObject(root, "devices");
     for (int i = 0; i < m->n_devices; i++) {
@@ -191,6 +193,11 @@ char *config_to_json(const model_t *m)
             cJSON *kp = cJSON_AddArrayToObject(o, "keep_power");
             for (int d = 0; d < MAX_DEVICES; d++)
                 if (a->keep_power & (1u << d)) cJSON_AddItemToArray(kp, cJSON_CreateNumber(d));
+        }
+        if (a->np_more[0][0]) {   /* Now playing's other players (0.2.13) */
+            cJSON *nm = cJSON_AddArrayToObject(o, "np_more");
+            for (int k = 0; k < NP_MORE; k++)
+                if (a->np_more[k][0]) cJSON_AddItemToArray(nm, cJSON_CreateString(a->np_more[k]));
         }
         cJSON *keys = NULL;   /* only the keys with a device of their own */
         for (int k = 0; k < N_OWN_KEYS; k++) {
@@ -352,6 +359,7 @@ static void read_settings(const cJSON *js, settings_t *s)
     s->hold_learned = get_bool(js, "hold_learned", s->hold_learned);
     /* added in 0.2.8: a file from before it had the comfortable rows */
     s->list_rows = id_of(rows_ids, N(rows_ids), get_id(js, "list_rows"), ROWS_COMFORTABLE);
+    s->np_artwork = id_of(np_art_ids, N(np_art_ids), get_id(js, "np_artwork"), NP_ART_FULL);   /* added in 0.2.16 */
 }
 
 static void read_device(const cJSON *o, device_t *d)
@@ -398,6 +406,11 @@ static void read_activity(const cJSON *o, activity_t *a, int n_devices)
     a->keep_power = 0;   /* added in 0.2.11, like "keys" */
     cJSON_ArrayForEach(d, cJSON_GetObjectItemCaseSensitive(o, "keep_power"))
         if (cJSON_IsNumber(d) && d->valuedouble >= 0 && d->valuedouble < n_devices) a->keep_power |= 1u << (int)d->valuedouble;
+    memset(a->np_more, 0, sizeof(a->np_more));
+    int nm = 0;
+    cJSON_ArrayForEach(d, cJSON_GetObjectItemCaseSensitive(o, "np_more"))
+        if (cJSON_IsString(d) && nm < NP_MORE && strlen(d->valuestring) < sizeof(a->np_more[0]))
+            snprintf(a->np_more[nm++], sizeof(a->np_more[0]), "%s", d->valuestring);
     const cJSON *keys = cJSON_GetObjectItemCaseSensitive(o, "keys");
     for (int k = 0; k < N_OWN_KEYS; k++) {
         int dev = keys ? get_ref(keys, own_key_ids[k], n_devices) : -1;

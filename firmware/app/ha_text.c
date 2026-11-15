@@ -4,6 +4,7 @@
  * domain's icon and the line under its name.
  */
 #include <stdio.h>
+#include <string.h>
 #include "ha.h"
 #include "ui/icons.h"
 
@@ -73,4 +74,34 @@ const char *ha_state_text(const ha_entity_t *e, char *buf, int len)
     default: buf[0] = 0; break;
     }
     return buf;
+}
+
+static bool unshown(unsigned c)
+{
+    return c >= 0x10000                     /* emoji, and everything else past the BMP */
+        || (c >= 0x2190 && c <= 0x2BFF)     /* arrows, technical, shapes, ☀ and the dingbats */
+        || (c >= 0x200B && c <= 0x200F)     /* zero-width space and joiner (family emoji), marks */
+        || c == 0x20E3                      /* the keycap's enclosing square */
+        || (c >= 0xFE00 && c <= 0xFE0F)     /* variation selectors: the emoji look of ☀ */
+        || c == 0x3030 || c == 0x303D || c == 0x3297 || c == 0x3299;
+}
+
+void ha_drop_unshown(char *s)
+{
+    char *o = s;
+    for (const unsigned char *p = (const unsigned char *)s; *p;) {
+        unsigned c = *p;
+        int k = c >= 0xF0 ? 4 : c >= 0xE0 ? 3 : c >= 0xC0 ? 2 : 1;
+        for (int i = 1; i < k; i++)
+            if (!p[i]) k = i;   /* cut short: as it is */
+        if (k == 2) c = (c & 0x1F) << 6 | (p[1] & 0x3F);
+        else if (k == 3) c = (c & 0x0F) << 12 | (p[1] & 0x3F) << 6 | (p[2] & 0x3F);
+        else if (k == 4) c = (c & 0x07) << 18 | (p[1] & 0x3F) << 12 | (p[2] & 0x3F) << 6 | (p[3] & 0x3F);
+        bool drop = k > 1 && unshown(c);
+        if (!drop && c == ' ' && (o == s || o[-1] == ' ')) drop = true;   /* a doubled or leading space */
+        if (!drop) memmove(o, p, k), o += k;
+        p += k;
+    }
+    while (o > s && o[-1] == ' ') o--;
+    *o = 0;
 }

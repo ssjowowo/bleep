@@ -14,6 +14,7 @@
 #define MAX_ACT_DEVICES 6
 #define MAX_STEPS       12
 #define MAX_ROUTINES    12
+#define NP_MORE         3       /* Now playing's other sources in an activity */
 #define MAX_RSTEPS      16      /* steps in a routine */
 #define RSTEP_WAIT_MAX  120     /* wait after a step: 0..60 s in 0.5 s units */
 
@@ -92,6 +93,8 @@ typedef struct {
     int8_t input_dev;           /* device switched to an input on start, e.g. the TV */
     uint8_t input_fn;           /* FN_INPUT_n */
     int8_t np_dev;              /* device whose HA media_player feeds Now playing, -1 = none */
+    char np_more[NP_MORE][64];  /* more HA media players for Now playing ("" = none): it shows
+                                 * whichever plays (a Plex player beside the TV's cast one) */
     uint16_t keep_power;        /* bit = device index: no Power on start, left as it is (and taken
                                  * to be on, so ending still switches it off) */
     uint8_t key_set[KEY_COUNT]; /* a key of its own (ACT_OWN_KEYS): device + 1; 0 = with the D-pad
@@ -141,6 +144,7 @@ bleep_key_t act_key_group(bleep_key_t key);    /* KEY_OK (the D-pad) or KEY_VOL_
 typedef enum { THEME_DARK, THEME_LIGHT, THEME_AUTO } theme_pref_t;
 typedef enum { LAYOUT_GRID, LAYOUT_LIST } layout_t;     /* Settings > Display: tiles or rows */
 typedef enum { ROWS_COMFORTABLE, ROWS_COMPACT } list_rows_t;   /* Settings > Display > List rows */
+typedef enum { NP_ART_FULL, NP_ART_CARD } np_art_t;            /* Settings > Display > Now playing artwork */
 typedef enum { FEEL_CRISP, FEEL_SOFT } haptic_feel_t;   /* Settings > Haptics: clicks or bumps */
 typedef enum { MOTOR_COIN_ERM, MOTOR_COIN_LRA, MOTOR_BAR_LRA } haptic_motor_t;   /* Settings > Haptics > Motor */
 /* What a buzz is for: each can be switched off (Settings > Haptics) */
@@ -188,6 +192,8 @@ typedef struct {
     uint8_t list_rows;          /* list_rows_t: row height in lists (Settings > Display). A fresh
                                  * setup starts compact; a file saved before the setting existed
                                  * loads as comfortable, the rows it had */
+    uint8_t np_artwork;         /* np_art_t: the picture behind the whole Now playing page, or a
+                                 * card above the title (added in 0.2.16; full by default) */
 } settings_t;
 
 /* The Home tab's layout (REQUIREMENTS.md section 8): only what the user

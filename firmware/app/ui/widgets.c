@@ -795,6 +795,60 @@ lv_obj_t *w_artwork(lv_obj_t *parent, int w, int h, int radius, bool caption)
     return o;
 }
 
+/* The crops of the artwork on screen: one per frame size, kept until the
+ * picture changes (a crop in use is never freed: a page shows two sizes at most) */
+#define ART_CROPS 6
+static struct {
+    uint32_t seq;
+    int w, h;
+    uint16_t *px;
+    lv_image_dsc_t dsc;
+    uint32_t used;
+} crops[ART_CROPS];
+
+static const lv_image_dsc_t *art_crop_for(const art_img_t *img, int w, int h)
+{
+    static uint32_t tick;
+    int free_at = -1, oldest = 0;
+    for (int i = 0; i < ART_CROPS; i++) {
+        if (crops[i].px && crops[i].seq == img->seq && crops[i].w == w && crops[i].h == h) {
+            crops[i].used = ++tick;
+            return &crops[i].dsc;
+        }
+        if (!crops[i].px || crops[i].seq != img->seq) free_at = free_at < 0 ? i : free_at;   /* an old picture's */
+        if (crops[i].used < crops[oldest].used) oldest = i;
+    }
+    int i = free_at >= 0 ? free_at : oldest;
+    if (crops[i].px) hal_big_free(crops[i].px);
+    memset(&crops[i], 0, sizeof(crops[i]));
+    crops[i].px = hal_big_alloc((size_t)w * h * 2);
+    if (!crops[i].px) return NULL;
+    art_crop(img, w, h, crops[i].px);
+    crops[i].seq = img->seq, crops[i].w = w, crops[i].h = h, crops[i].used = ++tick;
+    lv_image_dsc_t *d = &crops[i].dsc;
+    d->header.magic = LV_IMAGE_HEADER_MAGIC;
+    d->header.cf = LV_COLOR_FORMAT_RGB565;
+    d->header.w = w, d->header.h = h;
+    d->header.stride = w * 2;
+    d->data = (const uint8_t *)crops[i].px;
+    d->data_size = (uint32_t)w * h * 2;
+    return d;
+}
+
+lv_obj_t *w_artwork_of(lv_obj_t *parent, int w, int h, int radius, bool caption, int ent)
+{
+    const art_img_t *img = ent >= 0 ? ha_artwork(ent) : NULL;
+    const lv_image_dsc_t *d = img && w > 0 && h > 0 ? art_crop_for(img, w, h) : NULL;
+    lv_obj_t *o = w_artwork(parent, w, h, radius, caption && !d);
+    if (d) {
+        lv_obj_set_style_clip_corner(o, true, 0);   /* the picture takes the frame's round corners */
+        lv_obj_t *im = lv_image_create(o);
+        lv_image_set_src(im, d);
+        lv_obj_center(im);
+    }
+    return o;
+}
+
 lv_obj_t *w_battery_glyph(lv_obj_t *parent, int percent, lv_color_t color)
 {
     static const char *const bars[] = {ICON_BATTERY_0, ICON_BATTERY_1, ICON_BATTERY_2, ICON_BATTERY_3,

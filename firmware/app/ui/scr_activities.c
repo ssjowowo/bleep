@@ -18,10 +18,7 @@ static void fmt_time(char *buf, int len, int32_t s)
 /* The HA media_player that feeds an activity's Now playing, or NULL */
 static ha_entity_t *np_entity(int act, int *idx)
 {
-    if (act < 0 || act >= g_model.n_activities) return NULL;
-    const activity_t *a = &g_model.activities[act];
-    if (a->np_dev < 0) return NULL;
-    int e = ha_find(g_model.devices[a->np_dev].ha_entity);
+    int e = activity_np_ent(act, NULL);   /* whichever of its sources plays */
     if (idx) *idx = e;
     return e >= 0 ? ha_get(e) : NULL;
 }
@@ -281,8 +278,13 @@ static void activities_event(app_event_t ev, int arg)
     if (ev == EV_ACTIVITY && !activity_busy()) ui_refresh();
     if (ev == EV_DEVICES) ui_refresh();
     /* the card's player: a new title, play/pause (not every position tick while it plays) */
+    if (ev == EV_HA && g_model.running >= 0 && !view && ui_current() == &page_activities &&
+        activity_np_ent(g_model.running, NULL) != card_ent) {
+        ui_refresh();   /* another of its players took over */
+        return;
+    }
     if (ev == EV_HA && card_ent >= 0 && arg == card_ent && !view && ui_current() == &page_activities) {
-        static char last[64];
+        static char last[sizeof(((ha_entity_t *)0)->title)];
         static bool last_on;
         ha_entity_t *m = ha_get(card_ent);
         if (m && (strcmp(last, m->title) || last_on != m->on)) {
@@ -434,8 +436,63 @@ static const char *sleep_text(char *buf, int len, bool sentence)
 
 static struct {
     int act, ent;
+    uint32_t art;               /* the artwork shown (art_img_t.seq), 0 = the placeholder */
     lv_obj_t *title, *sub, *slider, *pos, *dur, *play, *sleep;
 } np;
+
+static uint32_t art_seq(int ent)
+{
+    const art_img_t *a = ha_artwork(ent);
+    return a ? a->seq : 0;
+}
+
+/* Settings > Display > Now playing artwork is "Full screen" and the playing
+ * source has a picture: it fills the screen behind the page (ui.c keeps
+ * that page dark: light text on it) */
+bool np_full_art(int act)
+{
+    if (g_model.settings.np_artwork != NP_ART_FULL || act < 0 || act >= g_model.n_activities) return false;
+    int e = activity_np_ent(act, NULL);
+    return e >= 0 && ha_artwork(e);
+}
+
+/* A black veil, its opacity fading from top to bottom (the text on the picture) */
+static void veil(lv_obj_t *scr, int y, int h, lv_opa_t top, lv_opa_t bottom, int solid_from, int index)
+{
+    lv_obj_t *v = lv_obj_create(scr);
+    lv_obj_remove_style_all(v);
+    lv_obj_set_floating(v, true);
+    lv_obj_set_clickable(v, false);
+    lv_obj_set_pos(v, 0, y);
+    lv_obj_set_size(v, SCREEN_W, h);
+    lv_obj_set_style_bg_opa(v, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(v, lv_color_black(), 0);
+    lv_obj_set_style_bg_grad_color(v, lv_color_black(), 0);
+    lv_obj_set_style_bg_grad_dir(v, LV_GRAD_DIR_VER, 0);
+    lv_obj_set_style_bg_main_opa(v, top, 0);
+    lv_obj_set_style_bg_grad_opa(v, bottom, 0);
+    lv_obj_set_style_bg_grad_stop(v, solid_from, 0);   /* 0..255 of the height: the bottom opacity from there */
+    lv_obj_move_to_index(v, index);
+}
+
+/* Full screen: the picture from the top of the screen (under the status bar)
+ * down to the nav bar, cropped to fill it; veils at the top for the clock and
+ * the top row, and at the bottom for the title, progress and keys */
+static void np_backdrop(lv_obj_t *root)
+{
+    lv_obj_t *scr = lv_obj_get_parent(root);
+    int h = SCREEN_H - TABBAR_H;
+    lv_obj_t *art = w_artwork_of(scr, SCREEN_W, h, 0, false, np.ent);
+    lv_obj_set_floating(art, true);
+    lv_obj_set_clickable(art, false);
+    lv_obj_set_pos(art, 0, 0);
+    lv_obj_move_to_index(art, 0);
+    veil(scr, 0, STATUS_H + UI_PICK(64, 48), LV_OPA_70, LV_OPA_0, 255, 1);
+    int vh = h * UI_PICK(58, 66) / 100;
+    veil(scr, h - vh, vh, LV_OPA_0, LV_OPA_80, 150, 2);
+    lv_obj_set_style_bg_opa(root, LV_OPA_TRANSP, 0);
+    lv_obj_set_scrollable(root, false);   /* the picture doesn't scroll: neither does the page */
+}
 
 static void np_end_cb(lv_event_t *e)
 {
@@ -497,17 +554,23 @@ static void np_seek_cb(lv_event_t *e)
     app_notify(EV_HA, np.ent);
 }
 
+/* The scrolling title starts over at every set_text: only when it changed */
+static void set_title(const char *s)
+{
+    if (strcmp(lv_label_get_text(np.title), s)) lv_label_set_text(np.title, s);
+}
+
 static void np_update(void)
 {
     ha_entity_t *m = ha_get(np.ent);
     char buf[16];
     if (!m) return;
     if (ha_link() != HA_CONNECTED) {
-        lv_label_set_text(np.title, "Connecting…");
+        set_title("Connecting…");
         lv_label_set_text(np.sub, "Now playing comes from Home Assistant");
         return;
     }
-    lv_label_set_text(np.title, m->title[0] ? m->title : "Nothing playing");
+    set_title(m->title[0] ? m->title : "Nothing playing");
     lv_label_set_text(np.sub, m->extra);
     if (!lv_slider_is_dragged(np.slider)) {
         lv_slider_set_range(np.slider, 0, m->dur > 0 ? m->dur : 1);
@@ -548,12 +611,15 @@ static void np_build(lv_obj_t *root, int act)
     np.ent = -1;
     const activity_t *a = &g_model.activities[act];
     ha_entity_t *m = np_entity(act, &np.ent);
+    np.art = art_seq(np.ent);
     lv_obj_set_style_pad_gap(root, 0, 0);
+    bool full_art = np_full_art(act);
+    if (full_art) np_backdrop(root);
 
     lv_obj_t *top = w_row(root, UI_PICK(4, 0));
     lv_obj_set_style_pad_hor(top, PAD, 0);
     if (UI->compact) lv_obj_set_style_pad_right(top, PAD - 2, 0);
-    char buf[64];
+    char buf[128];
     snprintf(buf, sizeof(buf), "%s%s%s", a->name, m && m->artist[0] ? " · " : "", m ? m->artist : "");
     lv_obj_t *t = w_label(top, F_LABEL, T->text2, buf);
     lv_obj_set_flex_grow(t, 1);
@@ -591,11 +657,18 @@ static void np_build(lv_obj_t *root, int act)
     }
 
     lv_obj_t *info;
-    if (!UI->compact) {
+    if (full_art || !np.art) {
+        /* the picture is the page: the title and keys at the bottom, over the
+         * veil; no picture, no placeholder: the same, on the plain background */
+        lv_obj_t *gap = w_col(root, 0);
+        lv_obj_set_flex_grow(gap, 1);
+        info = w_col(root, 3);
+        lv_obj_set_style_pad_hor(info, PAD, 0);
+    } else if (!UI->compact) {
         lv_obj_t *art_wrap = w_col(root, 0);
         lv_obj_set_style_pad_hor(art_wrap, PAD, 0);
         lv_obj_set_style_pad_top(art_wrap, 6, 0);
-        w_artwork(art_wrap, 288, 156, R_ART, true);
+        w_artwork_of(art_wrap, 288, 156, R_ART, true, np.ent);
         info = w_col(root, 3);
         lv_obj_set_style_pad_hor(info, PAD, 0);
         lv_obj_set_style_pad_top(info, 10, 0);
@@ -604,14 +677,16 @@ static void np_build(lv_obj_t *root, int act)
         lv_obj_t *row = w_row(root, 12);
         lv_obj_set_style_pad_hor(row, PAD, 0);
         lv_obj_set_style_pad_top(row, 6, 0);
-        w_artwork(row, 84, 84, R_ART, false);
+        w_artwork_of(row, 84, 84, R_ART, false, np.ent);
         info = w_col(row, 3);
         lv_obj_set_flex_grow(info, 1);
         lv_obj_set_width(info, LV_SIZE_CONTENT);
     }
     np.title = w_label(info, F_TITLE, T->text, "");
     lv_obj_set_width(np.title, lv_pct(100));
-    w_one_line(np.title);
+    /* a title too long for the line scrolls round (a short one stays put) */
+    lv_label_set_long_mode(np.title, LV_LABEL_LONG_MODE_SCROLL_CIRCULAR);
+    lv_label_set_max_lines(np.title, 1);
     np.sub = w_label(info, F_LABEL, T->text2, "");
     lv_obj_set_width(np.sub, lv_pct(100));
     w_one_line(np.sub);
@@ -661,7 +736,14 @@ static void np_event(app_event_t ev, int arg)
     if (ev == EV_ACTIVITY && g_model.running == np.act && !activity_busy() &&
         strcmp(lv_label_get_text(np.sleep), sleep_text(buf, sizeof(buf), false)))
         ui_refresh();   /* the timer was set or cleared: the moon's colour too */
-    if (ev == EV_HA && (arg == np.ent || arg < 0)) np_update();
+    if (ev == EV_HA) {
+        /* another of its players took over (Plex started, the cast one stopped),
+         * or the picture came: built again; else the title and position */
+        if (activity_np_ent(np.act, NULL) != np.ent || ((arg == np.ent || arg < 0) && art_seq(np.ent) != np.art))
+            ui_refresh();
+        else if (arg == np.ent || arg < 0)
+            np_update();
+    }
     if (ev == EV_ACTIVITY && g_model.running != np.act && !activity_busy()) ui_tab(TAB_ACTIVITIES);
 }
 
@@ -847,6 +929,25 @@ static void ed_dev_cb(lv_event_t *e)
     ui_refresh();
 }
 
+/* "Plex, Kodi", or "None": Now playing's other players */
+static void np_more_text(const activity_t *a, char *buf, int len)
+{
+    int n = 0;
+    buf[0] = 0;
+    for (int k = 0; k < NP_MORE && a->np_more[k][0]; k++) {
+        const ha_entity_t *e = ha_get(ha_find(a->np_more[k]));
+        n += snprintf(buf + n, len - n, "%s%s", n ? ", " : "", e && e->name[0] ? e->name : a->np_more[k]);
+        if (n >= len) break;
+    }
+    if (!buf[0]) snprintf(buf, len, "None");
+}
+
+static void ed_np_more_cb(lv_event_t *e)
+{
+    LV_UNUSED(e);
+    ui_open(&page_np_sources, 0);
+}
+
 static void ed_keep_cb(lv_event_t *e)
 {
     int dev = ARG_INT(e);
@@ -979,6 +1080,12 @@ static void ed_build(lv_obj_t *root, int arg)
     for (int i = 0; i < 4; i++) {
         lv_obj_t *row = w_list_row(col, roles[i].icon, roles[i].label, roles[i].val, NULL);
         w_on_click(row, ed_pick_cb, i);
+        if (i == 2) {   /* under Now playing: its other players */
+            char more[96];
+            np_more_text(a, more, sizeof(more));
+            lv_obj_t *mr = w_list_row(col, ICON_MEDIA_PLAYER, "Also from", more, NULL);
+            w_on_click(mr, ed_np_more_cb, 0);
+        }
     }
 
     /* Back, Home, Mute and the apps: with the D-pad (Mute: the volume), or a device of their own */
@@ -1048,6 +1155,74 @@ static const char *ed_dirty_q(void)
 }
 
 const page_t page_activity_edit = {"Edit activity", -1, ed_build, ed_event, NULL, false, ed_dirty_q};
+
+/* ================= Now playing's other players (np_more) ================= */
+
+/* Home Assistant's media players, a switch each: Now playing shows whichever
+ * plays, so a Plex player can stand beside the TV's cast one (which has no
+ * title while Plex plays) */
+static int nps_ids[48];
+
+static void nps_cb(lv_event_t *e)
+{
+    const ha_entity_t *m = ha_get(nps_ids[ARG_INT(e)]);
+    if (!m) return;
+    activity_t *a = &draft;
+    bool on = lv_obj_has_state(lv_event_get_target_obj(e), LV_STATE_CHECKED);
+    int at = -1, n = 0;
+    for (int k = 0; k < NP_MORE; k++) {
+        if (!strcmp(a->np_more[k], m->id)) at = k;
+        if (a->np_more[k][0]) n++;
+    }
+    if (on && at < 0 && n < NP_MORE && strlen(m->id) < sizeof(a->np_more[0])) {
+        snprintf(a->np_more[n], sizeof(a->np_more[0]), "%s", m->id);
+    } else if (!on && at >= 0) {
+        memmove(a->np_more[at], a->np_more[at + 1], (NP_MORE - at - 1) * sizeof(a->np_more[0]));
+        memset(a->np_more[NP_MORE - 1], 0, sizeof(a->np_more[0]));
+    }
+    model_activity_rebuild(a);
+    ui_refresh();
+}
+
+static void nps_build(lv_obj_t *root, int arg)
+{
+    LV_UNUSED(arg);
+    const activity_t *a = &draft;
+    w_header(root, a->name, "Now playing also from", ui_back_cb);
+    lv_obj_t *col = w_col(root, 0);
+    lv_obj_set_style_pad_hor(col, PAD, 0);
+    const char *own = a->np_dev >= 0 ? g_model.devices[a->np_dev].ha_entity : "";
+    int n_on = 0, shown = 0;
+    for (int k = 0; k < NP_MORE; k++) n_on += a->np_more[k][0] != 0;
+    for (int i = 0; i < ha_count() && shown < (int)(sizeof(nps_ids) / sizeof(nps_ids[0])); i++) {
+        const ha_entity_t *m = ha_get(i);
+        if (m->domain != HA_MEDIA || !strcmp(m->id, own) || strlen(m->id) >= sizeof(a->np_more[0])) continue;
+        bool on = false;
+        for (int k = 0; k < NP_MORE; k++) on |= !strcmp(a->np_more[k], m->id);
+        if (m->unavailable && !on) continue;
+        nps_ids[shown] = i;
+        lv_obj_t *row = w_list_row(col, ICON_MEDIA_PLAYER, m->name[0] ? m->name : m->id, NULL, NULL);
+        lv_obj_set_clickable(row, false);
+        lv_obj_t *sw = w_switch(row, on);
+        if (!on && n_on >= NP_MORE) lv_obj_add_state(sw, LV_STATE_DISABLED);
+        lv_obj_add_event_cb(sw, nps_cb, LV_EVENT_VALUE_CHANGED, ARG(shown));
+        shown++;
+    }
+    const char *note = !shown ? (ha_link() == HA_CONNECTED ? "Home Assistant has no other media players."
+                                                           : "Home Assistant's media players show here once it's connected.")
+                              : "Now playing shows whichever of these plays, or the Now playing device's. Up to three.";
+    lv_obj_t *l = w_label(col, F_CAPTION, T->text2, note);
+    lv_obj_set_width(l, lv_pct(100));
+    lv_obj_set_style_pad_top(l, 8, 0);
+}
+
+static void nps_event(app_event_t ev, int arg)
+{
+    LV_UNUSED(arg);
+    if (ev == EV_HA && arg < 0) ui_refresh();   /* the list came */
+}
+
+const page_t page_np_sources = {"Now playing sources", -1, nps_build, nps_event, NULL};
 
 /* ================= Icon picker (activities, routines, Home cards) ================= */
 

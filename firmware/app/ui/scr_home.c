@@ -594,7 +594,7 @@ static void name_cb(lv_event_t *e)
     LV_UNUSED(e);
     const ha_entity_t *en = card_ent();
     if (!en) return;
-    static char helper[64];
+    static char helper[96];
     snprintf(helper, sizeof(helper), "Empty: Home Assistant's, \"%s\"", en->name);
     ui_text_entry(home_card_name(en), "Name", "Name", home_card_name(en), helper, KB_TEXT,
                   sizeof(((home_ent_t *)0)->name) - 1, name_done, NULL);

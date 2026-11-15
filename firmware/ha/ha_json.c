@@ -146,7 +146,11 @@ const char *hj_str(hj_t v, char *buf, int len)
         char tmp[4];
         int k;
         if (*p != '\\') {
-            tmp[0] = *p++, k = 1;
+            /* a whole UTF-8 character (Greek is 2 bytes), so a cut never splits one */
+            unsigned char c0 = (unsigned char)*p;
+            k = c0 >= 0xF0 ? 4 : c0 >= 0xE0 ? 3 : c0 >= 0xC0 ? 2 : 1;
+            if (p + k > end) k = (int)(end - p);
+            memcpy(tmp, p, k), p += k;
         } else if (p + 1 < end) {
             char c = p[1];
             p += 2;

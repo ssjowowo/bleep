@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "artwork.h"
 
 typedef enum {
     HA_LIGHT, HA_SWITCH, HA_ENERGY, HA_BUTTON,
@@ -31,7 +32,7 @@ enum { LIGHT_DIM = 1, LIGHT_CT = 2, LIGHT_RGB = 4 };
 
 typedef struct {
     const char *id;             /* entity_id */
-    char name[28];
+    char name[48];              /* UTF-8: Greek is 2 bytes a letter */
     ha_domain_t domain;
     int16_t area;               /* index for ha_area_*(), -1 = in no area */
     uint8_t category;           /* HA_CAT_*: HA's entity_category */
@@ -51,8 +52,8 @@ typedef struct {
     const char *options;        /* "\n" separated: HVAC modes, fan speeds, select options */
     char sub[48];               /* secondary line, e.g. "Heating · now 20.5°" */
     char extra[96];             /* domain-specific text: weather, AQ values, to-do items */
-    char title[40];             /* media title, calendar event, notification text */
-    char artist[40];
+    char title[96];             /* media title, calendar event, notification text */
+    char artist[64];
     int32_t pos, dur;           /* media position/duration, timer remaining/total, seconds */
     uint32_t todo_done;         /* bitmask over extra's lines */
 } ha_entity_t;
@@ -79,6 +80,14 @@ ha_entity_t *ha_get(int idx);
 int ha_find(const char *entity_id);
 const char *ha_domain_icon(ha_domain_t d);
 const char *ha_state_text(const ha_entity_t *e, char *buf, int len);
+
+/* A media player's picture of what it plays (HA's entity_picture: a path on
+ * HA with a token, or a full URL), "" if it has none */
+const char *ha_picture(int idx);
+/* That picture decoded (artwork.h). The first ask starts fetching it; NULL
+ * until it's there (EV_HA fires with idx then), or if it can't be had. One
+ * picture is kept: the one last asked for. */
+const art_img_t *ha_artwork(int idx);
 
 /* ---- Server discovery and sign-in (Settings > Home Assistant) ----
  *
@@ -170,3 +179,9 @@ void ha_action(int idx, const char *action);  /* press, activate, run, open, clo
 void ha_alarm(int idx, int mode, const char *code);
 void ha_todo_toggle(int idx, int item);
 void ha_set_text(int idx, const char *text);  /* input_text / text: set_value */
+
+/* Takes out, in place, what the remote's fonts can't draw and would show as
+ * squares: emoji ("Η Μάσα και ο Αρκούδος ☀️🍓"), the symbol and dingbat blocks,
+ * and the invisible joiners and variation selectors that build emoji; the
+ * spaces left doubled or at the ends go too */
+void ha_drop_unshown(char *s);

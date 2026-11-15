@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "app.h"
+#include "control.h"
 #include "ha.h"
 #include "hal.h"
 #include "power.h"
@@ -98,7 +99,9 @@ static uint8_t context_transports(int *ble_dev, bool *np_needs_wifi)
             if ((d->transports & TR_BLE) && (*ble_dev < 0 || a->devices[i] == a->nav_dev))
                 *ble_dev = a->devices[i];
         }
-        if (a->np_dev >= 0 && g_model.devices[a->np_dev].ha_entity[0]) *np_needs_wifi = true;
+        bool np;
+        activity_np_ent(g_model.running, &np);
+        if (np) *np_needs_wifi = true;
     }
     return tr;
 }

@@ -129,6 +129,14 @@ static void load_house(void)
     e = add("media_player.sonos", "Sonos", HA_MEDIA, R_LIVING);
     snprintf(e->artist, sizeof(e->artist), "Sonos");
     e->value = 18, e->dur = 214;
+    /* Plex's own player for the TV: its title and poster while Plex plays,
+     * when the TV's cast player has none (hidden: not on the Home tab) */
+    e = add("media_player.plex_living_room", "Plex (Living room TV)", HA_MEDIA, R_NONE);
+    e->hidden = true, e->on = true, e->value = 30, e->pos = 1200, e->dur = 6300;
+    snprintf(e->title, sizeof(e->title), "Plex film: Ο ταχυδρόμος \u2600\ufe0f\U0001F3D6\uFE0F\U0001F353 του Ψηλορείτη");   /* Greek, and emoji the fonts lack */
+    ha_drop_unshown(e->title);   /* as ha_store does with what HA sends */
+    snprintf(e->artist, sizeof(e->artist), "Plex");
+    snprintf(e->extra, sizeof(e->extra), "2019 · 1 h 45 m");
 
     /* Kitchen */
     e = add("switch.coffee", "Coffee machine", HA_SWITCH, R_KITCHEN);
@@ -419,6 +427,40 @@ void ha_sign_out(void)
 }
 
 static void changed(int idx) { app_notify(EV_HA, idx); }
+
+/* ---- artwork: a picture for every player with a title, decoded here and now ---- */
+
+extern const uint8_t art_demo_thumb[], art_demo_poster[];
+extern const size_t art_demo_thumb_len, art_demo_poster_len;
+
+const char *ha_picture(int idx)
+{
+    static char pic[160];
+    const ha_entity_t *e = ha_get(idx);
+    if (!e || e->domain != HA_MEDIA || !e->title[0]) return "";
+    uint32_t h = 5381;
+    for (const char *p = e->title; *p; p++) h = h * 33 + (uint8_t)*p;
+    snprintf(pic, sizeof(pic), "/api/media_player_proxy/%s?token=demo&cache=%08x", e->id, (unsigned)h);
+    return pic;
+}
+
+const art_img_t *ha_artwork(int idx)
+{
+    static art_img_t art;
+    static char url[160];
+    const char *pic = ha_picture(idx);
+    if (!pic[0] || link_state != HA_CONNECTED) return NULL;
+    if (strcmp(pic, url)) {
+        art_free(&art);
+        snprintf(url, sizeof(url), "%s", pic);
+        bool plex = strstr(pic, "plex") != NULL;   /* a poster from Plex, a video's thumbnail from the rest */
+        if (art_decode(plex ? art_demo_poster : art_demo_thumb, plex ? art_demo_poster_len : art_demo_thumb_len, &art))
+            hal_log("ha: artwork %ux%u for %s", art.w, art.h, ha_get(idx)->id);
+        else
+            hal_log("ha: artwork for %s not decoded", ha_get(idx)->id);
+    }
+    return art.px ? &art : NULL;
+}
 
 static bool online(int idx)
 {

@@ -47,7 +47,7 @@ static const char *intern(const char *s)
 
 typedef struct {
     char state[24];
-    char aux[40];               /* hvac_action, current_operation, app_name, event_type, activity, ... */
+    char aux[64];               /* hvac_action, current_operation, app_name, event_type, activity, ... */
     char unit[12];
     char dclass[20];
     const char *raw;            /* "\n" list: hvac modes, operations, select options; todo: item uids */
@@ -57,7 +57,15 @@ typedef struct {
     uint8_t step;               /* fan percentage step */
     bool has_pos, has_state, details;
     uint32_t sf;                /* supported_features */
+    uint8_t pic;                /* media players: pics[] + 1 holding its entity_picture, 0 = none yet */
 } hx_t;
+
+/* Media players' entity_picture (a proxy path on HA with a token, or a full
+ * URL): a slot each for the first MAX_PICS players that send one. It changes
+ * with every item, so not interned (the arena keeps every version). */
+#define MAX_PICS 24
+static char pics[MAX_PICS][256];
+static int n_pics;
 
 #define BLOCK 128
 static ha_entity_t *eblk[HS_MAX_ENTITIES / BLOCK + 1];
@@ -77,6 +85,11 @@ static int n_areas;
 
 int ha_count(void) { return n_ents; }
 ha_entity_t *ha_get(int idx) { return idx >= 0 && idx < n_ents ? E(idx) : NULL; }
+const char *ha_picture(int idx)
+{
+    if (idx < 0 || idx >= n_ents || E(idx)->domain != HA_MEDIA || !X(idx)->pic) return "";
+    return pics[X(idx)->pic - 1];
+}
 int ha_area_count(void) { return n_areas; }
 const char *ha_area_id(int idx) { return idx >= 0 && idx < n_areas ? areas[idx].id : ""; }
 const char *ha_area_name(int idx) { return idx >= 0 && idx < n_areas ? areas[idx].name : ""; }
@@ -184,7 +197,7 @@ void hs_reset(void)
     for (int b = 0; b <= HS_MAX_ENTITIES / BLOCK; b++)
         if (eblk[b]) memset(eblk[b], 0, BLOCK * sizeof(ha_entity_t)), memset(xblk[b], 0, BLOCK * sizeof(hx_t));
     if (hash) memset(hash, 0, HASH_SIZE * sizeof(int16_t));
-    n_ents = n_areas = 0;
+    n_ents = n_areas = n_pics = 0;
     cur_chunk = -1;
     chunk_used = CHUNK;
     ha_changed(-1);
@@ -399,7 +412,13 @@ static void attr(ha_entity_t *e, hx_t *x, hj_t k, hj_t v)
         if (hj_streq(k, "current_position")) x->has_pos = num, e->value = num ? (int16_t)clamp(d, 0, 100) : e->value;
         break;
     case HA_MEDIA:
-        if (hj_streq(k, "media_title")) hj_str(v, e->title, sizeof(e->title));
+        if (hj_streq(k, "entity_picture")) {
+            if (!x->pic && hj_is_str(v) && n_pics < MAX_PICS) x->pic = (uint8_t)++n_pics;
+            if (x->pic) {
+                pics[x->pic - 1][0] = 0;
+                if (hj_is_str(v)) hj_str(v, pics[x->pic - 1], sizeof(pics[0]));
+            }
+        } else if (hj_streq(k, "media_title")) hj_str(v, e->title, sizeof(e->title));
         else if (hj_streq(k, "media_artist")) hj_str(v, e->artist, sizeof(e->artist));
         else if (hj_streq(k, "app_name")) hj_str(v, x->aux, sizeof(x->aux));
         else if (hj_streq(k, "volume_level")) { if (num) e->value = (int16_t)clamp(d * 100, 0, 100); }
@@ -735,6 +754,9 @@ static void finish(int idx)
     default: break;
     }
     if (e->unavailable) e->on = false;
+    /* what the fonts can't draw (emoji): out, or it shows as squares */
+    ha_drop_unshown(e->name), ha_drop_unshown(e->title), ha_drop_unshown(e->artist);
+    ha_drop_unshown(e->sub), ha_drop_unshown(e->extra);
 }
 
 /* ---- registries ---- */

@@ -46,6 +46,11 @@ void device_type_key(int dev, uint8_t usage);
 void control_select_device(int dev);
 const char *control_target_name(const char **icon);   /* NULL if nothing is active */
 
+/* The HA media player an activity's Now playing shows: of its sources (the
+ * Now playing device's, then np_more), the first playing one with a title, else
+ * the first with a title, else the first HA has. -1 = none, *any (if given):
+ * whether it has a source at all. */
+int activity_np_ent(int act, bool *any);
 void activity_start(int idx);
 void activity_end(void);
 /* The editor's Test: send a draft's start steps as starting it would (power

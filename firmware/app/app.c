@@ -351,8 +351,7 @@ void app_face_down(void)
     int act = g_model.running;
     if (act < 0) return;
     const activity_t *a = &g_model.activities[act];
-    const device_t *src = a->np_dev >= 0 ? &g_model.devices[a->np_dev] : NULL;
-    int e = src && src->ha_entity[0] ? ha_find(src->ha_entity) : -1;
+    int e = activity_np_ent(act, NULL);
     ha_entity_t *m = ha_get(e);
     if (!m || !m->on) {
         hal_log("face down: nothing known to be playing, left alone");

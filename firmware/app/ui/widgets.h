@@ -163,6 +163,9 @@ lv_obj_t *w_tile(lv_obj_t *parent, const char *icon, const char *name, const cha
 lv_obj_t *w_list_row(lv_obj_t *parent, const char *icon, const char *text, const char *value,
                      lv_obj_t **value_label);
 lv_obj_t *w_artwork(lv_obj_t *parent, int w, int h, int radius, bool caption);
+/* The same with a media player's picture in it (ha_artwork), once it's there;
+ * w and h in px (not lv_pct) */
+lv_obj_t *w_artwork_of(lv_obj_t *parent, int w, int h, int radius, bool caption, int ent);
 lv_obj_t *w_battery_glyph(lv_obj_t *parent, int percent, lv_color_t color);
 lv_obj_t *w_ring(lv_obj_t *parent, int size, int width, int percent);
 

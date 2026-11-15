@@ -63,7 +63,9 @@ void ui_toast(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
 /* Pages */
 extern const page_t page_activities, page_wake, page_now_playing, page_activity_page, page_activity_edit,
-    page_icon_pick, page_routine_edit, page_routine_step;
+    page_icon_pick, page_routine_edit, page_routine_step, page_np_sources;
+/* Now playing shows its activity's artwork full screen (scr_activities.c) */
+bool np_full_art(int act);
 /* Pick one of activity_icons[] into *icon; changed() runs after a pick */
 void ui_pick_icon(const char *sub, uint8_t *icon, void (*changed)(void));
 /* The same from another list (Home cards: home_icons), with a first cell for

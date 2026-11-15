@@ -356,6 +356,28 @@ void activity_test(const activity_t *draft)
     app_notify(EV_ACTIVITY, g_model.running);
 }
 
+int activity_np_ent(int act, bool *any)
+{
+    if (any) *any = false;
+    if (act < 0 || act >= g_model.n_activities) return -1;
+    const activity_t *a = &g_model.activities[act];
+    const char *src[1 + NP_MORE];
+    int n = 0;
+    if (a->np_dev >= 0 && g_model.devices[a->np_dev].ha_entity[0]) src[n++] = g_model.devices[a->np_dev].ha_entity;
+    for (int k = 0; k < NP_MORE; k++)
+        if (a->np_more[k][0]) src[n++] = a->np_more[k];
+    if (any) *any = n > 0;
+    int best = -1, best_score = 0;
+    for (int i = 0; i < n; i++) {
+        int e = ha_find(src[i]);
+        const ha_entity_t *m = ha_get(e);
+        if (!m || m->unavailable) continue;
+        int score = m->title[0] ? (m->on ? 3 : 2) : 1;
+        if (score > best_score) best = e, best_score = score;
+    }
+    return best;
+}
+
 void activity_start(int idx)
 {
     if (idx < 0 || idx >= g_model.n_activities) return;
