@@ -2,7 +2,8 @@
 # Publish build/flasher/ to https://bleepremote.com/ (Cloudflare Pages project
 # "bleepremote"): the web flasher at /, and at /fw/ the files the remote's
 # online update reads (esp/main/ota.c). Every remote that checks after this
-# sees the new version, so publish a build that has run on a board.
+# sees the new version: publish only a clean build that passed the emulator
+# tests, with a version of its own (every build is released: CLAUDE.md).
 #
 #   firmware/flasher/deploy.sh          (needs `npx wrangler login` once)
 set -euo pipefail
