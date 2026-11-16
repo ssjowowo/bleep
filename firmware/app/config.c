@@ -123,6 +123,7 @@ char *config_to_json(const model_t *m)
     cJSON_AddBoolToObject(js, "nightstand", s->nightstand);
     cJSON_AddBoolToObject(js, "ha_battery", s->ha_battery);
     cJSON_AddBoolToObject(js, "ha_key_events", s->ha_key_events);
+    cJSON_AddBoolToObject(js, "ha_card_keys", s->ha_card_keys);
     cJSON *bl = cJSON_AddArrayToObject(js, "bright_learn");
     for (int i = 0; i < 5; i++) cJSON_AddItemToArray(bl, cJSON_CreateNumber(s->bright_learn[i]));
     cJSON_AddBoolToObject(js, "fun_zone", s->fun_zone);
@@ -326,6 +327,7 @@ static void read_settings(const cJSON *js, settings_t *s)
     s->nightstand = get_bool(js, "nightstand", s->nightstand);
     s->ha_battery = get_bool(js, "ha_battery", s->ha_battery);
     s->ha_key_events = get_bool(js, "ha_key_events", s->ha_key_events);
+    s->ha_card_keys = get_bool(js, "ha_card_keys", s->ha_card_keys);   /* added in 0.2.23 */
     const cJSON *bl = cJSON_GetObjectItemCaseSensitive(js, "bright_learn");
     for (int i = 0; i < 5 && cJSON_IsArray(bl); i++) {
         const cJSON *v = cJSON_GetArrayItem(bl, i);

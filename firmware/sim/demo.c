@@ -110,12 +110,12 @@ void demo_fill(const char **wifi_pass)
      * so every card in the design shows somewhere */
     static const struct {
         const char *area;
-        const char *ids[16];
+        const char *ids[20];
     } rooms[] = {
         {"living_room", {"light.ceiling", "light.floor_lamp", "climate.living", "scene.movie", "scene.bright",
                          "scene.living_off", "light.led_strip", "media_player.shield", "remote.shield",
                          "cover.living_blinds", "media_player.apple_tv", "media_player.kodi", "media_player.sonos",
-                         "sensor.living_temp", "sensor.tv_outlet"}},
+                         "sensor.living_temp", "sensor.living_humidity", "sensor.living_co2", "sensor.tv_outlet"}},
         {"kitchen", {"switch.coffee", "light.kitchen_strip", "button.doorbell_chime", "water_heater.boiler",
                      "vacuum.downstairs", "sensor.air_quality", "counter.coffees", "timer.pizza", "todo.shopping"}},
         {"bedroom", {"fan.ceiling", "humidifier.bedroom", "light.bedside", "automation.morning_lights",
@@ -131,7 +131,7 @@ void demo_fill(const char **wifi_pass)
     for (unsigned i = 0; i < sizeof(rooms) / sizeof(rooms[0]); i++) {
         home_room_t *hr = &h->rooms[h->n_rooms++];
         snprintf(hr->area, sizeof(hr->area), "%s", rooms[i].area);
-        for (int k = 0; k < 16 && rooms[i].ids[k]; k++) hr->items[hr->n_items++] = model_home_id(rooms[i].ids[k]);
+        for (int k = 0; k < 20 && rooms[i].ids[k]; k++) hr->items[hr->n_items++] = model_home_id(rooms[i].ids[k]);
     }
 
 }

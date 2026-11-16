@@ -1,0 +1,21 @@
+# A camera: one snapshot on its card in the list (kept); tap it for the
+# camera's own page, where it keeps refreshing
+click Start
+wait 300
+click Home
+wait 800
+click Hallway
+wait 300
+click Front porch
+wait 300
+drag ~160 ~380 ~160 ~280
+wait 800
+expect Front porch
+expect-no No snapshot yet
+shot 200_camera_list
+tap ~160 ~320
+wait 500
+expect Front porch
+expect-no No snapshot yet
+expect Hallway
+shot 201_camera_page

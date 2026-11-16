@@ -96,10 +96,8 @@ wait 300
 shot s21_home_2
 click Kitchen
 wait 600
-# a light's tile, held: its full card
+# a light's tile, held: its page, the wheel under the swatches
 press LED strip
-wait 600
-clickin LED strip | expand
 wait 600
 drag ~160 ~380 ~160 ~200
 wait 300

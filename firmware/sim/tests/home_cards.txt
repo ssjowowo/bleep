@@ -1,0 +1,68 @@
+# The Home tab's cards (0.2.23): needs attention, the room's summary, scenes
+# as chips, the sensors' strip, tiles that slide, players that fold, and an
+# entity's own page that the volume keys and OK adjust
+click Start
+wait 300
+click Home
+wait 2000
+# above the rooms: what needs attention, from every room
+expect Low · 9% · Hallway
+expect Install
+# the summary: the lights that are on, the room's temperature
+expect 2 on
+expect 21.5°
+# the scenes first, then the sensors in one strip, then the tiles
+expect-before Movie | 48%
+expect-before 48% | Ceiling light
+expect 612 ppm
+shot 300_home_cards
+# the lights chip turns the room's lights off
+click Lights off
+wait 600
+expect-no 2 on
+expect Floor lamp
+# a light's tile: slide it to set the brightness
+drag ~160 ~340 ~160 ~190
+wait 1500
+shot 303_tiles
+mark
+swipe Floor lamp 100 0
+wait 300
+expect-log light.floor_lamp value =
+expect-log-no light.floor_lamp.toggle
+# players that are off fold to one row: no empty timer
+expect-no 0:00 / 49:10
+# a held tile opens the entity's page: the thermostat's ring, - and +
+press Thermostat
+wait 600
+expect Set to
+expect Volume ± sets the temperature
+shot 301_thermostat_page
+mark
+key VOL+
+wait 300
+expect-log climate.living target =
+mark
+click Warmer
+wait 300
+expect-log climate.living target =
+back
+wait 400
+# the blinds: a tall position bar, the volume keys move it
+press Living room blinds
+wait 600
+expect Volume ± moves it
+shot 302_blinds_page
+mark
+key VOL-
+wait 300
+expect-log cover.living_blinds value = 50
+back
+wait 400
+# a light's page: OK switches it
+press Ceiling light
+wait 600
+mark
+key OK
+wait 300
+expect-log light.ceiling.toggle

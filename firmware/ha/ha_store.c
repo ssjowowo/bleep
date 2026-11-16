@@ -57,12 +57,13 @@ typedef struct {
     uint8_t step;               /* fan percentage step */
     bool has_pos, has_state, details;
     uint32_t sf;                /* supported_features */
-    uint8_t pic;                /* media players: pics[] + 1 holding its entity_picture, 0 = none yet */
+    uint8_t pic;                /* media players, cameras: pics[] + 1 holding its entity_picture, 0 = none yet */
 } hx_t;
 
-/* Media players' entity_picture (a proxy path on HA with a token, or a full
- * URL): a slot each for the first MAX_PICS players that send one. It changes
- * with every item, so not interned (the arena keeps every version). */
+/* Media players' and cameras' entity_picture (a proxy path on HA with a
+ * token, or a full URL): a slot each for the first MAX_PICS that send one. It
+ * changes with every item (a camera's token every 5 minutes), so not interned
+ * (the arena keeps every version). */
 #define MAX_PICS 24
 static char pics[MAX_PICS][256];
 static int n_pics;
@@ -87,7 +88,8 @@ int ha_count(void) { return n_ents; }
 ha_entity_t *ha_get(int idx) { return idx >= 0 && idx < n_ents ? E(idx) : NULL; }
 const char *ha_picture(int idx)
 {
-    if (idx < 0 || idx >= n_ents || E(idx)->domain != HA_MEDIA || !X(idx)->pic) return "";
+    if (idx < 0 || idx >= n_ents || (E(idx)->domain != HA_MEDIA && E(idx)->domain != HA_CAMERA) || !X(idx)->pic)
+        return "";
     return pics[X(idx)->pic - 1];
 }
 int ha_area_count(void) { return n_areas; }
@@ -411,6 +413,7 @@ static void attr(ha_entity_t *e, hx_t *x, hj_t k, hj_t v)
     case HA_COVER:
         if (hj_streq(k, "current_position")) x->has_pos = num, e->value = num ? (int16_t)clamp(d, 0, 100) : e->value;
         break;
+    case HA_CAMERA:
     case HA_MEDIA:
         if (hj_streq(k, "entity_picture")) {
             if (!x->pic && hj_is_str(v) && n_pics < MAX_PICS) x->pic = (uint8_t)++n_pics;
@@ -418,7 +421,8 @@ static void attr(ha_entity_t *e, hx_t *x, hj_t k, hj_t v)
                 pics[x->pic - 1][0] = 0;
                 if (hj_is_str(v)) hj_str(v, pics[x->pic - 1], sizeof(pics[0]));
             }
-        } else if (hj_streq(k, "media_title")) hj_str(v, e->title, sizeof(e->title));
+        } else if (e->domain != HA_MEDIA) break;
+        else if (hj_streq(k, "media_title")) hj_str(v, e->title, sizeof(e->title));
         else if (hj_streq(k, "media_artist")) hj_str(v, e->artist, sizeof(e->artist));
         else if (hj_streq(k, "app_name")) hj_str(v, x->aux, sizeof(x->aux));
         else if (hj_streq(k, "volume_level")) { if (num) e->value = (int16_t)clamp(d * 100, 0, 100); }

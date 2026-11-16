@@ -117,6 +117,14 @@ static void load_house(void)
     e->current = 215, e->value = 48;
     snprintf(e->sub, sizeof(e->sub), "Temperature");
     snprintf(e->extra, sizeof(e->extra), "°C\nHumidity\n48%%");
+    e = add("sensor.living_humidity", "Living room humidity", HA_SENSOR, R_LIVING);
+    e->current = 480;
+    snprintf(e->sub, sizeof(e->sub), "Humidity");
+    snprintf(e->extra, sizeof(e->extra), "%%");
+    e = add("sensor.living_co2", "Living room CO2", HA_SENSOR, R_LIVING);
+    e->current = 6120;
+    snprintf(e->sub, sizeof(e->sub), "Carbon dioxide");
+    snprintf(e->extra, sizeof(e->extra), "ppm");
     e = add("sensor.tv_outlet", "TV outlet", HA_ENERGY, R_LIVING);
     e->value = 86, e->current = 42;
     snprintf(e->sub, sizeof(e->sub), "Power · energy");
@@ -428,7 +436,8 @@ void ha_sign_out(void)
 
 static void changed(int idx) { app_notify(EV_HA, idx); }
 
-/* ---- artwork: a picture for every player with a title, decoded here and now ---- */
+/* ---- artwork: a picture for every player with a title and every camera,
+ * decoded here and now (one per entity kind: Now playing and camera cards) ---- */
 
 extern const uint8_t art_demo_thumb[], art_demo_poster[];
 extern const size_t art_demo_thumb_len, art_demo_poster_len;
@@ -437,6 +446,10 @@ const char *ha_picture(int idx)
 {
     static char pic[160];
     const ha_entity_t *e = ha_get(idx);
+    if (e && e->domain == HA_CAMERA) {
+        snprintf(pic, sizeof(pic), "/api/camera_proxy/%s?token=demo", e->id);
+        return pic;
+    }
     if (!e || e->domain != HA_MEDIA || !e->title[0]) return "";
     uint32_t h = 5381;
     for (const char *p = e->title; *p; p++) h = h * 33 + (uint8_t)*p;
@@ -444,23 +457,40 @@ const char *ha_picture(int idx)
     return pic;
 }
 
+static int16_t art_wait[8];   /* asked for before HA was there: told when it is */
+static int n_wait;
+
 const art_img_t *ha_artwork(int idx)
 {
-    static art_img_t art;
-    static char url[160];
+    static art_img_t arts[2];
+    static char urls[2][160];
     const char *pic = ha_picture(idx);
-    if (!pic[0] || link_state != HA_CONNECTED) return NULL;
-    if (strcmp(pic, url)) {
-        art_free(&art);
-        snprintf(url, sizeof(url), "%s", pic);
-        bool plex = strstr(pic, "plex") != NULL;   /* a poster from Plex, a video's thumbnail from the rest */
-        if (art_decode(plex ? art_demo_poster : art_demo_thumb, plex ? art_demo_poster_len : art_demo_thumb_len, &art))
-            hal_log("ha: artwork %ux%u for %s", art.w, art.h, ha_get(idx)->id);
-        else
-            hal_log("ha: artwork for %s not decoded", ha_get(idx)->id);
+    if (!pic[0]) return NULL;
+    if (link_state != HA_CONNECTED) {
+        bool have = false;
+        for (int i = 0; i < n_wait; i++) have |= art_wait[i] == idx;
+        if (!have && n_wait < 8) art_wait[n_wait++] = (int16_t)idx;
+        return NULL;
     }
-    return art.px ? &art : NULL;
+    bool cam = ha_get(idx)->domain == HA_CAMERA;
+    art_img_t *art = &arts[cam];
+    if (strcmp(pic, urls[cam])) {
+        art_free(art);
+        snprintf(urls[cam], sizeof(urls[cam]), "%s", pic);
+        bool plex = strstr(pic, "plex") != NULL;   /* a poster from Plex, a video's thumbnail from the rest */
+        if (art_decode(plex ? art_demo_poster : art_demo_thumb, plex ? art_demo_poster_len : art_demo_thumb_len, art)) {
+            art->time = hal_time();
+            hal_log("ha: %s %ux%u for %s", cam ? "snapshot" : "artwork", art->w, art->h, ha_get(idx)->id);
+        } else
+            hal_log("ha: picture for %s not decoded", ha_get(idx)->id);
+    }
+    return art->px ? art : NULL;
 }
+
+void ha_artwork_free_all(void) {}
+
+/* The emulator's camera doesn't move: the same snapshot */
+const art_img_t *ha_artwork_live(int idx) { return ha_artwork(idx); }
 
 static bool online(int idx)
 {
@@ -478,6 +508,8 @@ void ha_tick(void)
         link_state = HA_CONNECTED;
         hal_log("ha: websocket authenticated, %d entities", n_ents);
         app_notify(EV_HA, -1);
+        for (int i = 0; i < n_wait; i++) app_notify(EV_HA, art_wait[i]);
+        n_wait = 0;
     }
     for (int i = 0; i < n_ents; i++) {
         ha_entity_t *e = &ents[i];

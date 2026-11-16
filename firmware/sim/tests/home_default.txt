@@ -10,12 +10,13 @@ expect-before Kitchen | Bedroom
 expect-before Hallway | Garden
 # the garage has only a hub's settings and diagnostics: no room
 expect-no Garage
-# Living room: lights, then climate, covers, media; scenes as one row
+# Living room: the scenes first, as one row of chips; then the tiles
+# (lights, then climate, covers) and the full cards (media)
+expect-before Movie | Ceiling light
 expect-before Ceiling light | Floor lamp
 expect-before LED strip | Thermostat
 expect-before Thermostat | Living room blinds
 expect-before Living room blinds | Apple TV
-expect-before Sonos | Movie
 # a light's diagnostic sensor and a plain sensor are left out
 expect-no Ceiling light signal
 expect-no Power · energy
@@ -37,7 +38,8 @@ expect Siren
 expect Front porch
 expect-no Old hall light
 expect-no Motion detected
-expect-no Low · 9%
+# the door sensor's low battery isn't a card here, but it's in "needs attention" above the rooms
+expect Low · 9% · Hallway
 # Garden: weather and the sun are in no area in HA
 click Garden
 wait 200

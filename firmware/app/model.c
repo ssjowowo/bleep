@@ -424,6 +424,7 @@ void model_init_defaults(void)
     s->face_down_pause = true;
     s->nightstand = true;
     s->ha_battery = true;
+    s->ha_card_keys = true;
     s->haptics = 2;
     s->haptic_feel = FEEL_CRISP;
     s->haptic_events = BUZZ_ALL;

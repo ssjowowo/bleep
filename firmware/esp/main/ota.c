@@ -17,6 +17,7 @@
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
 #include "esp_log.h"
+#include "esp_heap_caps.h"
 #include "esp_ota_ops.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -86,8 +87,10 @@ static void install_task(void *arg)
                                    .keep_alive_enable = true};
     esp_https_ota_config_t oc = {.http_config = &hc};
     esp_https_ota_handle_t ota = NULL;
+    const char *step = "connecting";   /* where it failed, for the log */
     esp_err_t err = esp_https_ota_begin(&oc, &ota);
     while (err == ESP_OK) {
+        step = "downloading";
         err = esp_https_ota_perform(ota);
         if (err != ESP_ERR_HTTPS_OTA_IN_PROGRESS) break;
         int total = esp_https_ota_get_image_size(ota), got = esp_https_ota_get_image_len_read(ota);
@@ -95,14 +98,26 @@ static void install_task(void *arg)
         if (abort_asked) break;
         err = ESP_OK;
     }
+    int status = ota ? esp_https_ota_get_status_code(ota) : 0, got = ota ? esp_https_ota_get_image_len_read(ota) : 0;
     if (ota && (abort_asked || err != ESP_OK || !esp_https_ota_is_complete_data_received(ota))) {
+        if (err == ESP_OK && !abort_asked) step = "downloading (ended early)";
         esp_https_ota_abort(ota);   /* the running firmware stays as it is */
         install_state = FW_INSTALL_FAILED;
     } else if (ota) {
-        install_state = esp_https_ota_finish(ota) == ESP_OK ? FW_INSTALL_DONE : FW_INSTALL_FAILED;
+        step = "checking the image";
+        err = esp_https_ota_finish(ota);
+        install_state = err == ESP_OK ? FW_INSTALL_DONE : FW_INSTALL_FAILED;
     } else {
         install_state = FW_INSTALL_FAILED;
     }
+    /* why, in the app's log (the screen just says it failed) */
+    if (install_state == FW_INSTALL_FAILED && !abort_asked)
+        hal_log("ota: failed %s: %s, HTTP %d, %d bytes in; free PSRAM %u KB (biggest %u KB), internal %u KB (biggest %u KB)",
+                step, esp_err_to_name(err), status, got,
+                (unsigned)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024),
+                (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024),
+                (unsigned)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024),
+                (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) / 1024));
     if (install_state == FW_INSTALL_DONE) install_pct = 100;
     ESP_LOGI(TAG, "install: %s", install_state == FW_INSTALL_DONE ? "done, boots after the restart" : "failed");
     vTaskDelete(NULL);

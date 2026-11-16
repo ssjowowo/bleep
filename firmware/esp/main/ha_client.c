@@ -322,20 +322,50 @@ static void open_socket(const char *server, bool local)
 /* ---- artwork (ha_artwork): fetched and decoded on the worker ---- */
 
 #define ART_MAX_BYTES (1536 * 1024)
-static art_img_t art;                   /* the loop's: the picture for art_url */
-static char art_url[256];               /* entity_picture it is (or is being fetched) for */
-static int art_ent = -1;
-static volatile bool art_busy;          /* JOB_ART queued or running */
+#define ART_SLOTS 3                     /* pictures kept: Now playing's, a couple of cameras */
+#define CAM_WIDTH 320                   /* a camera's snapshot asked at this width (the card is 258 px) */
+typedef struct {
+    int ent;                            /* -1 = free */
+    char url[256];                      /* the entity_picture img is (or is being fetched) for */
+    art_img_t img;
+    uint32_t at, used;                  /* hal_millis() it was asked for; last asked (LRU) */
+} art_slot_t;
+static art_slot_t slots[ART_SLOTS] = {{.ent = -1}, {.ent = -1}, {.ent = -1}};
+static volatile bool art_busy;          /* JOB_ART queued or running... */
+static int art_at;                      /* ...for this slot */
 static art_img_t art_new;               /* the worker's result... */
 static volatile int art_done;           /* ...1 when it's in art_new, -1 when it failed */
+static int16_t art_wait[8];             /* entities asked for while the worker was busy or HA not there */
+static int n_wait;
+
+static void art_add_wait(int idx)
+{
+    for (int i = 0; i < n_wait; i++)
+        if (art_wait[i] == idx) return;
+    if (n_wait < (int)(sizeof(art_wait) / sizeof(art_wait[0]))) art_wait[n_wait++] = (int16_t)idx;
+}
+
+/* The ones that waited: asked again (EV_HA), but not skip (it was just told) */
+static void art_wake(int skip)
+{
+    int n = n_wait;
+    int16_t wait[sizeof(art_wait) / sizeof(art_wait[0])];
+    memcpy(wait, art_wait, sizeof(wait));
+    n_wait = 0;
+    for (int i = 0; i < n; i++)
+        if (wait[i] != skip) app_notify(EV_HA, wait[i]);
+}
 
 /* The worker: GET the picture (a path on HA, with the access token, or a
- * full URL), then decode it */
-static void art_fetch(const char *pic)
+ * full URL), then decode it. A camera's at CAM_WIDTH (HA scales it). */
+static void art_fetch(const char *pic, bool cam)
 {
     static char url[400], hdr[360];   /* not on the worker's stack: TLS needs it (an https picture) */
     bool on_ha = strncmp(pic, "http://", 7) && strncmp(pic, "https://", 8);
-    snprintf(url, sizeof(url), "%s%s", on_ha ? base : "", pic);
+    if (cam && on_ha)
+        snprintf(url, sizeof(url), "%s%s%swidth=%d", base, pic, strchr(pic, '?') ? "&" : "?", CAM_WIDTH);
+    else
+        snprintf(url, sizeof(url), "%s%s", on_ha ? base : "", pic);
     esp_http_client_config_t cfg = {
         .url = url,
         .timeout_ms = 8000,
@@ -364,36 +394,82 @@ static void art_fetch(const char *pic)
     uint32_t t = hal_millis();
     bool ok = buf && n > 0 && art_decode(buf, n, &art_new);
     if (buf) hal_big_free(buf);
-    if (ok) hal_log("ha: artwork %u bytes, %ux%u, decoded in %u ms", (unsigned)n, art_new.w, art_new.h,
-                    (unsigned)(hal_millis() - t));
-    else hal_log("ha: artwork not shown (HTTP %d, %d bytes: not a baseline JPEG?)", status, n);
+    if (ok) hal_log("ha: %s %u bytes, %ux%u, decoded in %u ms", cam ? "snapshot" : "artwork", (unsigned)n,
+                    art_new.w, art_new.h, (unsigned)(hal_millis() - t));
+    else hal_log("ha: %s not shown (HTTP %d, %d bytes: not a baseline JPEG?)", cam ? "snapshot" : "artwork",
+                 status, n);
     art_done = ok ? 1 : -1;
 }
 
-const art_img_t *ha_artwork(int idx)
+/* max_age: a camera's snapshot older than that (ms) is fetched again */
+static const art_img_t *artwork(int idx, uint32_t max_age)
 {
+    static uint32_t tick;
     const char *pic = ha_picture(idx);
     if (!pic[0]) return NULL;
-    if (art_ent == idx && !strcmp(pic, art_url)) return art.px ? &art : NULL;
-    if (art_busy || ha_ws_state() != WS_READY) return NULL;   /* asked again when that one's in (EV_HA) */
-    art_free(&art);
-    snprintf(art_url, sizeof(art_url), "%s", pic);
-    art_ent = idx;
+    bool cam = ha_get(idx)->domain == HA_CAMERA;
+    art_slot_t *s = NULL;
+    for (int i = 0; i < ART_SLOTS; i++)
+        if (slots[i].ent == idx) s = &slots[i];
+    if (s) s->used = ++tick;
+    const art_img_t *have = s && s->img.px ? &s->img : NULL;
+    /* a player's picture is for its item; a camera's token changes every 5
+     * minutes, its snapshot is old only by max_age */
+    bool fresh = s && (cam ? hal_millis() - s->at < max_age : !strcmp(s->url, pic));
+    if (fresh) return have;
+    const art_img_t *keep = cam ? have : NULL;   /* a camera's last snapshot until the next is in */
+    if (art_busy || ha_ws_state() != WS_READY) {
+        if (!(art_busy && s && art_at == s - slots)) art_add_wait(idx);
+        return keep;                    /* asked again when that one's in, or HA is (EV_HA) */
+    }
+    if (!s) {                           /* a free slot, or the one asked for longest ago */
+        s = &slots[0];
+        for (int i = 0; i < ART_SLOTS; i++)
+            if (slots[i].ent < 0 || (s->ent >= 0 && slots[i].used < s->used)) s = &slots[i];
+        art_free(&s->img);
+        s->ent = idx;
+        s->used = ++tick;
+        keep = NULL;
+    } else if (!cam) {
+        art_free(&s->img);              /* the last item's picture: not shown for this one */
+    }
+    snprintf(s->url, sizeof(s->url), "%s", pic);
+    s->at = hal_millis();               /* a failed one isn't asked for again before max_age */
+    art_at = (int)(s - slots);
     art_busy = true;
     art_done = 0;
-    post_job(JOB_ART, pic, NULL);
-    return NULL;
+    post_job(JOB_ART, pic, cam ? "cam" : NULL);
+    return keep;
 }
+
+const art_img_t *ha_artwork(int idx) { return artwork(idx, UINT32_MAX); }
+
+void ha_artwork_free_all(void)
+{
+    for (int i = 0; i < ART_SLOTS; i++) {
+        if (art_busy && i == art_at) continue;   /* the worker's: its result lands there */
+        art_free(&slots[i].img);
+        slots[i].ent = -1;
+        slots[i].url[0] = 0;
+    }
+}
+const art_img_t *ha_artwork_live(int idx) { return artwork(idx, HA_CAM_REFRESH_MS); }
 
 /* The loop: the worker's picture in */
 static void art_poll(void)
 {
     if (!art_busy || !art_done) return;
-    if (art_done > 0) art = art_new;
+    art_slot_t *s = &slots[art_at];
+    if (art_done > 0) {
+        art_free(&s->img);
+        s->img = art_new;
+        s->img.time = hal_time();
+    }
     memset(&art_new, 0, sizeof(art_new));
     art_done = 0;
     art_busy = false;
-    app_notify(EV_HA, art_ent);   /* shown now, or another one asked for meanwhile is fetched */
+    app_notify(EV_HA, s->ent);          /* shown now */
+    art_wake(s->ent);
 }
 
 /* ---- the worker task ---- */
@@ -529,7 +605,7 @@ static void worker(void *arg)
             break;
         }
         case JOB_ART:
-            art_fetch(j.a);
+            art_fetch(j.a, j.b != NULL);
             break;
         case JOB_SAVE: {
             FILE *f = fopen(CACHE_PATH, "wb");
@@ -680,6 +756,7 @@ void ha_poll(void)
             } else if (before != WS_READY && ha_ws_state() == WS_READY) {
                 hal_log("ha: ready %u ms after connecting", (unsigned)(hal_millis() - connect_t0));
                 replay_held();
+                if (!art_busy) art_wake(-1);   /* pictures asked for before HA was there */
                 /* look for it on the home network now; a .local name: its address */
                 if (!via_local || mdns_name(base)) post_job(JOB_LOCAL, NULL, NULL);
                 retry_ms = 0;

@@ -22,8 +22,9 @@ typedef struct page {
     /* Unsaved changes: the question to ask before they're thrown away
      * ("Discard changes?"), or NULL when there's nothing to lose. Optional. */
     const char *(*dirty)(void);
-    /* Every physical key, while it's on screen (the games), instead of the
-     * device or activity. Optional. */
+    /* The physical keys, while it's on screen, before the device or activity:
+     * true = taken (the games take them all; an entity's page the volume keys
+     * and OK), false = as usual. Optional. */
     bool (*key)(bleep_key_t key);
 } page_t;
 

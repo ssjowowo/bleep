@@ -81,13 +81,22 @@ int ha_find(const char *entity_id);
 const char *ha_domain_icon(ha_domain_t d);
 const char *ha_state_text(const ha_entity_t *e, char *buf, int len);
 
-/* A media player's picture of what it plays (HA's entity_picture: a path on
- * HA with a token, or a full URL), "" if it has none */
+/* A media player's picture of what it plays, or a camera's snapshot (HA's
+ * entity_picture: a path on HA with a token, or a full URL), "" if it has none */
 const char *ha_picture(int idx);
 /* That picture decoded (artwork.h). The first ask starts fetching it; NULL
- * until it's there (EV_HA fires with idx then), or if it can't be had. One
- * picture is kept: the one last asked for. */
+ * until it's there (EV_HA fires with idx then), or if it can't be had. A few
+ * are kept, the ones last asked for. A camera's snapshot is fetched once and
+ * kept (the list shows that one). */
 const art_img_t *ha_artwork(int idx);
+/* The same, but a camera's snapshot older than HA_CAM_REFRESH_MS is fetched
+ * again (the old one is returned until the new one is in): the camera's own
+ * page asks every second while it's open. */
+#define HA_CAM_REFRESH_MS 3000
+const art_img_t *ha_artwork_live(int idx);
+/* Lets go of the pictures kept (they're fetched again when asked for): the
+ * memory for something bigger, like an update's download */
+void ha_artwork_free_all(void);
 
 /* ---- Server discovery and sign-in (Settings > Home Assistant) ----
  *

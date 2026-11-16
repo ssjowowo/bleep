@@ -14,6 +14,7 @@ typedef struct {
     uint16_t w, h;
     uint16_t *px;               /* RGB565, w * h; hal_big_alloc'd */
     uint32_t seq;               /* a new picture, a new number (the screens' crops key on it) */
+    int64_t time;               /* hal_time() it came in (a camera card shows it) */
 } art_img_t;
 
 /* The JPEG at about screen size: every k-th pixel, k the largest that still

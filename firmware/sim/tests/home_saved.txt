@@ -21,8 +21,9 @@ expect-before Hallway | Garden
 # then the kitchen's other cards
 expect-before Espresso | Porch light
 expect-no Coffee machine
-expect-before Porch light | Air quality
-expect-before Air quality | LED strip
+expect-before Porch light | LED strip
+# the tiles together, then the full cards (air quality)
+expect-before LED strip | Air quality
 expect Water heater
 shot 172_home_saved_kitchen
 # Living room: a lock and a scene added from elsewhere, after the ceiling
@@ -31,8 +32,9 @@ click Living room
 wait 200
 # the ceiling light renamed and compact (its brightness slider gone); the
 # floor lamp's unknown icon and size are HA's and full
-expect-before Big light | Front door
 expect-before Front door | Floor lamp
+# compact is a card, not a tile: after the tiles
+expect-before Floor lamp | Big light
 expect-no Ceiling light
 expect-no 3000 K
 shot 193_home_saved_living

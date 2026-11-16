@@ -1,23 +1,19 @@
 # A colour light in a house with hundreds of entities (its index past 64):
-# a colour tapped shows as chosen, and expand opens the wheel
+# a colour tapped shows as chosen; its page has the wheel under the swatches
 bighouse
 click Start
 wait 300
 tab Home
 wait 900
 expect LED strip
-# its tile, held: the full card
+# its tile, held: its page
 press LED strip
 wait 600
 mark
 click Colour 2
 wait 600
 shot 197_colour_chosen
-clickin LED strip | expand
+expect Volume ± dims · OK switches
+drag ~160 ~400 ~160 ~150
 wait 600
-expect Done
-expect White
 shot 198_colour_wheel_big_house
-click Done
-wait 600
-expect-no Done

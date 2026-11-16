@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "app.h"
+#include "ha.h"
 #include "power.h"
 #include "radio.h"
 
@@ -182,6 +183,7 @@ void update_tick(void)
     case UPD_WAIT_WIFI:
         if (wifi_up) {
             if (installing) {
+                ha_artwork_free_all();   /* the download's TLS buffers need the PSRAM the pictures hold */
                 hal_fw_install_start();
                 st.percent = 0;
                 st.busy = UPD_DOWNLOADING;

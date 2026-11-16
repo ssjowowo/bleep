@@ -48,7 +48,7 @@ bool ui_key_intercept(bleep_key_t key)
         qs_dismiss();
         return true;
     }
-    if (p->key) return p->key(key);   /* a game: the whole remote is the controller */
+    if (p->key && p->key(key)) return true;   /* a game: the whole remote; an entity page: a few */
     if (key != KEY_BACK && key != KEY_HOME) return false;
     bool control = p->tab >= 0 || p == &page_device || p == &page_activity_page || p == &page_now_playing ||
                    p == &page_trackpad;

@@ -3,6 +3,7 @@
  * (app/home.c). It's the page's arg (1), so it survives the Add page on top
  * and ends with Done or on leaving the tab (a tab opens with arg 0). */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include "../ha.h"
@@ -27,6 +28,14 @@ static int n_cards;
 static int built_ents[MAX_CARDS], n_built;   /* every entity on the page, scene groups' too */
 static bool empty;          /* built with nothing from HA yet */
 static bool scheduled;
+/* The page's parts besides the cards, rebuilt in place when what they show changes */
+static lv_obj_t *summary_row;   /* under the room picker: lights on, temperature, playing, alerts, the link */
+static lv_obj_t *attn_row;      /* above the rooms: what needs the user, from every room */
+static lv_obj_t *glance_obj;    /* the room's sensors in one card */
+#define MAX_ATTN 8
+static int attn_ents[MAX_ATTN], n_attn;
+static int glance_ents[MAX_CARDS], n_glance;
+static bool summary_dirty, attn_dirty, glance_dirty;
 
 static void select_room(int r)
 {
@@ -53,12 +62,43 @@ static bool pressed_inside(lv_obj_t *o)
     return false;
 }
 
-/* Link state, short, in the title row between the room and Edit: hidden
- * while connected, and the cards don't move when it changes. */
-static lv_obj_t *link_lbl;
+static void setup_cb(lv_event_t *e) { LV_UNUSED(e); ui_open(&page_ha_settings, 0); }
+static void wifi_cb(lv_event_t *e) { LV_UNUSED(e); ui_open_wifi(); }
 
-static void update_link(void)
+/* ---- the summary under the room picker ---- */
+
+static void open_ent_cb(lv_event_t *e) { ha_card_open_detail(ARG_INT(e)); }
+
+static void lights_off_cb(lv_event_t *e)
 {
+    LV_UNUSED(e);
+    int n = 0;
+    for (int i = 0; i < n_built; i++) {
+        const ha_entity_t *en = ha_get(built_ents[i]);
+        if (en && en->domain == HA_LIGHT && en->on && !en->unavailable) ha_action(built_ents[i], "turn_off"), n++;
+    }
+    app_buzz(HAPTIC_CONFIRM);
+    ui_toast(n == 1 ? "Turned off 1 light" : "Turned off %d lights", n);
+}
+
+static lv_obj_t *summary_chip(const char *text, const char *icon, bool warn, lv_event_cb_t cb, int arg)
+{
+    lv_obj_t *c = w_chip(summary_row, text, icon, false);
+    lv_obj_t *l = lv_obj_get_child(c, -1);
+    lv_obj_set_style_text_color(l, warn ? T->warning : T->text, 0);
+    if (icon) lv_obj_set_style_text_color(lv_obj_get_child(c, 0), warn ? T->warning : T->text2, 0);
+    if (warn) lv_obj_set_style_border_color(c, T->warning, 0);
+    lv_obj_add_event_cb(c, cb, LV_EVENT_CLICKED, ARG(arg));
+    return c;
+}
+
+/* What the room is doing, at a glance; each chip a shortcut. The link state
+ * (not connected) comes first, in the warning colour. Hidden when there's
+ * nothing to say. */
+static void fill_summary(void)
+{
+    if (!summary_row) return;
+    lv_obj_clean(summary_row);
     ha_link_t l = ha_link();
     const radio_status_t *rs = radio_status();
     const char *t = l == HA_CONNECTED             ? ""
@@ -67,15 +107,77 @@ static void update_link(void)
                     : l == HA_CONNECTING          ? "Connecting…"
                     : l == HA_SIGNED_OUT          ? "Signed out"
                                                   : "Offline";
-    bool never = empty && !g_model.settings.ha_user[0];   /* nothing set up yet: not a fault */
-    if (never) t = "";
-    lv_label_set_text(link_lbl, t);
-    lv_obj_set_style_text_color(link_lbl, T->warning, 0);
-    lv_obj_set_hidden(link_lbl, !t[0]);
+    if (t[0]) summary_chip(t, ICON_WIFI, true, setup_cb, 0);
+    int lights = 0, climate = -1, playing = -1, alerts = 0;
+    char buf[48];
+    for (int i = 0; i < n_built; i++) {
+        const ha_entity_t *e = ha_get(built_ents[i]);
+        if (!e || e->unavailable) continue;
+        if (e->domain == HA_LIGHT && e->on) lights++;
+        if (e->domain == HA_CLIMATE && climate < 0 && e->current) climate = built_ents[i];
+        if (e->domain == HA_MEDIA && e->on && playing < 0) playing = built_ents[i];
+    }
+    if (lights) {
+        snprintf(buf, sizeof(buf), "%d on", lights);
+        w_name(summary_chip(buf, ICON_BULB_FILL, false, lights_off_cb, 0), "Lights off");
+    }
+    if (climate >= 0) {
+        const ha_entity_t *e = ha_get(climate);
+        snprintf(buf, sizeof(buf), "%d.%d°", e->current / 10, abs(e->current % 10));
+        summary_chip(buf, ICON_THERMO, false, open_ent_cb, climate);
+    }
+    if (playing >= 0) summary_chip(home_card_name(ha_get(playing)), ICON_MEDIA_PLAYER, false, open_ent_cb, playing);
+    for (int i = 0; i < n_built && alerts < 2; i++) {
+        const ha_entity_t *e = ha_get(built_ents[i]);
+        if (!e || !e->alert || e->unavailable) continue;
+        summary_chip(home_card_name(e), home_card_icon(e), true, open_ent_cb, built_ents[i]);
+        alerts++;
+    }
+    lv_obj_set_hidden(summary_row, lv_obj_get_child_count(summary_row) == 0);
 }
 
-static void setup_cb(lv_event_t *e) { LV_UNUSED(e); ui_open(&page_ha_settings, 0); }
-static void wifi_cb(lv_event_t *e) { LV_UNUSED(e); ui_open_wifi(); }
+/* ---- needs attention: across the house ---- */
+
+static int attention_list(int *out)
+{
+    int n = 0;
+    for (int i = 0; i < ha_count() && n < MAX_ATTN; i++)
+        if (ha_needs_attention(ha_get(i))) out[n++] = i;
+    return n;
+}
+
+static void fill_attention(void)
+{
+    if (!attn_row) return;
+    lv_obj_clean(attn_row);
+    for (int i = 0; i < n_attn; i++) ha_attention_card(attn_row, attn_ents[i]);
+    lv_obj_set_hidden(attn_row, n_attn == 0);
+    /* all as tall as the tallest (one with a button) */
+    lv_obj_update_layout(attn_row);
+    int h = 0;
+    for (uint32_t i = 0; i < lv_obj_get_child_count(attn_row); i++) {
+        int ch = lv_obj_get_height(lv_obj_get_child(attn_row, i));
+        h = ch > h ? ch : h;
+    }
+    for (uint32_t i = 0; i < lv_obj_get_child_count(attn_row); i++) lv_obj_set_height(lv_obj_get_child(attn_row, i), h);
+}
+
+/* ---- the sensor strip ---- */
+
+/* A sensor that goes in the strip: a plain one (the size left to the layout), not alerting */
+static bool glance_kind(const ha_entity_t *e)
+{
+    return e && e->domain == HA_SENSOR && !e->alert && home_card_size(e) == HOME_AUTO;
+}
+
+/* The room's sensors for the strip; none if there's only one (it stays a tile) */
+static int glance_of(const int *ents, int n, int *out)
+{
+    int k = 0;
+    for (int i = 0; i < n; i++)
+        if (glance_kind(ha_get(ents[i]))) out[k++] = ents[i];
+    return k >= 2 ? k : 0;
+}
 
 /* Never signed in: nothing cached, so say how to start */
 static void build_empty(lv_obj_t *root)
@@ -234,11 +336,9 @@ static void home_build(lv_obj_t *root, int arg)
     lv_obj_t *hdr = w_header(root, NULL, n_rooms ? home_room_name(room) : "Home Assistant", NULL);
     lv_obj_set_flex_align(hdr, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_gap(hdr, UI_PICK(8, 6), 0);
-    link_lbl = w_label(hdr, F_CAPTION, T->warning, "");
-    lv_obj_set_style_max_width(link_lbl, UI_PICK(96, 64), 0);
-    lv_label_set_long_mode(link_lbl, LV_LABEL_LONG_MODE_WRAP);
-    lv_obj_set_style_text_align(link_lbl, LV_TEXT_ALIGN_RIGHT, 0);
-    update_link();
+    summary_row = attn_row = glance_obj = NULL;
+    n_attn = n_glance = 0;
+    summary_dirty = attn_dirty = glance_dirty = false;
     if (empty) {
         build_empty(root);
         return;
@@ -247,6 +347,17 @@ static void home_build(lv_obj_t *root, int arg)
                                                  editing ? BTN_SELECTED : BTN_OUTLINE)
                                : w_chip(hdr, editing ? "Done" : "Edit", editing ? ICON_CHECK : ICON_EDIT, editing);
     lv_obj_add_event_cb(eb, edit_cb, LV_EVENT_CLICKED, NULL);
+
+    if (!editing) {
+        attn_row = w_row(root, UI_PICK(8, 6));
+        lv_obj_set_scrollable(attn_row, true);
+        lv_obj_set_scroll_dir(attn_row, LV_DIR_HOR);
+        lv_obj_set_scrollbar_mode(attn_row, LV_SCROLLBAR_MODE_OFF);
+        lv_obj_set_style_pad_hor(attn_row, PAD, 0);
+        lv_obj_set_flex_align(attn_row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+        n_attn = attention_list(attn_ents);
+        fill_attention();
+    }
 
     lv_obj_t *chips = w_row(root, 8);
     lv_obj_set_scrollable(chips, true);
@@ -275,42 +386,51 @@ static void home_build(lv_obj_t *root, int arg)
         return;
     }
 
-    lv_obj_t *list = w_col(root, UI_PICK(10, 8));
-    lv_obj_set_style_pad_hor(list, PAD, 0);
     int ents[MAX_CARDS];
     int n = n_rooms ? home_cards(room, ents, MAX_CARDS) : 0;
     memcpy(built_ents, ents, n * sizeof(int));
     n_built = n;
+    summary_row = w_row(root, 6);
+    lv_obj_set_flex_flow(summary_row, LV_FLEX_FLOW_ROW_WRAP);
+    lv_obj_set_style_pad_row(summary_row, 6, 0);
+    lv_obj_set_style_pad_hor(summary_row, PAD, 0);
+    fill_summary();
+
+    lv_obj_t *list = w_col(root, UI_PICK(10, 8));
+    lv_obj_set_style_pad_hor(list, PAD, 0);
     if (!n) {
         lv_obj_t *l = w_label(list, F_LABEL, T->text2, "Nothing to show here.");
         lv_obj_set_width(l, lv_pct(100));
     }
-    lv_obj_t *grid = NULL;   /* tiles side by side, two to a row, until a full card */
+    /* scenes first (chips), then the sensors' strip, all the tiles together,
+     * then the full cards; each group in the room's order */
+    int scenes[MAX_CARDS], tiles[MAX_CARDS], fulls[MAX_CARDS], ns = 0, nt = 0, nf = 0;
+    n_glance = glance_of(ents, n, glance_ents);
     for (int i = 0; i < n; i++) {
-        if (ha_get(ents[i])->domain == HA_SCENE) {
-            int group[6], g = 0;
-            while (i < n && g < 6 && ha_get(ents[i])->domain == HA_SCENE) group[g++] = ents[i++];
-            i--;
-            if (g > 1) {
-                ha_scene_row(list, group, g);
-                grid = NULL;
-                continue;
-            }
-        }
+        const ha_entity_t *e = ha_get(ents[i]);
+        if (e->domain == HA_SCENE && home_card_size(e) == HOME_AUTO) scenes[ns++] = ents[i];
+        else if (n_glance && glance_kind(e)) continue;
+        else if (home_card_tile(e)) tiles[nt++] = ents[i];
+        else fulls[nf++] = ents[i];
+    }
+    if (ns) ha_scene_row(list, scenes, ns);
+    if (n_glance) glance_obj = ha_glance(list, glance_ents, n_glance);
+    lv_obj_t *grid = NULL;
+    for (int i = 0; i < nt + nf; i++) {
+        int ent = i < nt ? tiles[i] : fulls[i - nt];
         lv_obj_t *into = list;
-        if (home_card_tile(ha_get(ents[i]))) {
+        if (i < nt) {
             if (!grid) {
                 grid = w_row(list, UI_PICK(8, 6));
                 lv_obj_set_flex_flow(grid, LV_FLEX_FLOW_ROW_WRAP);
                 lv_obj_set_style_pad_row(grid, UI_PICK(8, 6), 0);
             }
             into = grid;
-        } else {
-            grid = NULL;
         }
-        cards[n_cards].ent = ents[i];
-        cards[n_cards].obj = ha_card_create(into, ents[i]);
+        cards[n_cards].ent = ent;
+        cards[n_cards].obj = ha_card_create(into, ent);
         cards[n_cards].dirty = false;
+        if (i == nt - 1 && nt % 2) ha_tile_stretch(cards[n_cards].obj, ent);   /* no hole beside the last tile */
         n_cards++;
     }
     if (sel) {
@@ -335,13 +455,24 @@ static void rebuild_dirty(void *unused)
     }
     scheduled = false;
     if (ui_current() != &page_home) return;
+    if (summary_dirty) summary_dirty = false, fill_summary();
+    if (attn_dirty) attn_dirty = false, fill_attention();
+    if (glance_dirty && glance_obj && !pressed_inside(glance_obj)) {
+        glance_dirty = false;
+        lv_obj_t *fresh = ha_glance(lv_obj_get_parent(glance_obj), glance_ents, n_glance);
+        lv_obj_move_to_index(fresh, lv_obj_get_index(glance_obj));
+        lv_obj_delete(glance_obj);
+        glance_obj = fresh;
+    }
     for (int i = 0; i < n_cards; i++) {
         if (!cards[i].dirty) continue;
         lv_obj_t *old = cards[i].obj;
         if (pressed_inside(old)) continue;   /* don't pull a slider out from under a finger */
         cards[i].dirty = false;
+        bool stretched = lv_obj_get_style_width(old, 0) == lv_pct(100) && home_card_tile(ha_get(cards[i].ent));
         lv_obj_t *fresh = ha_card_create(lv_obj_get_parent(old), cards[i].ent);
         lv_obj_move_to_index(fresh, lv_obj_get_index(old));
+        if (stretched) ha_tile_stretch(fresh, cards[i].ent);
         lv_obj_delete(old);
         cards[i].obj = fresh;
     }
@@ -357,16 +488,41 @@ static void home_event(app_event_t ev, int arg)
 {
     if (ev == EV_RADIO || (ev == EV_HA && arg < 0)) {
         if (empty != (ha_count() == 0)) ui_refresh();   /* the first sign-in brought the house */
-        else update_link();
+        else fill_summary();                          /* the link chip */
         return;
     }
-    if (ev != EV_HA || arg < 0) return;
+    if (ev != EV_HA || arg < 0 || editing || empty) return;
+    /* the attention row and the sensor strip: one that joins or leaves either changes the page */
+    bool want = ha_needs_attention(ha_get(arg)), had = false;
+    for (int i = 0; i < n_attn; i++) had |= attn_ents[i] == arg;
+    if (want != had && (had || n_attn < MAX_ATTN)) {
+        ui_refresh();
+        return;
+    }
+    bool in_room = false, in_glance = false;
+    for (int i = 0; i < n_built; i++) in_room |= built_ents[i] == arg;
+    for (int i = 0; i < n_glance; i++) in_glance |= glance_ents[i] == arg;
+    if (in_room && ha_get(arg)->domain == HA_SENSOR) {
+        int g[MAX_CARDS];
+        int k = glance_of(built_ents, n_built, g);
+        if (k != n_glance || memcmp(g, glance_ents, k * sizeof(int))) {
+            ui_refresh();
+            return;
+        }
+    }
+    bool more = had || in_room;
+    attn_dirty |= had;
+    summary_dirty |= in_room;
+    glance_dirty |= in_glance;
+    if (more && !scheduled) {
+        scheduled = true;
+        lv_async_call(rebuild_dirty, NULL);
+    }
     /* unavailable entities don't show: one that went (or came back) changes
      * the page's cards, not just its own */
     const ha_entity_t *e = ha_get(arg);
-    bool shown = false;
-    for (int i = 0; i < n_built; i++) shown |= built_ents[i] == arg;
-    if (e && !editing && e->unavailable == shown) {
+    bool shown = in_room;
+    if (e && e->unavailable == shown) {
         bool now = false;
         if (!shown) {
             int ents[MAX_ROOM_ITEMS];
@@ -764,7 +920,7 @@ static void detail_build(lv_obj_t *root, int arg)
         w_label(col, F_LABEL, T->warning, "Not in Home Assistant right now.");
         return;
     }
-    ha_card_create_full(col, idx);
+    ha_card_create_detail(col, idx);
 }
 
 static void detail_event(app_event_t ev, int arg)
@@ -772,4 +928,7 @@ static void detail_event(app_event_t ev, int arg)
     if (ev == EV_HA && (arg < 0 || arg == ha_find(detail_id))) ui_refresh();
 }
 
-const page_t page_ha_detail = {"Card", TAB_HOME, detail_build, detail_event, NULL};
+/* The volume keys and OK adjust what's open (ha_card_key); the rest go on as usual */
+static bool detail_key(bleep_key_t key) { return ha_card_key(ha_find(detail_id), key); }
+
+const page_t page_ha_detail = {"Card", TAB_HOME, detail_build, detail_event, NULL, .key = detail_key};

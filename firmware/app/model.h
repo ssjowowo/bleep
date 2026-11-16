@@ -194,6 +194,8 @@ typedef struct {
                                  * loads as comfortable, the rows it had */
     uint8_t np_artwork;         /* np_art_t: the picture behind the whole Now playing page, or a
                                  * card above the title (added in 0.2.16; full by default) */
+    bool ha_card_keys;          /* on an entity's page (Home), the volume keys step its value and OK
+                                 * switches it, instead of going to the device (added in 0.2.23; on) */
 } settings_t;
 
 /* The Home tab's layout (REQUIREMENTS.md section 8): only what the user
