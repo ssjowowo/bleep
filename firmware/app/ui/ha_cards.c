@@ -14,7 +14,8 @@
 #include "../model.h"
 #include "ui.h"
 
-#define WHEEL 120
+#define WHEEL_MAX 120
+#define WHEEL     UI_PICK(WHEEL_MAX, 96)   /* the small screen: smaller, so a light's page fits it */
 
 /* The light whose colour wheel is open (one at a time; a house has hundreds of entities) */
 static int light_open = -1;
@@ -187,12 +188,14 @@ static void wheel_cb(lv_event_t *e)
 /* The colour wheel is one of the two fixed images the design allows. */
 static lv_obj_t *colour_wheel(lv_obj_t *parent, int idx, lv_color_t bg)
 {
-    LV_DRAW_BUF_DEFINE_STATIC(wheel_buf, WHEEL, WHEEL, LV_COLOR_FORMAT_RGB565);
-    static bool inited;
+    LV_DRAW_BUF_DEFINE_STATIC(wheel_buf, WHEEL_MAX, WHEEL_MAX, LV_COLOR_FORMAT_RGB565);
+    static int inited;   /* the size it's set up for */
     static lv_color_t drawn_bg;
-    if (!inited) {
-        LV_DRAW_BUF_INIT_STATIC(wheel_buf);
-        inited = true;
+    if (inited != WHEEL) {
+        lv_draw_buf_init(&wheel_buf, WHEEL, WHEEL, LV_COLOR_FORMAT_RGB565, LV_DRAW_BUF_STRIDE(WHEEL, LV_COLOR_FORMAT_RGB565),
+                         buf_wheel_buf, sizeof(buf_wheel_buf));
+        lv_draw_buf_set_flag(&wheel_buf, LV_IMAGE_FLAGS_MODIFIABLE);
+        inited = WHEEL;
         drawn_bg = lv_color_hex(0x123456);
     }
     lv_obj_t *c = lv_canvas_create(parent);
@@ -1255,14 +1258,12 @@ static void bar_set_cb(lv_event_t *e)
     else ha_set_value(idx, v);
 }
 
-static lv_obj_t *big_bar(lv_obj_t *parent, int idx, const ha_entity_t *e, lv_color_t fill)
+static lv_obj_t *big_bar(lv_obj_t *parent, int idx, const ha_entity_t *e, lv_color_t fill, int w, int h)
 {
     int v = 0;
     tile_level(e, &v);
-    lv_obj_t *wrap = w_row(parent, 0);
-    lv_obj_set_flex_align(wrap, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_t *b = lv_slider_create(wrap);
-    lv_obj_set_size(b, UI_PICK(96, 72), UI_PICK(196, 128));
+    lv_obj_t *b = lv_slider_create(parent);
+    lv_obj_set_size(b, w, h);
     lv_slider_set_range(b, 0, 100);
     lv_slider_set_value(b, v, LV_ANIM_OFF);
     lv_obj_set_scroll_chain_ver(b, false);   /* dragging it doesn't scroll the page */
@@ -1290,13 +1291,22 @@ static lv_obj_t *big_bar(lv_obj_t *parent, int idx, const ha_entity_t *e, lv_col
 }
 
 /* The thermostat's ring: the target in the middle, what it's doing under it */
+static void round_btn(lv_obj_t *parent, int idx, const char *icon, int step);
+
 static lv_obj_t *dial(lv_obj_t *parent, int idx, const ha_entity_t *e)
 {
     int lo = e->vmin < e->vmax ? e->vmin : 7, hi = e->vmin < e->vmax ? e->vmax : 35;
-    int size = UI_PICK(176, 124);
-    lv_obj_t *wrap = w_row(parent, 0);
-    lv_obj_set_flex_align(wrap, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    int size = UI_PICK(148, 92);
+    /* the ring in the middle, - and + at the wrap's lower corners beside it: the page
+     * fits the screen without scrolling */
+    lv_obj_t *wrap = w_box(parent);
+    lv_obj_set_size(wrap, lv_pct(100), size);
+    round_btn(wrap, idx, ICON_MINUS, -1);
+    lv_obj_align(lv_obj_get_child(wrap, -1), LV_ALIGN_BOTTOM_LEFT, 0, 0);
+    round_btn(wrap, idx, ICON_PLUS, 1);
+    lv_obj_align(lv_obj_get_child(wrap, -1), LV_ALIGN_BOTTOM_RIGHT, 0, 0);
     lv_obj_t *a = w_ring(wrap, size, UI_PICK(12, 9), 0);
+    lv_obj_center(a);
     lv_arc_set_rotation(a, 135);
     lv_arc_set_bg_angles(a, 0, 270);
     lv_arc_set_range(a, lo, hi);
@@ -1322,6 +1332,13 @@ static void key_hint(lv_obj_t *parent, const char *text)
     lv_obj_set_flex_align(r, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     w_icon(r, ICON_VOLUME, 14, T->text2);
     w_label(r, F_CAPTION, T->text2, text);
+}
+
+/* The hint on a page with a big control: not on the small screen, where it would push the
+ * page past the bottom */
+static void big_hint(lv_obj_t *parent, const char *text)
+{
+    if (!UI->compact) key_hint(parent, text);
 }
 
 static void round_btn(lv_obj_t *parent, int idx, const char *icon, int step)
@@ -1350,26 +1367,32 @@ lv_obj_t *ha_card_create_detail(lv_obj_t *parent, int idx)
     }
     bool on = e->domain == HA_COVER ? e->value > 0 : e->on;
     lv_obj_t *c = w_card(parent, on, e->alert);
+    if (UI->compact) lv_obj_set_style_pad_all(c, 8, 0), lv_obj_set_style_pad_gap(c, 6, 0);   /* it all fits the screen */
     lv_obj_t *h = head(c, e, on);
     switch (e->domain) {
     case HA_LIGHT: {
         toggle(h, idx, e->on);
         lv_color_t fill = (e->features & LIGHT_RGB) && e->rgb ? lv_color_hex(e->rgb) : lv_color_hex(0xFFC56B);
-        big_bar(c, idx, e, fill);
-        key_hint(c, "Volume ± dims · OK switches");
+        /* a colour light: the bar and the wheel side by side, so it all fits the screen */
+        lv_obj_t *wr = w_row(c, UI_PICK(24, 12));
+        lv_obj_set_flex_align(wr, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
         if (e->features & LIGHT_RGB) {
-            swatches(c, idx, e, UI_PICK(6, 5), false);
-            lv_obj_t *wr = w_row(c, 0);
-            lv_obj_set_flex_align(wr, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+            big_bar(wr, idx, e, fill, UI_PICK(80, 64), WHEEL);
             colour_wheel(wr, idx, T->surface);
-        } else if (e->features & LIGHT_CT) {
-            ct_slider(c, idx, e);
+            big_hint(c, "Volume ± dims · OK switches");
+            swatches(c, idx, e, UI_PICK(6, 5), false);
+        } else {
+            big_bar(wr, idx, e, fill, UI_PICK(88, 64), UI_PICK(150, 92));
+            big_hint(c, "Volume ± dims · OK switches");
+            if (e->features & LIGHT_CT) ct_slider(c, idx, e);
         }
         break;
     }
     case HA_COVER: {
-        big_bar(c, idx, e, T->accent);
-        key_hint(c, "Volume ± moves it");
+        lv_obj_t *wr = w_row(c, 0);
+        lv_obj_set_flex_align(wr, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        big_bar(wr, idx, e, T->accent, UI_PICK(88, 64), UI_PICK(150, 92));
+        big_hint(c, "Volume ± moves it");
         lv_obj_t *r = w_row(c, 8);
         lv_obj_t *b1 = action_btn(r, idx, "Open", ICON_CHEV_UP, "open", BTN_DEFAULT);
         action_btn(r, idx, NULL, ICON_STOP, "stop", BTN_DEFAULT);
@@ -1379,11 +1402,7 @@ lv_obj_t *ha_card_create_detail(lv_obj_t *parent, int idx)
     }
     default: {   /* HA_CLIMATE */
         dial(c, idx, e);
-        lv_obj_t *r = w_row(c, UI_PICK(40, 28));
-        lv_obj_set_flex_align(r, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-        round_btn(r, idx, ICON_MINUS, -1);
-        round_btn(r, idx, ICON_PLUS, 1);
-        key_hint(c, "Volume ± sets the temperature");
+        big_hint(c, "Volume ± sets the temperature");
         modes(c, idx, e->options, e->mode);
         break;
     }

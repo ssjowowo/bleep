@@ -36,7 +36,7 @@ expect-no 0:00 / 49:10
 press Thermostat
 wait 600
 expect Set to
-expect Volume ± sets the temperature
+@320x480 expect Volume ± sets the temperature
 shot 301_thermostat_page
 mark
 key VOL+
@@ -51,7 +51,7 @@ wait 400
 # the blinds: a tall position bar, the volume keys move it
 press Living room blinds
 wait 600
-expect Volume ± moves it
+@320x480 expect Volume ± moves it
 shot 302_blinds_page
 mark
 key VOL-
@@ -62,6 +62,7 @@ wait 400
 # a light's page: OK switches it
 press Ceiling light
 wait 600
+shot 306_light_page
 mark
 key OK
 wait 300
