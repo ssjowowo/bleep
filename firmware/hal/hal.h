@@ -163,6 +163,18 @@ void hal_restart(void);                         /* esp_restart(); doesn't return
 typedef enum { USB_FW_IDLE, USB_FW_RECEIVING, USB_FW_DONE, USB_FW_FAILED } usb_fw_t;
 usb_fw_t hal_usb_fw_poll(uint8_t *percent);
 
+/* Settings backup and restore over the same link, from the flash page. The
+ * HAL carries the file; the app makes and applies it on its own thread
+ * (config_backup, config_restore). poll returns a request once:
+ *   USB_SETTINGS_BACKUP: answer hal_usb_settings_done(file, file != NULL)
+ *   USB_SETTINGS_RESTORE: *file is the backup received (NUL-terminated, the
+ *     HAL's until done); answer hal_usb_settings_done(NULL, applied). After
+ *     true the page is told it's done, and the app restarts.
+ * The HAL copies a backup it's handed. */
+typedef enum { USB_SETTINGS_NONE, USB_SETTINGS_BACKUP, USB_SETTINGS_RESTORE } usb_settings_t;
+usb_settings_t hal_usb_settings_poll(const char **file);
+void hal_usb_settings_done(const char *file, bool ok);
+
 /* Setup flows. Each returns true once, when something happened. */
 bool hal_ir_receive(uint8_t *protocol, uint32_t *address, uint32_t *command);   /* learning */
 bool hal_ble_paired(char *host, int len);                                        /* pairing: its address */

@@ -32,6 +32,10 @@
  *   type TEXT          type into the open text box
  *   clear              empty the open text box
  *   battery PCT | usb on|off | nocell on|off | lux N
+ *   usb-backup FILE    the flash page's Back up settings: fail unless the app hands over a
+ *                      backup; it goes to FILE in the screenshot folder
+ *   usb-restore FILE   its Restore settings with FILE (the screenshot folder, else next to the
+ *                      script); the outcome shows (toast, log, the restart)
  *   usbfw PCT | done | fail | idle   an update over the USB cable (the flash page) at PCT %, ...
  *   reach wifi|ble on|off   the router / the TVs answer or not (Wi-Fi, Bluetooth links)
  *   unavailable ENTITY on|off   Home Assistant can't reach the entity (its state "unavailable"), or can again
@@ -742,6 +746,44 @@ int script_run(const char *path, const char *shot_dir)
             else if (!strcmp(rest, "idle")) g_sim.usb_fw = USB_FW_IDLE;
             else g_sim.usb_fw = USB_FW_RECEIVING, g_sim.usb_fw_pct = atoi(rest);
             run(50);
+        } else if (!strcmp(cmd, "usb-backup") && rest) {
+            g_sim.usb_settings = USB_SETTINGS_BACKUP;
+            g_sim.usb_settings_ok = -1;
+            run(50);
+            char p[512];
+            snprintf(p, sizeof(p), "%s/%s", shot_dir ? shot_dir : ".", rest);
+            FILE *bf = g_sim.usb_settings_ok == 1 ? fopen(p, "wb") : NULL;
+            if (!bf) {
+                printf("FAIL: usb-backup: %s\n", g_sim.usb_settings_ok == 1 ? "can't write it" : "no backup");
+                failures++;
+            } else {
+                fputs(g_sim.usb_settings_file, bf);
+                fclose(bf);
+            }
+        } else if (!strcmp(cmd, "usb-restore") && rest) {
+            char p[512];
+            snprintf(p, sizeof(p), "%s/%s", shot_dir ? shot_dir : ".", rest);
+            FILE *rf = fopen(p, "rb");
+            if (!rf) {
+                const char *slash = strrchr(path, '/');
+                snprintf(p, sizeof(p), "%.*s%s", slash ? (int)(slash - path + 1) : 0, path, rest);
+                rf = fopen(p, "rb");
+            }
+            if (!rf) {
+                printf("FAIL: usb-restore %s: can't open\n", rest);
+                failures++;
+            } else {
+                fseek(rf, 0, SEEK_END);
+                long n = ftell(rf);
+                rewind(rf);
+                free(g_sim.usb_settings_file);
+                g_sim.usb_settings_file = calloc(1, n + 1);
+                fread(g_sim.usb_settings_file, 1, n, rf);
+                fclose(rf);
+                g_sim.usb_settings = USB_SETTINGS_RESTORE;
+                g_sim.usb_settings_ok = -1;
+                run(50);
+            }
         } else if (!strcmp(cmd, "usb") && rest) {
             sim_set_usb(!strcmp(rest, "on"));
             run(50);

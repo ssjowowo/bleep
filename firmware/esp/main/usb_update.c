@@ -22,6 +22,22 @@
  * hence the window: the page waits for acks, so no more than WINDOW bytes
  * are ever on their way. Outside an update the buffer is small (hello lines
  * only); for an update it grows to RX_UPDATE, and back after.
+ *
+ * Settings backup and restore (hal.h, hal_usb_settings_poll), the app making
+ * and loading the file (app/config.c, config_backup / config_restore):
+ *
+ *   page: @bleep backup
+ *   remote: @bleep file <size> <SHA-256 of it, 64 hex>
+ *   remote: @bleep b <base64>                 lines of the file, up to 72 bytes each
+ *   remote: @bleep end                        or  @bleep fail <why>
+ *
+ *   page: @bleep restore <size> <SHA-256 of it, 64 hex>
+ *   remote: @bleep ready <chunk> <window>     then acks, as for an update
+ *   remote: @bleep done                       loaded and saved: it restarts
+ *        or @bleep fail <why>                 the setup is as it was
+ *
+ * The backup goes out as base64 lines, not raw: the log shares the link, and
+ * a line goes out in one write, so a log line can't land inside one.
  */
 #include "board.h"
 
@@ -37,6 +53,9 @@
 #include "esp_ota_ops.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_heap_caps.h"
+#include "freertos/semphr.h"
+#include "mbedtls/base64.h"
 #include "mbedtls/sha256.h"
 
 #define PROTOCOL 1
@@ -48,6 +67,9 @@
 #define DATA_TIMEOUT_MS 5000
 #define PT_OFFSET 0x8000            /* the partition table, as the page has it */
 #define PT_SIZE 0xC00
+#define SETTINGS_MAX (300 * 1024)   /* a backup: the saved file (256 KB at most) and the secrets */
+#define B64_BYTES 72                /* per "b" line: 96 characters */
+#define APP_WAIT_MS 10000           /* for the app to take a request (it runs while awake) */
 
 static const char *TAG = "usb-update";
 
@@ -174,6 +196,155 @@ static void receive(uint32_t size, const char *want_sha)
     }
 }
 
+/* ---- settings: handed to the app's thread and back ---- */
+
+typedef enum { REQ_NONE, REQ_WAITING, REQ_TAKEN } req_state_t;
+static portMUX_TYPE req_lock = portMUX_INITIALIZER_UNLOCKED;
+static volatile req_state_t req_state;
+static usb_settings_t req_kind;
+static const char *req_file;          /* a restore: what was received */
+static char *reply_file;              /* a backup: the app's file, copied */
+static bool reply_ok;
+static SemaphoreHandle_t reply_sem;
+
+usb_settings_t hal_usb_settings_poll(const char **file)
+{
+    usb_settings_t k = USB_SETTINGS_NONE;
+    taskENTER_CRITICAL(&req_lock);
+    if (req_state == REQ_WAITING) {
+        req_state = REQ_TAKEN;
+        k = req_kind;
+    }
+    taskEXIT_CRITICAL(&req_lock);
+    if (file) *file = k == USB_SETTINGS_RESTORE ? req_file : NULL;
+    return k;
+}
+
+void hal_usb_settings_done(const char *file, bool ok)
+{
+    if (req_state != REQ_TAKEN) return;
+    reply_file = NULL;
+    if (file) {
+        size_t n = strlen(file) + 1;
+        reply_file = heap_caps_malloc(n, MALLOC_CAP_SPIRAM);
+        if (reply_file) memcpy(reply_file, file, n);
+    }
+    reply_ok = ok && (!file || reply_file);
+    xSemaphoreGive(reply_sem);
+}
+
+/* Hand the request to the app; true once it answered (reply_ok, reply_file) */
+static bool ask_app(usb_settings_t kind, const char *file)
+{
+    xSemaphoreTake(reply_sem, 0);   /* a stale answer */
+    reply_file = NULL;
+    reply_ok = false;
+    req_kind = kind;
+    req_file = file;
+    req_state = REQ_WAITING;
+    if (xSemaphoreTake(reply_sem, pdMS_TO_TICKS(APP_WAIT_MS)) != pdTRUE) {
+        bool taken;
+        taskENTER_CRITICAL(&req_lock);
+        taken = req_state == REQ_TAKEN;
+        if (!taken) req_state = REQ_NONE;
+        taskEXIT_CRITICAL(&req_lock);
+        if (!taken) return false;   /* asleep or stuck: it never saw it */
+        xSemaphoreTake(reply_sem, portMAX_DELAY);   /* it's on it: the file stays until it's done */
+    }
+    req_state = REQ_NONE;
+    return true;
+}
+
+static void send_backup(void)
+{
+    if (!ask_app(USB_SETTINGS_BACKUP, NULL)) {
+        say("fail the remote is asleep: press a key and try again");
+        return;
+    }
+    if (!reply_ok) {
+        free(reply_file);
+        say("fail out of memory");
+        return;
+    }
+    size_t n = strlen(reply_file);
+    uint8_t sum[32];
+    char sum_hex[65];
+    mbedtls_sha256((const uint8_t *)reply_file, n, sum, 0);
+    hex(sum, 32, sum_hex);
+    ESP_LOGI(TAG, "backup: %u bytes", (unsigned)n);
+    say("file %u %s", (unsigned)n, sum_hex);
+    for (size_t at = 0; at < n; at += B64_BYTES) {
+        unsigned char b64[B64_BYTES * 4 / 3 + 4];
+        size_t olen = 0, len = n - at < B64_BYTES ? n - at : B64_BYTES;
+        mbedtls_base64_encode(b64, sizeof(b64), &olen, (const uint8_t *)reply_file + at, len);
+        b64[olen] = 0;
+        say("b %s", b64);
+    }
+    say("end");
+    free(reply_file);
+    reply_file = NULL;
+}
+
+/* The page's bytes, windowed and acked as for an update; why on failure */
+static const char *read_data(uint8_t *dst, uint32_t size, mbedtls_sha256_context *sha)
+{
+    uint32_t got = 0;
+    while (got < size) {
+        int want = size - got < CHUNK ? (int)(size - got) : CHUNK, fill = 0;
+        while (fill < want) {
+            int r = usb_serial_jtag_read_bytes(dst + got + fill, want - fill, pdMS_TO_TICKS(DATA_TIMEOUT_MS));
+            if (r <= 0) break;
+            fill += r;
+        }
+        if (fill < want) return "timeout";
+        mbedtls_sha256_update(sha, dst + got, fill);
+        got += fill;
+        say("ack %lu", (unsigned long)got);
+    }
+    return NULL;
+}
+
+static void receive_settings(uint32_t size, const char *want_sha)
+{
+    if (size < 16 || size > SETTINGS_MAX || strlen(want_sha) != 64) {
+        say("fail size");
+        return;
+    }
+    char *file = heap_caps_malloc(size + 1, MALLOC_CAP_SPIRAM);
+    if (!file || !driver(RX_UPDATE)) {
+        free(file);
+        say("fail memory");
+        return;
+    }
+    mbedtls_sha256_context sha;
+    mbedtls_sha256_init(&sha);
+    mbedtls_sha256_starts(&sha, 0);
+    say("ready %d %d", CHUNK, WINDOW);
+    const char *why = read_data((uint8_t *)file, size, &sha);
+    if (!why) {
+        uint8_t sum[32];
+        char sum_hex[65];
+        mbedtls_sha256_finish(&sha, sum);
+        hex(sum, 32, sum_hex);
+        if (strcasecmp(sum_hex, want_sha)) why = "checksum";
+    }
+    mbedtls_sha256_free(&sha);
+    driver(RX_IDLE);
+    if (!why) {
+        file[size] = 0;
+        ESP_LOGI(TAG, "restore: %lu bytes received, handing to the app", (unsigned long)size);
+        if (!ask_app(USB_SETTINGS_RESTORE, file)) why = "the remote is asleep: press a key and try again";
+        else if (!reply_ok) why = "not a Bleep backup";
+    }
+    free(file);
+    if (why) {
+        ESP_LOGW(TAG, "restore stopped (%s): the setup is unchanged", why);
+        say("fail %s", why);
+    } else {
+        say("done");
+    }
+}
+
 static void task(void *arg)
 {
     char line[160];
@@ -194,11 +365,14 @@ static void task(void *arg)
         char sha[72];
         if (!strcmp(cmd, "hello")) hello();
         else if (sscanf(cmd, "update %lu %70s", &size, sha) == 2) receive((uint32_t)size, sha);
+        else if (!strcmp(cmd, "backup")) send_backup();
+        else if (sscanf(cmd, "restore %lu %70s", &size, sha) == 2) receive_settings((uint32_t)size, sha);
     }
 }
 
 void usb_update_init(void)
 {
+    reply_sem = xSemaphoreCreateBinary();
     if (!driver(RX_IDLE)) {
         ESP_LOGW(TAG, "no USB link driver: updates over USB are off");
         return;

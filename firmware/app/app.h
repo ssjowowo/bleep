@@ -67,6 +67,11 @@ void app_save_now(void);
  * erase everything stored (setup, secrets, Bluetooth bonds), restart as new */
 void app_factory_reset(void);
 
+/* The flash page's Restore settings: load the backup in place of the setup
+ * (config_restore). True: saved, and nothing running any more; restart next.
+ * False: not a backup, nothing changed. */
+bool app_restore_settings(const char *backup);
+
 /* Restart (after an update): save, keep the runtime state in RTC memory, reboot */
 void app_restart(void);
 

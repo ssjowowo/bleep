@@ -1,0 +1,55 @@
+# The flash page's Back up settings / Restore settings (over USB): a backup,
+# a file that isn't one (nothing changes), a factory reset, then the backup
+# brings the whole setup back, Wi-Fi and the HA sign-in included
+click Start
+wait 300
+mark
+usb-backup settings-backup.json
+wait 300
+expect Settings backed up to your computer
+expect-log backup: sent over USB
+# a saved config file is not a backup: refused, the setup stays
+mark
+usb-restore fixtures/config-v1.json
+wait 300
+expect That file isn't a Bleep backup
+expect-haptic no 1
+expect-log restore: not a Bleep backup
+expect Watch TV
+# start over from nothing
+tab Settings
+wait 1500
+drag ~160 ~400 ~160 ~100
+click Reset to factory settings
+wait 300
+click Reset
+wait 2500
+expect Start
+click Start
+wait 300
+expect-no Watch TV
+tab Settings
+wait 300
+expect Not set up
+# restore: saved, then the remote restarts with it
+mark
+usb-restore settings-backup.json
+wait 300
+expect Settings restored. Restarting…
+expect-log restore: backup from firmware
+wait 2500
+click Start
+wait 300
+expect Watch TV
+click Routines
+wait 300
+expect Movie night
+tab Devices
+wait 300
+expect Living room TV
+tab Settings
+wait 300
+expect Home-5G
+expect-no Not set up
+expect-no Not signed in
+shot 153_after_restore

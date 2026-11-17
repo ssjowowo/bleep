@@ -27,6 +27,7 @@ function blocked(html) {
   $("hdr-serial").innerHTML = '<span class="led bad">●</span> no web serial';
   $("install").disabled = true;
   $("con-connect").disabled = true;
+  $("set-backup").disabled = $("set-restore").disabled = true;
 }
 
 if (!("serial" in navigator)) {
@@ -276,7 +277,8 @@ async function install() {
   const m = selectedModel();
   if (!m) return;
   const clean = document.querySelector('input[name="mode"]:checked').value === "clean";
-  if (clean && !confirm("Clean install erases everything on the remote: devices, activities, routines, Wi-Fi and paired TVs. Continue?"))
+  if (clean && !confirm("Clean install erases everything on the remote: devices, activities, routines, Wi-Fi and paired TVs. " +
+              "Back up your settings first (below) to restore them after. Continue?"))
     return;
   await consoleStop();
 
@@ -366,6 +368,273 @@ async function install() {
 }
 
 $("install").addEventListener("click", install);
+
+/* ---------- settings backup and restore (esp/main/usb_update.c) ---------- */
+
+// The remote's firmware, ready for @bleep commands; null if it doesn't answer
+async function openLink(port) {
+  await port.open({ baudRate: 115200 });
+  const reader = port.readable.getReader(), writer = port.writable.getWriter();
+  const next = lineReader(reader);
+  const enc = new TextEncoder();
+  const link = {
+    writer,
+    send: (line) => writer.write(enc.encode(line + "\n")),
+    expect: async (ms, ...words) => {
+      for (;;) {
+        const msg = await next(ms);
+        if (msg == null) return null;
+        if (words.some((w) => msg === w || msg.startsWith(w + " "))) return msg;
+      }
+    },
+    close: async () => {
+      try { await reader.cancel(); } catch {}
+      try { reader.releaseLock(); } catch {}
+      try { writer.releaseLock(); } catch {}
+      try { await port.close(); } catch {}
+    },
+  };
+  for (let i = 0; i < 2 && !link.hello; i++) {
+    await link.send("\n@bleep hello");
+    link.hello = await link.expect(1000, "hello");
+  }
+  if (!link.hello) {
+    await link.close();
+    throw new Error("The remote didn't answer. Press a key to wake it, check the cable, and try again.");
+  }
+  link.version = link.hello.split(" ")[3];
+  return link;
+}
+
+const OLD_FIRMWARE = (v) =>
+  `The remote runs firmware ${v}, which can't do this yet. Install the latest firmware above (update keeps your setup), then try again.`;
+
+function setResult(kind, html) {
+  const el = $("set-result");
+  el.className = "result " + kind;
+  el.innerHTML = html;
+}
+
+async function settingsJob(label, job) {
+  if (busy) return;
+  await consoleStop();
+  let port;
+  try {
+    port = await navigator.serial.requestPort({ filters: [{ usbVendorId: ESPRESSIF_VID }] });
+  } catch {
+    return;
+  }
+  busy = true;
+  for (const id of ["install", "con-connect", "set-backup", "set-restore"]) $(id).disabled = true;
+  setResult("", "");
+  $("set-status").textContent = label;
+  let link = null;
+  try {
+    link = await openLink(port);
+    await job(link);
+  } catch (err) {
+    setResult("err", "<b>It didn't work.</b> " + (err && err.plain ? err.message : friendly(err)));
+  } finally {
+    if (link) await link.close();
+    $("set-status").textContent = "";
+    busy = false;
+    for (const id of ["install", "con-connect", "set-backup", "set-restore"]) $(id).disabled = false;
+  }
+}
+
+const plain = (msg) => Object.assign(new Error(msg), { plain: true });
+
+async function backup(link) {
+  await link.send("@bleep backup");
+  const head = await link.expect(15000, "file", "fail");
+  if (!head) throw plain(OLD_FIRMWARE(link.version));
+  if (head.startsWith("fail")) throw plain("The remote said: " + head.slice(5));
+  const [, size, sha] = head.split(" ");
+  let b64 = "";
+  for (;;) {
+    const msg = await link.expect(5000, "b", "end", "fail");
+    if (!msg || msg.startsWith("fail")) throw plain("The backup stopped halfway. Try again.");
+    if (msg === "end") break;
+    b64 += msg.slice(2);
+    $("set-status").textContent = `Backing up… ${Math.min(99, Math.round((b64.length * 0.75 / size) * 100))}%`;
+  }
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  if (bytes.length !== Number(size) || (await sha256hex(bytes)) !== sha)
+    throw plain("The backup arrived damaged. Try again.");
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+/* ---- the file: encrypted with a password (PBKDF2-SHA256 -> AES-256-GCM, WebCrypto),
+ * or without the secrets. The remote only ever sees the plain backup. ---- */
+
+const KDF_ITERATIONS = 600000;
+function b64of(u8) {
+  let s = "";
+  for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+
+async function keyFrom(password, salt, iterations) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt, iterations }, base,
+                                 { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+
+async function encryptBackup(backup, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await keyFrom(password, salt, KDF_ITERATIONS);
+  const data = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key,
+                                                          new TextEncoder().encode(JSON.stringify(backup))));
+  return { bleep_backup_encrypted: 1, firmware: backup.firmware, cipher: "AES-256-GCM", kdf: "PBKDF2-SHA256",
+           iterations: KDF_ITERATIONS, salt: b64of(salt), iv: b64of(iv), data: b64of(data) };
+}
+
+// the plain backup, or null for a wrong password (GCM's tag doesn't match)
+async function decryptBackup(file, password) {
+  const key = await keyFrom(password, unb64(file.salt), file.iterations);
+  try {
+    const plainBytes = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(file.iv) }, key, unb64(file.data));
+    return JSON.parse(new TextDecoder().decode(plainBytes));
+  } catch {
+    return null;
+  }
+}
+
+function saveFile(obj, suffix) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 1) + "\n"], { type: "application/json" }));
+  a.download = `bleep-settings-${new Date().toISOString().slice(0, 10)}${suffix}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  return a.download;
+}
+
+/* The password dialog. Resolves to the password, "" for "without secrets", null for cancel.
+ * check(pw) may return an error to show and keep it open (a wrong password). */
+function askPassword({ title, text, repeat, skip, check }) {
+  const d = $("pw");
+  $("pw-title").textContent = title;
+  $("pw-text").textContent = text;
+  $("pw-2-row").hidden = !repeat;
+  $("pw-skip").hidden = !skip;
+  $("pw-1").value = $("pw-2").value = "";
+  $("pw-1").autocomplete = repeat ? "new-password" : "current-password";
+  $("pw-err").textContent = "";
+  d.showModal();
+  $("pw-1").focus();
+  return new Promise((resolve) => {
+    const done = (v) => {
+      $("pw-form").onsubmit = $("pw-cancel").onclick = $("pw-skip").onclick = d.oncancel = null;
+      d.close();
+      resolve(v);
+    };
+    $("pw-cancel").onclick = () => done(null);
+    d.oncancel = (e) => { e.preventDefault(); done(null); };
+    $("pw-skip").onclick = () => done("");
+    $("pw-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const pw = $("pw-1").value;
+      if (!pw) return ($("pw-err").textContent = "Type a password.");
+      if (repeat && pw.length < 8) return ($("pw-err").textContent = "At least 8 characters.");
+      if (repeat && pw !== $("pw-2").value) return ($("pw-err").textContent = "The two don't match.");
+      if (check) {
+        $("pw-ok").disabled = true;
+        $("pw-err").textContent = "Checking…";
+        const err = await check(pw);
+        $("pw-ok").disabled = false;
+        if (err) return ($("pw-err").textContent = err);
+      }
+      done(pw);
+    };
+  });
+}
+
+async function restore(link, data) {
+  const sha = await sha256hex(data);
+  await link.send(`@bleep restore ${data.length} ${sha}`);
+  const ready = await link.expect(5000, "ready", "fail");
+  if (!ready) throw plain(OLD_FIRMWARE(link.version));
+  if (ready.startsWith("fail")) throw plain("The remote said: " + ready.slice(5));
+  const [, chunk, windowBytes] = ready.split(" ").map(Number);
+  let sent = 0, acked = 0;
+  while (acked < data.length) {
+    while (sent < data.length && sent - acked < windowBytes) {
+      const n = Math.min(chunk, data.length - sent);
+      await link.writer.write(data.subarray(sent, sent + n));
+      sent += n;
+    }
+    const msg = await link.expect(10000, "ack", "fail");
+    if (!msg || msg.startsWith("fail")) throw plain("The restore stopped halfway; the remote's setup is as it was. Try again.");
+    acked = Number(msg.split(" ")[1]);
+    $("set-status").textContent = `Restoring… ${Math.round((acked / data.length) * 100)}%`;
+  }
+  const end = await link.expect(20000, "done", "fail");
+  if (end !== "done")
+    throw plain(`The remote didn't take it (${end ? end.slice(5) : "no answer"}). Its setup is as it was.`);
+  setResult("ok", "<b>Restored.</b> The remote is restarting with the settings from the backup.");
+}
+
+$("set-backup").addEventListener("click", async () => {
+  if (busy) return;
+  const pw = await askPassword({
+    title: "Protect the backup",
+    text: "The file is encrypted with this password, and restoring it asks for it. There's no way to get it back if it's lost. " +
+          "Or save it without the Wi-Fi password and Home Assistant sign-in.",
+    repeat: true, skip: true,
+  });
+  if (pw == null) return;
+  settingsJob("Backing up…", async (link) => {
+    const b = await backup(link);
+    let name;
+    if (pw) {
+      $("set-status").textContent = "Encrypting…";
+      name = saveFile(await encryptBackup(b, pw), "");
+    } else {
+      delete b.secrets;
+      name = saveFile(b, "-no-secrets");
+    }
+    setResult("ok", `<b>Backed up.</b> Saved as <code>${name}</code> in your downloads. ` +
+      (pw ? "It's encrypted: restoring it asks for the password."
+          : "The Wi-Fi password and Home Assistant sign-in aren't in it: restoring it keeps the ones on the remote."));
+  });
+});
+
+$("set-restore").addEventListener("click", () => $("set-file").click());
+
+$("set-file").addEventListener("change", async () => {
+  const f = $("set-file").files[0];
+  $("set-file").value = "";
+  if (!f) return;
+  const data = new Uint8Array(await f.arrayBuffer());
+  let info;
+  try {
+    info = JSON.parse(new TextDecoder().decode(data));
+  } catch {}
+  if (info && info.bleep_backup_encrypted === 1) {
+    let opened = null;
+    const pw = await askPassword({
+      title: "Encrypted backup",
+      text: `Type the password ${f.name} was saved with.`,
+      check: async (p) => ((opened = await decryptBackup(info, p)) ? null : "That's not the password for this file."),
+    });
+    if (pw == null) return;
+    info = opened;
+  } else if (info && typeof info.bleep_backup_encrypted === "number") {
+    setResult("err", "<b>This backup is from a newer page.</b> Reload this page and try again.");
+    return;
+  }
+  if (!info || typeof info.bleep_backup !== "number" || typeof info.config !== "object") {
+    setResult("err", `<b>That isn't a Bleep backup.</b> Pick the <code>bleep-settings-….json</code> file a backup saved.`);
+    return;
+  }
+  if (!confirm(`Restore ${f.name}? It replaces everything set up on the remote now (devices, activities, ` +
+               "routines, Home, Wi-Fi, Home Assistant), and the remote restarts." +
+               (info.secrets ? "" : " This backup has no passwords in it: the remote keeps its Wi-Fi password and Home Assistant sign-in.")))
+    return;
+  const plainData = new TextEncoder().encode(JSON.stringify(info));
+  settingsJob("Restoring…", (link) => restore(link, plainData));
+});
 
 /* ---------- console ---------- */
 

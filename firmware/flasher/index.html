@@ -157,6 +157,19 @@
   details.q .a { margin: 10px 0 0 calc(3ch + 12px); color: var(--text2); display: grid; gap: 8px; font-size: 14px; }
   ol.howto { margin: 0; padding-left: 3ch; display: grid; gap: 6px; }
 
+  dialog.pw { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px; width: min(440px, calc(100vw - 32px)); font-family: var(--mono); }
+  dialog.pw::backdrop { background: rgba(0, 0, 0, 0.7); }
+  dialog.pw h3 { margin: 0 0 8px; color: var(--text-hi); font-size: 16px; }
+  dialog.pw p { margin: 0 0 14px; color: var(--text2); font-size: 14px; }
+  dialog.pw label { display: grid; gap: 6px; margin-bottom: 12px; font-size: 13px; color: var(--dim); }
+  dialog.pw input { font: 15px var(--mono); height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text-hi); }
+  dialog.pw input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  dialog.pw .err { color: var(--warn); min-height: 1.2em; font-size: 13px; margin: 0 0 10px; }
+  dialog.pw .btns { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+  dialog.pw button.primary { height: 44px; }
+
   footer { color: var(--dim); font-size: 13px; border-top: 1px dashed var(--line); padding-top: 20px; display: grid; gap: 4px; }
 
   @media (max-width: 640px) {
@@ -241,6 +254,20 @@
     <li><div class="n">[04] done</div><p>Leave the cable in until it says done. The remote restarts by itself.</p></li>
   </ol>
 
+  <section class="con" aria-labelledby="s-set">
+    <div class="con-head">
+      <h2 id="s-set"><span class="p">$</span> settings --backup</h2>
+      <div class="con-btns">
+        <button id="set-backup">back up</button>
+        <button id="set-restore">restore</button>
+        <input type="file" id="set-file" accept=".json,application/json" hidden>
+      </div>
+    </div>
+    <p class="muted" style="font-size:14px">Save everything set up on the remote to a file on this computer: devices, activities, routines, Home, Wi-Fi and the Home Assistant sign-in. A password encrypts the file (AES-256, in this browser); without one, the Wi-Fi password and the sign-in are left out. Restore puts it back, on this remote or after a clean install. Paired Bluetooth TVs need pairing again on a new board. Wake the remote first.</p>
+    <div class="dim" id="set-status" aria-live="polite" style="font-size:13px"></div>
+    <div class="result" id="set-result" role="status"></div>
+  </section>
+
   <section class="con" aria-labelledby="s-con">
     <div class="con-head">
       <h2 id="s-con"><span class="p">$</span> tail -f bleep.log</h2>
@@ -303,6 +330,20 @@
     <span>Flashing with <a href="https://github.com/espressif/esptool-js">esptool-js</a> 0.7.0 by Espressif (Apache 2.0). Nothing you do here leaves your computer.</span>
   </footer>
 </main>
+<dialog class="pw" id="pw">
+  <form method="dialog" id="pw-form">
+    <h3 id="pw-title"></h3>
+    <p id="pw-text"></p>
+    <label>password <input type="password" id="pw-1" autocomplete="new-password"></label>
+    <label id="pw-2-row">repeat it <input type="password" id="pw-2" autocomplete="new-password"></label>
+    <div class="err" id="pw-err" role="alert"></div>
+    <div class="btns">
+      <button type="button" id="pw-cancel">cancel</button>
+      <button type="button" id="pw-skip">without secrets</button>
+      <button class="primary" id="pw-ok" value="ok">ok</button>
+    </div>
+  </form>
+</dialog>
 <script type="module" src="flasher.js"></script>
 </body>
 </html>

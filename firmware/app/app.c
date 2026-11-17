@@ -307,6 +307,17 @@ void app_factory_reset(void)
     hal_restart();           /* boots as a new remote */
 }
 
+bool app_restore_settings(const char *backup)
+{
+    routine_stop();          /* before the routines it refers to are replaced */
+    if (!config_restore(backup, &g_model)) return false;
+    saved_hash = seen_hash = config_hash();
+    dirty_at = retry_at = 0;
+    save_failed = false;
+    retained_clear();        /* what was running referred to the old setup */
+    return true;
+}
+
 void app_restart(void)
 {
     app_save_now();

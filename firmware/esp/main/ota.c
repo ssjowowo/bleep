@@ -2,7 +2,10 @@
  * Firmware updates (hal.h; the policy is app/update.c). The check fetches
  * the release manifest; install streams its image into the other OTA slot
  * with esp_https_ota and makes it the boot slot. Both run in a task of
- * their own and leave their result for the app's polls. A new image boots
+ * their own and leave their result for the app's polls: one worker task
+ * whose stack is reserved at link time (internal RAM), so starting one can't
+ * fail when the heap is short (Wi-Fi, Bluetooth and HA's link all up), as
+ * xTaskCreate did with "Update failed" and nothing in the log. A new image boots
  * pending verify: hal_fw_boot_ok() keeps it, a crash before that rolls back.
  *
  * TODO before release: signed images (secure boot v2 or signed app updates),
@@ -33,7 +36,20 @@ static volatile bool abort_asked;
 static fw_release_t release;
 static char image_url[200];
 
-static void check_task(void *arg)
+#define WORKER_STACK 8192
+typedef enum { JOB_CHECK = 1, JOB_INSTALL = 2 } job_t;
+static TaskHandle_t worker;
+
+static void log_memory(const char *what)
+{
+    hal_log("ota: %s; free PSRAM %u KB (biggest %u KB), internal %u KB (biggest %u KB)", what,
+            (unsigned)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024),
+            (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024),
+            (unsigned)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024),
+            (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) / 1024));
+}
+
+static void check_job(void)
 {
     char *body = hal_big_alloc(4096);
     int n = 0;
@@ -63,16 +79,41 @@ static void check_task(void *arg)
         cJSON_Delete(js);
     }
     hal_big_free(body);
-    if (result != FW_CHECK_OK) ESP_LOGW(TAG, "check failed");
+    if (result != FW_CHECK_OK) log_memory(body ? "check failed (no answer, or not a manifest)" : "check failed: out of memory");
     check_state = result;
-    vTaskDelete(NULL);
+}
+
+static void install_job(void);
+
+static void worker_task(void *arg)
+{
+    for (;;) {
+        uint32_t jobs = 0;
+        xTaskNotifyWait(0, UINT32_MAX, &jobs, portMAX_DELAY);
+        if (jobs & JOB_CHECK) check_job();
+        if (jobs & JOB_INSTALL) install_job();
+    }
+}
+
+/* The worker, made the first time it's needed; its stack and TCB are static */
+static bool start(job_t job)
+{
+    static StaticTask_t tcb;
+    static StackType_t stack[WORKER_STACK / sizeof(StackType_t)];
+    if (!worker) worker = xTaskCreateStatic(worker_task, "fw_update", WORKER_STACK / sizeof(StackType_t), NULL, 3, stack, &tcb);
+    if (!worker) return false;
+    xTaskNotify(worker, job, eSetBits);
+    return true;
 }
 
 void hal_fw_check_start(void)
 {
     if (check_state == FW_CHECK_BUSY) return;
     check_state = FW_CHECK_BUSY;
-    if (xTaskCreate(check_task, "fw_check", 6144, NULL, 3, NULL) != pdPASS) check_state = FW_CHECK_FAILED;
+    if (!start(JOB_CHECK)) {
+        log_memory("check failed: no worker task");
+        check_state = FW_CHECK_FAILED;
+    }
 }
 
 fw_check_t hal_fw_check_poll(fw_release_t *out)
@@ -81,7 +122,7 @@ fw_check_t hal_fw_check_poll(fw_release_t *out)
     return check_state;
 }
 
-static void install_task(void *arg)
+static void install_job(void)
 {
     esp_http_client_config_t hc = {.url = image_url, .crt_bundle_attach = esp_crt_bundle_attach, .timeout_ms = 10000,
                                    .keep_alive_enable = true};
@@ -111,25 +152,30 @@ static void install_task(void *arg)
         install_state = FW_INSTALL_FAILED;
     }
     /* why, in the app's log (the screen just says it failed) */
-    if (install_state == FW_INSTALL_FAILED && !abort_asked)
-        hal_log("ota: failed %s: %s, HTTP %d, %d bytes in; free PSRAM %u KB (biggest %u KB), internal %u KB (biggest %u KB)",
-                step, esp_err_to_name(err), status, got,
-                (unsigned)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024),
-                (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024),
-                (unsigned)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024),
-                (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) / 1024));
+    if (install_state == FW_INSTALL_FAILED && !abort_asked) {
+        char what[120];
+        snprintf(what, sizeof(what), "failed %s: %s, HTTP %d, %d bytes in", step, esp_err_to_name(err), status, got);
+        log_memory(what);
+    }
     if (install_state == FW_INSTALL_DONE) install_pct = 100;
     ESP_LOGI(TAG, "install: %s", install_state == FW_INSTALL_DONE ? "done, boots after the restart" : "failed");
-    vTaskDelete(NULL);
 }
 
 void hal_fw_install_start(void)
 {
-    if (install_state == FW_INSTALL_BUSY || !image_url[0]) return;
+    if (install_state == FW_INSTALL_BUSY) return;
+    if (!image_url[0]) {
+        hal_log("ota: failed: no image address (check first)");
+        install_state = FW_INSTALL_FAILED;
+        return;
+    }
     install_state = FW_INSTALL_BUSY;
     install_pct = 0;
     abort_asked = false;
-    if (xTaskCreate(install_task, "fw_install", 8192, NULL, 3, NULL) != pdPASS) install_state = FW_INSTALL_FAILED;
+    if (!start(JOB_INSTALL)) {
+        log_memory("failed: no worker task");
+        install_state = FW_INSTALL_FAILED;
+    }
 }
 
 fw_install_t hal_fw_install_poll(uint8_t *percent)

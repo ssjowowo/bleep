@@ -15,6 +15,9 @@ typedef struct {
     bool no_cell;           /* no battery fitted (only matters on USB) */
     int usb_fw;             /* usb_fw_t: an update over the USB cable, as the flash page would drive it */
     int usb_fw_pct;
+    int usb_settings;       /* usb_settings_t: a backup or restore the flash page asked for, until polled */
+    char *usb_settings_file;   /* a restore: the file sent; a backup: the one the app handed back */
+    int usb_settings_ok;    /* the app's answer: -1 none yet, 0 failed, 1 ok */
     uint16_t lux;
     bool reach_wifi;        /* the router is on (Wi-Fi links come up) */
     bool reach_ble;         /* the TVs answer over Bluetooth (on and in range) */

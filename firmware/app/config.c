@@ -612,3 +612,83 @@ bool config_save(const model_t *m)
     }
     return true;
 }
+
+/* ---- backup / restore (the flash page, over USB) ---- */
+
+#define BACKUP_FORMAT 1
+static const char *const backup_secrets[] = {"wifi_pass", "ha_refresh"};
+
+char *config_backup(const model_t *m)
+{
+    char *cfg = config_to_json(m);
+    if (!cfg) return NULL;
+    use_psram();
+    cJSON *sec = cJSON_CreateObject();
+    for (int i = 0; i < (int)N(backup_secrets); i++) {
+        char v[512] = "";
+        if (!strcmp(backup_secrets[i], "wifi_pass")) snprintf(v, sizeof(v), "%s", m->settings.wifi_pass);
+        else hal_secret_get(backup_secrets[i], v, sizeof(v));
+        if (v[0]) cJSON_AddStringToObject(sec, backup_secrets[i], v);
+    }
+    char *sec_text = cJSON_PrintUnformatted(sec);
+    cJSON_Delete(sec);
+    char *out = NULL;
+    if (sec_text) {
+        size_t n = strlen(cfg) + strlen(sec_text) + 128;
+        out = cJSON_malloc(n);
+        if (out)
+            snprintf(out, n, "{\"bleep_backup\":%d,\"firmware\":\"%s\",\"config\":%s,\"secrets\":%s}\n",
+                     BACKUP_FORMAT, hal_fw_version(), cfg, sec_text);
+        cJSON_free(sec_text);
+    }
+    config_free(cfg);
+    return out;
+}
+
+bool config_restore(const char *backup, model_t *m)
+{
+    use_psram();
+    cJSON *root = cJSON_Parse(backup);
+    const cJSON *format = cJSON_GetObjectItemCaseSensitive(root, "bleep_backup");
+    const cJSON *cfg = cJSON_GetObjectItemCaseSensitive(root, "config");
+    char *cfg_text = NULL;
+    if (cJSON_IsNumber(format) && cJSON_IsObject(cfg) &&
+        cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(cfg, "version")))
+        cfg_text = cJSON_PrintUnformatted(cfg);
+    if (!cfg_text) {
+        hal_log("restore: not a Bleep backup, nothing changed");
+        cJSON_Delete(root);
+        return false;
+    }
+    if (format->valueint > BACKUP_FORMAT)
+        hal_log("restore: backup format %d is newer than this firmware's %d; reading what it knows",
+                format->valueint, BACKUP_FORMAT);
+    const cJSON *from = cJSON_GetObjectItemCaseSensitive(root, "firmware");
+    hal_log("restore: backup from firmware %s%s", cJSON_IsString(from) ? from->valuestring : "?",
+            cJSON_IsObject(cJSON_GetObjectItemCaseSensitive(root, "secrets")) ? "" : ", without secrets (kept)");
+
+    /* No "secrets" (the flash page saves it so without a password): keep the remote's own */
+    const cJSON *sec = cJSON_GetObjectItemCaseSensitive(root, "secrets");
+    bool keep_secrets = !cJSON_IsObject(sec);
+    char kept_pass[sizeof(m->settings.wifi_pass)];
+    snprintf(kept_pass, sizeof(kept_pass), "%s", m->settings.wifi_pass);
+
+    model_init_defaults();               /* what the backup leaves out is the default, as after config_load */
+    config_from_json(cfg_text, m);       /* the same checks passed above: it reads */
+    cJSON_free(cfg_text);
+
+    if (keep_secrets) snprintf(m->settings.wifi_pass, sizeof(m->settings.wifi_pass), "%s", kept_pass);
+    for (int i = 0; !keep_secrets && i < (int)N(backup_secrets); i++) {
+        const cJSON *v = cJSON_GetObjectItemCaseSensitive(sec, backup_secrets[i]);
+        const char *val = cJSON_IsString(v) ? v->valuestring : "";
+        if (!strcmp(backup_secrets[i], "wifi_pass")) snprintf(m->settings.wifi_pass, sizeof(m->settings.wifi_pass), "%s", val);
+        else hal_secret_set(backup_secrets[i], val);   /* none in the backup: none kept from before */
+    }
+    cJSON_Delete(root);
+    hal_secret_set("wifi_pass", m->settings.wifi_pass);
+    snprintf(saved_pass, sizeof(saved_pass), "%s", m->settings.wifi_pass);
+    bool ok = config_save(m);
+    hal_log("restore: %d devices, %d activities, %d routines%s", m->n_devices, m->n_activities, m->n_routines,
+            ok ? "" : " (not saved: flash error)");
+    return ok;
+}

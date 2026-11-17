@@ -4,9 +4,11 @@
 #include <string.h>
 
 #include "app.h"
+#include "config.h"
 #include "ha.h"
 #include "power.h"
 #include "radio.h"
+#include "ui/ui.h"
 
 #define WIFI_WAIT_MS     15000      /* give up on Wi-Fi after this */
 #define RESTART_DELAY_MS 1500       /* "Restarting…" stays up this long */
@@ -148,9 +150,49 @@ static void usb_tick(void)
     }
 }
 
+/* Settings backup and restore from the flash page (hal.h): the HAL carries
+ * the file, this side makes it or loads it. A restore restarts the remote. */
+static uint32_t restored_at;
+
+static void usb_settings_tick(void)
+{
+    const char *file = NULL;
+    switch (hal_usb_settings_poll(&file)) {
+    case USB_SETTINGS_BACKUP: {
+        app_save_now();
+        char *b = config_backup(&g_model);
+        hal_usb_settings_done(b, b != NULL);
+        hal_log("backup: %s", b ? "sent over USB" : "out of memory");
+        if (b) ui_toast("Settings backed up to your computer");
+        config_free(b);
+        break;
+    }
+    case USB_SETTINGS_RESTORE: {
+        bool ok = app_restore_settings(file);
+        hal_usb_settings_done(NULL, ok);
+        if (ok) {
+            app_buzz(HAPTIC_CONFIRM);
+            ui_toast("Settings restored. Restarting…");
+            restored_at = hal_millis() | 1;
+        } else {
+            app_buzz(HAPTIC_NO);
+            ui_toast("That file isn't a Bleep backup");
+        }
+        break;
+    }
+    case USB_SETTINGS_NONE:
+        break;
+    }
+    if (restored_at && hal_millis() - restored_at >= RESTART_DELAY_MS) {
+        hal_log("restore: restarting with the restored settings");
+        hal_restart();   /* not app_restart: saved already, and nothing running to keep */
+    }
+}
+
 void update_tick(void)
 {
     usb_tick();
+    usb_settings_tick();
 
     const settings_t *s = &g_model.settings;
     bool wifi_up = radio_status()->wifi == LINK_UP;

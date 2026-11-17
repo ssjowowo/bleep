@@ -60,6 +60,20 @@ char *config_to_json(const model_t *m);
 bool config_from_json(const char *json, model_t *m);
 void config_free(char *json);
 
+/* A backup of everything set up, for the flash page (Back up settings):
+ *   {"bleep_backup": 1, "firmware": "0.2.26", "config": {the saved file},
+ *    "secrets": {"wifi_pass": "...", "ha_refresh": "..."}}
+ * The Bluetooth bonds stay out: they belong to this board's radio. Returns a
+ * string to config_free, or NULL (out of memory). */
+char *config_backup(const model_t *m);
+
+/* Load such a backup into m (g_model) in place of the current setup, from
+ * factory defaults up as config_load does (so an older firmware's backup
+ * loads, config.h's rules), set its secrets (none in it: the remote keeps
+ * its own), and save it. False, with
+ * nothing changed, if it isn't a Bleep backup. */
+bool config_restore(const char *backup, model_t *m);
+
 /* A fingerprint of the file as last loaded or saved (0 = none): what the
  * indexes kept through deep sleep refer to (app/retained.c). */
 uint32_t config_file_hash(void);

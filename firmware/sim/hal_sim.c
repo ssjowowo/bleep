@@ -512,6 +512,23 @@ usb_fw_t hal_usb_fw_poll(uint8_t *percent)
     return (usb_fw_t)g_sim.usb_fw;
 }
 
+usb_settings_t hal_usb_settings_poll(const char **file)
+{
+    usb_settings_t k = (usb_settings_t)g_sim.usb_settings;
+    g_sim.usb_settings = USB_SETTINGS_NONE;
+    if (file) *file = k == USB_SETTINGS_RESTORE ? g_sim.usb_settings_file : NULL;
+    return k;
+}
+
+void hal_usb_settings_done(const char *file, bool ok)
+{
+    if (file) {
+        free(g_sim.usb_settings_file);
+        g_sim.usb_settings_file = strdup(file);
+    }
+    g_sim.usb_settings_ok = ok;
+}
+
 fw_install_t hal_fw_install_poll(uint8_t *percent)
 {
     if (!g_sim.wifi) return FW_INSTALL_FAILED;
