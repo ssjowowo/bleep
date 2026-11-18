@@ -435,6 +435,8 @@ void model_init_defaults(void)
     s->layout_activities = LAYOUT_GRID;
     s->layout_devices = LAYOUT_LIST;
     s->list_rows = ROWS_COMPACT;
+    s->setup_guide = true;   /* a new remote: the setup guide after Start */
+    s->setup_card = true;
 }
 
 void ir_library_fill(device_t *d, const ir_brand_t *brand, int set)

@@ -26,7 +26,7 @@ static void signed_in(const char *user)
     app_buzz(HAPTIC_CONFIRM);
     app_notify(EV_SETTINGS, 0);
     ui_toast("Signed in as %s", user);
-    ui_back_to(&page_ha_settings);
+    if (!ui_setup_return()) ui_back_to(&page_ha_settings);   /* from the setup guide: back to it */
 }
 
 static lv_obj_t *error_card(lv_obj_t *parent, const char *title, const char *text)
@@ -80,8 +80,7 @@ static void ha_sign_out_cb(lv_event_t *e)
 static void bridge_switch_cb(lv_event_t *e)
 {
     bool on = lv_obj_has_state(lv_event_get_target_obj(e), LV_STATE_CHECKED);
-    if (ARG_INT(e) == 2) g_model.settings.ha_card_keys = on;
-    else if (ARG_INT(e)) g_model.settings.ha_key_events = on;
+    if (ARG_INT(e)) g_model.settings.ha_key_events = on;
     else g_model.settings.ha_battery = on;
     app_notify(EV_SETTINGS, 0);
 }
@@ -106,14 +105,6 @@ static void ha_build(lv_obj_t *root, int arg)
     ui_ha_status(buf, sizeof(buf), &c);
     lv_obj_t *st = w_list_row(col, ICON_HOME, "Status", buf, NULL);
     lv_obj_set_style_text_color(lv_obj_get_child(st, 2), c, 0);
-
-    w_section(col, "Home tab");
-    bridge_row(col, ICON_VOLUME, "Keys adjust an open card", s->ha_card_keys, 2);
-    lv_obj_t *kn = w_label(col, F_CAPTION, T->text2,
-                           "On a light's, a thermostat's or a player's own page, the volume keys step it up and "
-                           "down and OK switches it. Elsewhere they go to your devices as usual.");
-    lv_obj_set_width(kn, lv_pct(100));
-    lv_obj_set_style_pad_ver(kn, 6, 0);
 
     w_section(col, "Server");
     w_on_click(w_list_row(col, ICON_HOME, "Address", s->ha_url[0] ? short_url(s->ha_url) : "Not set", NULL),

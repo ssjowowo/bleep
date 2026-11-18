@@ -196,6 +196,13 @@ typedef struct {
                                  * card above the title (added in 0.2.16; full by default) */
     bool ha_card_keys;          /* on an entity's page (Home), the volume keys step its value and OK
                                  * switches it, instead of going to the device (added in 0.2.23; on) */
+    /* The first-time setup (scr_setup.c, added in 0.2.30). A new remote, or one
+     * reset to factory settings, starts with the first two on; a file saved
+     * before they existed loads with all three off, so a remote that was set up
+     * already sees none of it (Settings > Setup guide still opens it). */
+    bool setup_guide;           /* open the setup guide after the splash's Start (once) */
+    bool setup_card;            /* the "Finish setting up" card on the Activities tab */
+    bool tour_seen;             /* the guide's pages on the keys and gestures were read */
 } settings_t;
 
 /* The Home tab's layout (REQUIREMENTS.md section 8): only what the user

@@ -31,10 +31,11 @@ static void open_device_cb(lv_event_t *e)
 static void show_new_device(device_t *d)
 {
     app_notify(EV_DEVICES, 0);
-    ui_tab(TAB_DEVICES);
     control_select_device((int)(d - g_model.devices));
-    ui_open(&page_device, (int)(d - g_model.devices));
     ui_toast("%s added", d->name);
+    if (ui_setup_return()) return;   /* added from the setup guide: back to it */
+    ui_tab(TAB_DEVICES);
+    ui_open(&page_device, (int)(d - g_model.devices));
 }
 
 /* ================= Device list ================= */

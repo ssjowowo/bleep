@@ -27,6 +27,10 @@ wait 2500
 expect Start
 click Start
 wait 300
+# a new remote: the setup guide comes first
+expect Let's get your remote ready
+click Set up later
+wait 300
 expect-no Watch TV
 tab Settings
 wait 300

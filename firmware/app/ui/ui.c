@@ -268,6 +268,13 @@ void ui_back_to(const page_t *page)
     request_build();
 }
 
+bool ui_in_stack(const page_t *page)
+{
+    for (int i = 0; i < depth; i++)
+        if (stack[i].page == page) return true;
+    return false;
+}
+
 void ui_tab(int tab)
 {
     leave_top();

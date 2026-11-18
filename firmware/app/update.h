@@ -1,7 +1,7 @@
 /*
  * Firmware updates (REQUIREMENTS.md section 11). A check asks
  * bleepremote.com for the latest release over Wi-Fi; installing needs USB
- * power. The new image is written to the other OTA slot, so a stopped or
+ * power or enough battery (UPD_MIN_BATTERY). The new image is written to the other OTA slot, so a stopped or
  * failed download leaves the running firmware as it is.
  */
 #pragma once
@@ -25,9 +25,16 @@ typedef enum {
     UPD_NO_WIFI_SETUP,
     UPD_OFFLINE,        /* Wi-Fi didn't connect */
     UPD_CHECK_FAILED,   /* bleepremote.com didn't answer */
-    UPD_STOPPED_USB,    /* USB-C unplugged during the install */
+    UPD_STOPPED_USB,    /* USB-C unplugged during the install (before 0.2.31; no longer happens) */
     UPD_INSTALL_FAILED,
+    UPD_STOPPED_LOW,    /* on battery, it fell below UPD_STOP_BATTERY during the install */
 } upd_result_t;
+
+/* Installing on battery: it starts at UPD_MIN_BATTERY % or more, and stops
+ * (nothing changed) if the battery falls below UPD_STOP_BATTERY % on the way.
+ * On USB there's no limit. A download takes about a minute. */
+#define UPD_MIN_BATTERY  30
+#define UPD_STOP_BATTERY 15
 
 typedef struct {
     upd_busy_t busy;
@@ -39,7 +46,8 @@ typedef struct {
 } update_status_t;
 
 void update_check(void);        /* from the Software update page */
-void update_install(void);      /* the release from the last check; needs USB */
+void update_install(void);      /* the release from the last check; needs update_power_ok() */
+bool update_power_ok(void);     /* on USB, or the battery at UPD_MIN_BATTERY % or more */
 bool update_can_install(void);  /* a newer release is known and not installed yet */
 void update_tick(void);
 void update_cancel(void);       /* power off: stop a check or an install, nothing changes */

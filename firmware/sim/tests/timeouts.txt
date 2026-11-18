@@ -9,7 +9,7 @@ slide Strength 3
 expect Strong
 back
 wait 300
-click Power & sleep
+click Battery & sleep
 wait 300
 slide Idle after 0
 expect 5 s

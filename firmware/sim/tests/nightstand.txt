@@ -38,6 +38,6 @@ key BACK
 wait 300
 tab Settings
 wait 300
-click Display
+click Battery & sleep
 wait 300
 expect Nightstand clock

@@ -24,6 +24,11 @@ wait 2500
 expect Start
 click Start
 wait 300
+# a new remote: the setup guide comes first
+expect Let's get your remote ready
+click Set up later
+wait 300
+expect Finish setting up
 expect-no Watch TV
 expect New activity
 click Routines
@@ -43,9 +48,12 @@ wait 800
 expect Connect Home Assistant
 expect-no Ceiling light
 # and it stays that way across a real reboot (no demo house coming back)
+# the guide opens once; its card stays
 reboot
 click Start
 wait 300
+expect-no Let's get your remote ready
+expect Finish setting up
 expect-no Watch TV
 tab Settings
 wait 300

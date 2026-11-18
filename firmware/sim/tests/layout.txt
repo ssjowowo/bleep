@@ -9,7 +9,7 @@ expect System
 shot 120_settings_groups
 click Display
 wait 300
-expect Screen
+expect Colours
 expect Layout
 expect-no Feel
 shot 121_display
@@ -25,7 +25,7 @@ wait 300
 expect Grid
 back
 wait 300
-click Power & sleep
+click Battery & sleep
 wait 300
 expect Idle after
 expect Battery saver

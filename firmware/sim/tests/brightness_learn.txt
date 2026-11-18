@@ -5,8 +5,6 @@ tab Settings
 wait 300
 click Display
 wait 300
-click Brightness
-wait 300
 # 400 lux: the standard curve says 70 %
 expect backlight now 70%
 expect-no Forget what it learned
@@ -20,7 +18,7 @@ lux 200
 wait 1100
 back
 wait 300
-click Brightness
+click Display
 wait 300
 expect Light sensor: 200 lux · backlight now 35%
 # brighter again: back to what it learned there, after a restart too
@@ -32,8 +30,6 @@ wait 300
 tab Settings
 wait 300
 click Display
-wait 300
-click Brightness
 wait 300
 expect backlight now 50%
 click Forget what it learned

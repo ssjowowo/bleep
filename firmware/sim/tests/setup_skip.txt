@@ -1,0 +1,55 @@
+factory
+# The setup guide skipped: what's left stays on the Activities tab's card,
+# which opens the guide at the first step not done, and can be hidden.
+click Start
+wait 300
+click Get started
+wait 300
+expect Step 1 of 6
+click Skip for now
+wait 300
+# Home Assistant needs Wi-Fi: its button is greyed out, Next goes on
+expect Step 2 of 6
+expect This needs Wi-Fi first
+click Next
+wait 300
+click Skip for now
+wait 300
+click Next
+wait 300
+click Next
+wait 300
+click Next
+wait 300
+expect That's it for now
+expect Skipped
+shot 420_setup_skipped
+click Finish
+wait 300
+# the card: 1 of 5 (the tour was read), next Wi-Fi
+expect Finish setting up
+expect 1 of 5 done. Next: connect to Wi-Fi.
+shot 421_setup_card
+click Continue setup
+wait 300
+expect Step 1 of 6
+key BACK
+wait 300
+expect Let's get your remote ready
+click Set up later
+wait 300
+expect Finish setting up
+# hidden for good: it asks first
+clickicon x
+wait 300
+expect Hide the setup card?
+click Hide
+wait 300
+expect-no Finish setting up
+# saved two seconds after the last change
+wait 2500
+reboot
+click Start
+wait 300
+expect-no Finish setting up
+expect-no Let's get your remote ready

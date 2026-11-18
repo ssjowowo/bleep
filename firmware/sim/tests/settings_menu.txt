@@ -1,0 +1,51 @@
+# The Settings tab's layout: connections first, then the remote's own pages;
+# the battery card opens Battery & sleep; the moved settings work and are saved
+click Start
+wait 300
+tab Settings
+wait 300
+expect-before Wi-Fi | Display
+expect-before Display | Keys & gestures
+expect-before Keys & gestures | Battery & sleep
+expect-no Power & sleep
+shot 430_settings_menu
+# the battery card: Battery & sleep, with the nightstand clock
+click About 49 days left
+wait 300
+expect Battery & sleep
+expect Idle after
+expect Nightstand clock
+expect-no Wake on pick-up
+back
+wait 300
+# Display: brightness on the page itself
+click Display
+wait 300
+expect Automatic
+expect backlight now
+expect Theme
+expect Activities & routines
+expect-no Nightstand clock
+shot 431_display
+back
+wait 300
+# Keys & gestures: the wake gestures, and the keys on a Home card
+click Keys & gestures
+wait 300
+expect Wake on pick-up
+expect Face down to pause
+expect Keys adjust an open card
+shot 432_keys_gestures
+mark
+switch Keys adjust an open card
+# saved two seconds after the change
+wait 3500
+expect-log config: saved
+back
+wait 300
+# no longer on the Home Assistant page
+click Home Assistant
+wait 300
+expect-no Keys adjust an open card
+back
+wait 300

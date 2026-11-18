@@ -3,6 +3,10 @@ factory
 expect Firmware 0.1.0
 click Start
 wait 300
+# a new remote: the setup guide comes first
+expect Let's get your remote ready
+click Set up later
+wait 300
 shot 80_factory_activities
 expect-no Watch TV
 tab Devices

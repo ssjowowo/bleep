@@ -1,6 +1,9 @@
 # What the remote shows under "Version x.y.z is available" (Settings > Software update):
 # one line per version, "version: a sentence or two", at most 159 bytes of UTF-8.
 # A version without a line here ships with no notes.
+0.2.32: Settings regrouped: brightness right on Display, a new Keys & gestures page, Battery & sleep with the nightstand clock. Tap the battery card for it.
+0.2.31: Updates install on battery too, from 30 % charge; no USB-C needed.
+0.2.30: A setup guide for new remotes: Wi-Fi, Home Assistant, your TV, an activity and the keys. Open it any time from Settings > Setup guide.
 0.2.29: Thermostat, blind and light pages fit the screen without scrolling.
 0.2.28: Restoring a settings backup saved without passwords keeps the remote's own Wi-Fi password and Home Assistant sign-in.
 0.2.27: Fixes "Update failed" right after Install when memory was short.

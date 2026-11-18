@@ -95,9 +95,10 @@ static void wifi_page_open(void);
 
 /* ================= Settings ================= */
 
-/* The tab is an overview in four groups: the remote itself (Display,
- * Haptics, Power & sleep, each a page of its own), connections, system, and
- * power & reset. The battery card stays on top. */
+/* The tab is an overview in four groups: connections, the remote itself
+ * (Display, Keys & gestures, Haptics, Battery & sleep, each a page of its
+ * own), system, and power & reset. The battery card stays on top and opens
+ * Battery & sleep. */
 
 static const char *const layout_names[] = {"Grid", "List"};
 static const char *const rows_names[] = {"Comfortable", "Compact"};   /* list_rows_t */
@@ -113,7 +114,7 @@ static void row_cb(lv_event_t *e)
 {
     settings_t *s = &g_model.settings;
     switch (ARG_INT(e)) {
-    case 0: ui_open(&page_brightness, 0); break;
+    case 0: ui_open(&page_gestures, 0); break;
     case 1: ui_open(&page_display, 0); break;
     case 2: ui_open(&page_power, 0); break;
     case 3: ui_open(&page_ha_settings, 0); break;
@@ -132,6 +133,7 @@ static void row_cb(lv_event_t *e)
     case 13: ui_open(&page_haptics, 0); break;
     case 14: ui_choice("Settings · Layout", "List rows", rows_names, 2, s->list_rows, rows_done, NULL); break;
     case 15: ui_choice("Settings · Layout", "Now playing artwork", np_art_names, 2, s->np_artwork, np_art_done, NULL); break;
+    case 16: ui_setup_open(false); break;
     }
 }
 
@@ -143,6 +145,7 @@ static void switch_cb(lv_event_t *e)
     case 2: g_model.settings.wake_on_tap = on; break;
     case 3: g_model.settings.face_down_pause = on; break;
     case 4: g_model.settings.nightstand = on; break;
+    case 5: g_model.settings.ha_card_keys = on; break;
     default: g_model.settings.battery_saver = on; break;
     }
     settings_changed(false);
@@ -207,17 +210,8 @@ static void settings_build(lv_obj_t *root, int arg)
     battery_text(buf, sizeof(buf), l2, sizeof(l2));
     w_wrap(w_label(txt, F_BODY_B, T->text, buf));
     w_wrap(w_label(txt, F_CAPTION, T->text2, l2));
-
-    w_section(col, "Remote");
-    w_on_click(w_list_row(col, theme_is_light() ? ICON_SUN : ICON_DARK_MODE, "Display", theme_names[s->theme], NULL),
-               row_cb, 1);
-    if (s->battery_saver) snprintf(buf, sizeof(buf), "Battery saver");
-    else if (s->sleep_after_s >= 60) snprintf(buf, sizeof(buf), "Sleep after %d min", s->sleep_after_s / 60);
-    else snprintf(buf, sizeof(buf), "Sleep after %d s", s->sleep_after_s);
-    w_on_click(w_list_row(col, ICON_TAP, "Haptics", haptic_names[s->haptics], NULL), row_cb, 13);
-    lv_obj_t *pv;
-    w_on_click(w_list_row(col, ICON_BATTERY, "Power & sleep", buf, &pv), row_cb, 2);
-    if (s->battery_saver) lv_obj_set_style_text_color(pv, T->warning, 0);
+    w_name(card, "Battery");
+    w_on_click(card, row_cb, 2);
 
     w_section(col, "Connections");
     w_on_click(w_list_row(col, ICON_WIFI, "Wi-Fi", s->wifi_ssid[0] ? s->wifi_ssid : "Not set up", NULL), row_cb, 6);
@@ -232,6 +226,20 @@ static void settings_build(lv_obj_t *root, int arg)
     w_label(ha, F_LABEL, T->text2, buf);
     w_on_click(ha, row_cb, 3);
 
+    w_section(col, "Remote");
+    w_on_click(w_list_row(col, theme_is_light() ? ICON_SUN : ICON_DARK_MODE, "Display", theme_names[s->theme], NULL),
+               row_cb, 1);
+    if (s->battery_saver) snprintf(buf, sizeof(buf), "Battery saver");
+    else if (s->sleep_after_s >= 60) snprintf(buf, sizeof(buf), "Sleep after %d min", s->sleep_after_s / 60);
+    else snprintf(buf, sizeof(buf), "Sleep after %d s", s->sleep_after_s);
+    const char *wake = s->wake_on_lift && s->wake_on_tap ? "Pick-up, double-tap"
+                       : s->wake_on_lift ? "Pick-up" : s->wake_on_tap ? "Double-tap" : "Keys only";
+    w_on_click(w_list_row(col, ICON_GESTURE, "Keys & gestures", wake, NULL), row_cb, 0);
+    w_on_click(w_list_row(col, ICON_TAP, "Haptics", haptic_names[s->haptics], NULL), row_cb, 13);
+    lv_obj_t *pv;
+    w_on_click(w_list_row(col, ICON_BATTERY, "Battery & sleep", buf, &pv), row_cb, 2);
+    if (s->battery_saver) lv_obj_set_style_text_color(pv, T->warning, 0);
+
     w_section(col, "System");
     const update_status_t *u = update_status();
     lv_obj_t *upd_value;
@@ -241,12 +249,10 @@ static void settings_build(lv_obj_t *root, int arg)
                                : avail ? "Update available" : hal_fw_version(), &upd_value);
     if (avail) lv_obj_set_style_text_color(upd_value, T->accent, 0);
     w_on_click(upd, row_cb, 7);
+    w_on_click(w_list_row(col, ICON_CHECK, "Setup guide", "Wi-Fi, HA, a TV, the keys", NULL), row_cb, 16);
     w_on_click(w_list_row(col, ICON_INFO, "About", NULL, NULL), row_cb, 5);
-
-    if (s->fun_zone) {   /* the easter egg, once found */
-        w_section(col, "Fun Zone");
+    if (s->fun_zone)   /* the easter egg, once found */
         w_on_click(w_list_row(col, ICON_GAMEPAD, "Fun Zone", "Snake · Bleep Blocks", NULL), row_cb, 12);
-    }
 
     w_section(col, "Power & reset");
     w_on_click(w_list_row(col, ICON_POWER, "Power off", NULL, NULL), row_cb, 10);
@@ -300,20 +306,19 @@ static void accent_row(lv_obj_t *col)
     }
 }
 
+static void bright_controls(lv_obj_t *col);
+
 static void display_build(lv_obj_t *root, int arg)
 {
     LV_UNUSED(arg);
     settings_t *s = &g_model.settings;
     w_header(root, "Settings", "Display", ui_back_cb);
     lv_obj_t *col = page_col(root);
-    char buf[16];
-    w_section(col, "Screen");
-    if (s->auto_brightness) snprintf(buf, sizeof(buf), "Auto");
-    else snprintf(buf, sizeof(buf), "%d%%", s->brightness);
-    w_on_click(w_list_row(col, ICON_SUN, "Brightness", buf, NULL), row_cb, 0);
+    w_section(col, "Brightness");
+    bright_controls(col);
+    w_section(col, "Colours");
     w_on_click(w_list_row(col, ICON_DARK_MODE, "Theme", theme_names[s->theme], NULL), row_cb, 4);
     accent_row(col);
-    switch_row(col, ICON_TIMER, "Nightstand clock", s->nightstand, 4);
     w_section(col, "Layout");
     w_on_click(w_list_row(col, ICON_GRID, "Activities & routines", layout_names[s->layout_activities], NULL), row_cb, 8);
     w_on_click(w_list_row(col, ICON_REMOTE, "Devices", layout_names[s->layout_devices], NULL), row_cb, 9);
@@ -422,7 +427,7 @@ static void haptics_build(lv_obj_t *root, int arg)
     lv_obj_set_width(n, lv_pct(100));
     lv_obj_set_style_pad_ver(n, 8, 0);
 
-    w_section(col, "Motor");
+    w_section(col, "Hardware");
     w_on_click(w_list_row(col, ICON_ENERGY, "Motor", motor_names[s->haptic_motor], NULL), haptic_row_cb, 4);
     w_on_click(w_list_row(col, ICON_UPDATE, "Calibrate", NULL, NULL), haptic_row_cb, 5);
     lv_obj_t *m = w_label(col, F_CAPTION, T->text2,
@@ -434,13 +439,43 @@ static void haptics_build(lv_obj_t *root, int arg)
 
 const page_t page_haptics = {"Haptics", -1, haptics_build, sub_event, NULL};
 
-/* ================= Power & sleep ================= */
+/* ================= Keys & gestures ================= */
+
+/* What the remote does when it's moved or tapped, and what the keys do on a
+ * Home Assistant card's own page */
+static void gestures_build(lv_obj_t *root, int arg)
+{
+    LV_UNUSED(arg);
+    settings_t *s = &g_model.settings;
+    w_header(root, "Settings", "Keys & gestures", ui_back_cb);
+    lv_obj_t *col = page_col(root);
+    w_section(col, "Gestures");
+    switch_row(col, ICON_REMOTE, "Wake on pick-up", s->wake_on_lift, 0);
+    switch_row(col, ICON_TAP, "Wake on double-tap", s->wake_on_tap, 2);
+    switch_row(col, ICON_PAUSE, "Face down to pause", s->face_down_pause, 3);
+    lv_obj_t *g = w_label(col, F_CAPTION, T->text2,
+                          "Double-tap the case to wake it. Lay it face down to pause what's playing (when Home "
+                          "Assistant says it's playing).");
+    lv_obj_set_width(g, lv_pct(100));
+    lv_obj_set_style_pad_ver(g, 6, 0);
+    w_section(col, "Keys");
+    switch_row(col, ICON_VOLUME, "Keys adjust an open card", s->ha_card_keys, 5);
+    lv_obj_t *kn = w_label(col, F_CAPTION, T->text2,
+                           "On a Home Assistant light's, thermostat's or player's own page, the volume keys step "
+                           "it up and down and OK switches it. Elsewhere they go to your devices as usual.");
+    lv_obj_set_width(kn, lv_pct(100));
+    lv_obj_set_style_pad_ver(kn, 6, 0);
+}
+
+const page_t page_gestures = {"Keys & gestures", -1, gestures_build, sub_event, NULL};
+
+/* ================= Battery & sleep ================= */
 
 static void power_build(lv_obj_t *root, int arg)
 {
     LV_UNUSED(arg);
     settings_t *s = &g_model.settings;
-    w_header(root, "Settings", "Power & sleep", ui_back_cb);
+    w_header(root, "Settings", "Battery & sleep", ui_back_cb);
     lv_obj_t *col = page_col(root);
     idle_slider = w_step_slider(col, ICON_TIMER, "Idle after", &idle_steps, step_of(idle_values, N_IDLE, s->dim_after_s));
     sleep_slider = w_step_slider(col, ICON_MOON, "Sleep after", &sleep_steps,
@@ -453,22 +488,20 @@ static void power_build(lv_obj_t *root, int arg)
                              s->battery_saver ? "Battery saver is on: idle after 5 s, sleep after 15 s."
                                               : "Idle dims to the lock screen. Sleep turns the screen off.");
     lv_obj_set_width(note, lv_pct(100));
-    switch_row(col, ICON_REMOTE, "Wake on pick-up", s->wake_on_lift, 0);
-    switch_row(col, ICON_TAP, "Wake on double-tap", s->wake_on_tap, 2);
-    switch_row(col, ICON_PAUSE, "Face down to pause", s->face_down_pause, 3);
-    lv_obj_t *g = w_label(col, F_CAPTION, T->text2,
-                          "Double-tap the case to wake it. Lay it face down to pause what's playing (when Home "
-                          "Assistant says it's playing).");
-    lv_obj_set_width(g, lv_pct(100));
-    lv_obj_set_style_pad_ver(g, 6, 0);
     switch_row(col, ICON_BATTERY, "Battery saver", s->battery_saver, 1);
     lv_obj_t *n = w_label(col, F_CAPTION, T->text2,
                           "Battery saver caps the brightness at 50 % and shortens the timeouts.");
     lv_obj_set_width(n, lv_pct(100));
-    lv_obj_set_style_pad_top(n, 8, 0);
+    lv_obj_set_style_pad_ver(n, 8, 0);
+    w_section(col, "On the charger");
+    switch_row(col, ICON_TIMER, "Nightstand clock", s->nightstand, 4);
+    lv_obj_t *c = w_label(col, F_CAPTION, T->text2,
+                          "Idle on USB-C, it shows a big clock, the date and the weather instead of the lock screen.");
+    lv_obj_set_width(c, lv_pct(100));
+    lv_obj_set_style_pad_ver(c, 6, 0);
 }
 
-const page_t page_power = {"Power & sleep", -1, power_build, sub_event, NULL};
+const page_t page_power = {"Battery & sleep", -1, power_build, sub_event, NULL};
 
 static void settings_event(app_event_t ev, int arg)
 {
@@ -523,20 +556,17 @@ static void bright_released_cb(lv_event_t *e)
     if (g_model.settings.auto_brightness) ui_refresh();
 }
 
-static void bright_build(lv_obj_t *root, int arg)
+/* The brightness, on the Display page: Automatic, the slider, what it's at now */
+static void bright_controls(lv_obj_t *col)
 {
-    LV_UNUSED(arg);
     settings_t *s = &g_model.settings;
-    w_header(root, "Settings · Display", "Brightness", ui_back_cb);
-    lv_obj_t *col = w_col(root, 12);
-    lv_obj_set_style_pad_hor(col, PAD, 0);
     lv_obj_t *r = w_list_row(col, ICON_SUN, "Automatic", NULL, NULL);
     lv_obj_set_clickable(r, false);
     lv_obj_t *sw = w_switch(r, s->auto_brightness);
     lv_obj_add_event_cb(sw, bright_auto_cb, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_t *sl = w_slider(col, s->auto_brightness ? power_auto_level(power_light_band()) : s->brightness, 5, 100);
     w_slider_detents(sl, 5);
-    lv_obj_set_style_margin_ver(sl, 10, 0);
+    lv_obj_set_style_margin_ver(sl, UI_PICK(14, 10), 0);
     lv_obj_add_event_cb(sl, bright_cb, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_add_event_cb(sl, bright_released_cb, LV_EVENT_RELEASED, NULL);
     bright_now = w_label(col, F_LABEL, T->text2, "");
@@ -548,14 +578,14 @@ static void bright_build(lv_obj_t *root, int arg)
                                 "that level for light like this. Battery saver caps it at 50 %, USB at 85 %."
                               : "Battery saver caps it at 50 %, and on USB it stops at 85 %.");
     lv_obj_set_width(n, lv_pct(100));
+    lv_obj_set_style_pad_top(n, 4, 0);
     if (s->auto_brightness && power_learned()) {
         lv_obj_t *f = w_button(col, "Forget what it learned", NULL, BTN_OUTLINE);
         lv_obj_set_width(f, lv_pct(100));
+        lv_obj_set_style_margin_top(f, 8, 0);
         lv_obj_add_event_cb(f, bright_forget_cb, LV_EVENT_CLICKED, NULL);
     }
 }
-
-const page_t page_brightness = {"Brightness", -1, bright_build, NULL, NULL};
 
 /* ================= Wi-Fi ================= */
 
@@ -605,6 +635,11 @@ static void wifi_poll(lv_timer_t *t)
             app_buzz(HAPTIC_CONFIRM);
             app_notify(EV_SETTINGS, 0);
             radio_update();   /* the first network saved: Wi-Fi may now come on */
+            if (ui_current() == &page_wifi_settings && ui_setup_return()) {   /* from the setup guide */
+                ui_toast("Connected to %s", wf.ssid);
+                lv_timer_delete(t);
+                return;
+            }
         } else {
             hal_log("wifi: test of \"%s\" failed (%d), nothing saved", wf.ssid, (int)r);
             app_buzz(HAPTIC_NO);
@@ -870,18 +905,19 @@ static lv_obj_t *upd_card(lv_obj_t *col, bool on, bool alert, const char *icon, 
     return c;
 }
 
-/* Install, or a disabled reminder when not on USB */
-static void install_button(lv_obj_t *card, bool usb)
+/* Install, or a disabled reminder when the battery is too low for it off USB */
+static void install_button(lv_obj_t *card)
 {
     const update_status_t *u = update_status();
-    char text[40];
-    if (u->result == UPD_AVAILABLE) snprintf(text, sizeof(text), "Install");
+    bool ok = update_power_ok();
+    char text[48];
+    if (!ok) snprintf(text, sizeof(text), "Charge to %d %% or plug in", UPD_MIN_BATTERY);
+    else if (u->result == UPD_AVAILABLE) snprintf(text, sizeof(text), "Install");
     else snprintf(text, sizeof(text), "Try %s again", u->release.version);
-    lv_obj_t *btn = w_button(card, usb ? text : "Plug in USB-C to install", usb ? ICON_UPDATE : ICON_BOLT,
-                             usb ? BTN_PRIMARY : BTN_DISABLED);
+    lv_obj_t *btn = w_button(card, text, ok ? ICON_UPDATE : ICON_BOLT, ok ? BTN_PRIMARY : BTN_DISABLED);
     lv_obj_set_width(btn, lv_pct(100));
     lv_obj_set_style_margin_top(btn, 6, 0);
-    if (usb) lv_obj_add_event_cb(btn, upd_install_cb, LV_EVENT_CLICKED, NULL);
+    if (ok) lv_obj_add_event_cb(btn, upd_install_cb, LV_EVENT_CLICKED, NULL);
 }
 
 static void upd_build(lv_obj_t *root, int arg)
@@ -896,7 +932,6 @@ static void upd_build(lv_obj_t *root, int arg)
 
     char buf[160];
     w_list_row(col, ICON_REMOTE, "Installed", hal_fw_version(), NULL);
-    hal_battery_t b = *app_battery();
 
     lv_obj_t *c;
     switch (u->busy) {
@@ -922,7 +957,7 @@ static void upd_build(lv_obj_t *root, int arg)
         lv_obj_set_style_bg_opa(upd_bar, LV_OPA_COVER, LV_PART_INDICATOR);
         lv_obj_set_style_radius(upd_bar, 3, 0);
         lv_obj_set_style_radius(upd_bar, 3, LV_PART_INDICATOR);
-        snprintf(buf, sizeof(buf), "%d %% · keep the remote plugged in", u->percent);
+        snprintf(buf, sizeof(buf), "%d %% · don't switch the remote off", u->percent);
         upd_pct = w_label(c, F_LABEL, T->text2, buf);
         break;
     case UPD_RESTARTING:
@@ -943,7 +978,7 @@ static void upd_build(lv_obj_t *root, int arg)
             snprintf(buf, sizeof(buf), "%u.%u MB download", (unsigned)(u->release.size_kb / 1000),
                      (unsigned)(u->release.size_kb % 1000 / 100));
             w_label(c, F_CAPTION, T->text2, buf);
-            install_button(c, b.usb);
+            install_button(c);
             break;
         case UPD_NO_WIFI_SETUP:
             c = upd_card(col, false, true, ICON_WIFI, "Wi-Fi isn't set up",
@@ -964,12 +999,18 @@ static void upd_build(lv_obj_t *root, int arg)
         case UPD_STOPPED_USB:
             c = upd_card(col, false, true, ICON_X, "Update stopped",
                          "USB-C was unplugged, so the update stopped. Nothing was changed.");
-            install_button(c, b.usb);
+            install_button(c);
+            break;
+        case UPD_STOPPED_LOW:
+            snprintf(buf, sizeof(buf), "The battery fell below %d %%, so the update stopped. Nothing was changed.",
+                     UPD_STOP_BATTERY);
+            c = upd_card(col, false, true, ICON_X, "Update stopped", buf);
+            install_button(c);
             break;
         case UPD_INSTALL_FAILED:
             c = upd_card(col, false, true, ICON_X, "Update failed",
                          "The download didn't finish. Nothing was changed.");
-            install_button(c, b.usb);
+            install_button(c);
             break;
         }
         break;
@@ -1006,9 +1047,9 @@ static void upd_event(app_event_t ev, int arg)
     if (ev == EV_UPDATE && arg == 1 && upd_bar) {
         const update_status_t *u = update_status();
         lv_bar_set_value(upd_bar, u->percent, LV_ANIM_OFF);
-        lv_label_set_text_fmt(upd_pct, "%d %% · keep the remote plugged in", u->percent);
+        lv_label_set_text_fmt(upd_pct, "%d %% · don't switch the remote off", u->percent);
     } else if ((ev == EV_UPDATE && arg != 2) || ev == EV_BATTERY) {
-        ui_refresh();   /* USB plugged in or out changes the Install button */
+        ui_refresh();   /* USB or the battery level changes the Install button */
     }
 }
 

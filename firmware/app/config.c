@@ -150,6 +150,9 @@ char *config_to_json(const model_t *m)
     cJSON_AddBoolToObject(js, "hold_learned", s->hold_learned);
     cJSON_AddStringToObject(js, "list_rows", rows_ids[s->list_rows < N(rows_ids) ? s->list_rows : 0]);
     cJSON_AddStringToObject(js, "np_artwork", np_art_ids[s->np_artwork < N(np_art_ids) ? s->np_artwork : 0]);
+    cJSON_AddBoolToObject(js, "setup_guide", s->setup_guide);
+    cJSON_AddBoolToObject(js, "setup_card", s->setup_card);
+    cJSON_AddBoolToObject(js, "tour_seen", s->tour_seen);
 
     cJSON *jd = cJSON_AddArrayToObject(root, "devices");
     for (int i = 0; i < m->n_devices; i++) {
@@ -362,6 +365,10 @@ static void read_settings(const cJSON *js, settings_t *s)
     /* added in 0.2.8: a file from before it had the comfortable rows */
     s->list_rows = id_of(rows_ids, N(rows_ids), get_id(js, "list_rows"), ROWS_COMFORTABLE);
     s->np_artwork = id_of(np_art_ids, N(np_art_ids), get_id(js, "np_artwork"), NP_ART_FULL);   /* added in 0.2.16 */
+    /* added in 0.2.30: a file from before was a remote already set up, so no guide */
+    s->setup_guide = get_bool(js, "setup_guide", false);
+    s->setup_card = get_bool(js, "setup_card", false);
+    s->tour_seen = get_bool(js, "tour_seen", false);
 }
 
 static void read_device(const cJSON *o, device_t *d)
@@ -531,6 +538,9 @@ bool config_from_json(const char *json, model_t *m)
      * first. For example:
      *     if (version < 2) upgrade_1_to_2(root);   // e.g. "wait" from 0.5 s units to seconds
      */
+    /* A saved file, even one without a settings block, is a remote set up
+     * already: no setup guide unless the file itself asks for it (0.2.30) */
+    m->settings.setup_guide = m->settings.setup_card = m->settings.tour_seen = false;
     read_settings(cJSON_GetObjectItemCaseSensitive(root, "settings"), &m->settings);
 
     const cJSON *o;

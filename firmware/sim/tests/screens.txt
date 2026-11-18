@@ -134,11 +134,6 @@ wait 300
 click Display
 wait 300
 shot s32_display
-click Brightness
-wait 300
-shot s33_brightness
-back
-wait 300
 click Theme
 wait 300
 shot s41_choice
@@ -146,9 +141,14 @@ back
 wait 300
 back
 wait 300
-click Power & sleep
+click Battery & sleep
 wait 300
 shot s34_power
+back
+wait 300
+click Keys & gestures
+wait 300
+shot s34b_gestures
 back
 wait 300
 click Wi-Fi

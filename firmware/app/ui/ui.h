@@ -41,6 +41,7 @@ void ui_back_guarded_cb(lv_event_t *e);
 void ui_leave(void (*go)(void));
 bool ui_editing(void);                          /* keyboard open, or unsaved changes anywhere in the stack */
 void ui_back_to(const page_t *page);            /* pop until this page is on top */
+bool ui_in_stack(const page_t *page);           /* somewhere in the stack, on top or under others */
 void ui_tab(int tab);
 void ui_rebuild(void);                          /* after a theme change: page and overlays */
 void ui_refresh(void);                          /* rebuild the current page on the next tick */
@@ -83,13 +84,27 @@ void ui_device_controls(lv_obj_t *root, int dev, int vol_dev, const int8_t *key_
 extern const page_t page_devices, page_device, page_device_edit, page_add_device;
 extern const page_t page_pair_ble, page_ir_brands, page_ir_detect, page_ir_test, page_ir_learn;
 extern const page_t page_home, page_ha_detail;
-extern const page_t page_settings, page_display, page_haptics, page_power, page_brightness, page_wifi_settings, page_ha_settings,
+extern const page_t page_settings, page_display, page_haptics, page_power, page_gestures, page_wifi_settings, page_ha_settings,
     page_about, page_update;
 extern const page_t page_ha_server, page_ha_phone, page_ha_password;
 void ui_ha_status(char *buf, int len, lv_color_t *color);
 void ui_open_wifi(void);                        /* Settings > Wi-Fi, with a fresh draft */   /* "Connected", "Not signed in", ... */
 extern const page_t page_text, page_choice;
 extern const page_t page_splash;
+
+/* The first-time setup guide (scr_setup.c): Wi-Fi, Home Assistant, a device,
+ * an activity and a short tour, every step skippable. It opens after the
+ * splash on a new remote, from the Activities tab's "Finish setting up" card
+ * and from Settings > Setup guide. The flows it opens (Wi-Fi, sign-in, adding
+ * a device) come back to it when they finish, rather than going where they
+ * usually do. */
+extern const page_t page_setup;
+void ui_setup_open(bool first_unfinished);      /* false: from its welcome page */
+bool ui_setup_return(void);                     /* the guide is under the page on top: back to it (true) */
+void ui_setup_card(lv_obj_t *root);             /* the Activities tab's card, while there's one to show */
+/* The activity editor (scr_activities.c) for a new activity with every
+ * device in it (up to the most it takes), named name */
+void ui_new_activity_all(const char *name);
 
 /* A physical key the UI wants for itself (the splash screen's Start).
  * Returns true if the key was used and must not go to a device. */

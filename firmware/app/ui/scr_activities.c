@@ -240,6 +240,7 @@ static void activities_build(lv_obj_t *root, int arg)
     LV_UNUSED(arg);
     w_header(root, NULL, view ? "Routines" : "Activities", NULL);
     if (!view) now_card(root);
+    if (!view) ui_setup_card(root);
     lv_obj_t *sw = w_col(root, 0);
     lv_obj_set_style_pad_hor(sw, PAD, 0);
     w_segmented(sw, "Activities\nRoutines", view, view_cb);
@@ -901,6 +902,43 @@ static void ed_icon_cb(lv_event_t *e)
     ui_pick_icon(draft.name, &draft.icon, ed_changed);
 }
 
+/* A device into an activity: it takes the D-pad, the volume and Now playing
+ * if it's the first that can */
+static void draft_add_dev(activity_t *a, int dev)
+{
+    if (a->n_devices >= MAX_ACT_DEVICES) return;
+    a->devices[a->n_devices++] = dev;
+    const device_t *d = &g_model.devices[dev];
+    if (a->nav_dev < 0 && (d->kind == DEV_STREAMER || d->kind == DEV_MEDIA_BOX || d->kind == DEV_TV)) a->nav_dev = dev;
+    if (a->vol_dev < 0 && d->fn[FN_VOL_UP].transport) a->vol_dev = dev;
+    if (a->np_dev < 0 && d->ha_entity[0]) a->np_dev = dev;
+}
+
+/* subtitle: "TV + Shield" */
+static void draft_sub(activity_t *a)
+{
+    a->sub[0] = 0;
+    for (int i = 0; i < a->n_devices && i < 3; i++) {
+        size_t n = strlen(a->sub);
+        snprintf(a->sub + n, sizeof(a->sub) - n, "%s%s", i ? " + " : "", g_model.devices[a->devices[i]].name);
+    }
+}
+
+void ui_new_activity_all(const char *name)
+{
+    if (g_model.n_activities >= MAX_ACTIVITIES) {
+        ui_toast("No room for more activities");
+        return;
+    }
+    ed = -1;
+    model_activity_init(&draft, name);
+    for (int i = 0; i < g_model.n_devices; i++) draft_add_dev(&draft, i);
+    draft_sub(&draft);
+    model_activity_rebuild(&draft);
+    orig = draft;   /* as offered: leaving without Create doesn't ask */
+    ui_open(&page_activity_edit, 0);
+}
+
 static void ed_dev_cb(lv_event_t *e)
 {
     int dev = ARG_INT(e);
@@ -909,22 +947,13 @@ static void ed_dev_cb(lv_event_t *e)
     int at = -1;
     for (int i = 0; i < a->n_devices; i++)
         if (a->devices[i] == dev) at = i;
-    if (on && at < 0 && a->n_devices < MAX_ACT_DEVICES) {
-        a->devices[a->n_devices++] = dev;
-        const device_t *d = &g_model.devices[dev];
-        if (a->nav_dev < 0 && (d->kind == DEV_STREAMER || d->kind == DEV_MEDIA_BOX || d->kind == DEV_TV)) a->nav_dev = dev;
-        if (a->vol_dev < 0 && d->fn[FN_VOL_UP].transport) a->vol_dev = dev;
-        if (a->np_dev < 0 && d->ha_entity[0]) a->np_dev = dev;
+    if (on && at < 0) {
+        draft_add_dev(a, dev);
     } else if (!on && at >= 0) {
         memmove(&a->devices[at], &a->devices[at + 1], a->n_devices - at - 1);
         a->n_devices--;
     }
-    /* subtitle: "TV + Shield" */
-    a->sub[0] = 0;
-    for (int i = 0; i < a->n_devices && i < 3; i++) {
-        size_t n = strlen(a->sub);
-        snprintf(a->sub + n, sizeof(a->sub) - n, "%s%s", i ? " + " : "", g_model.devices[a->devices[i]].name);
-    }
+    draft_sub(a);
     ed_changed();
     ui_refresh();
 }

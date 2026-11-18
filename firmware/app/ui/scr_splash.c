@@ -1,5 +1,6 @@
 /* Splash screen at boot: the Bleep logo and a Start button (OK also starts) */
 #include "../control.h"
+#include "../model.h"
 #include "ui.h"
 
 #define LOGO_BODY "\xEE\x84\x80"   /* U+E100, tools/make_logo_font.py */
@@ -9,6 +10,7 @@ static void start(void)
 {
     app_buzz(HAPTIC_CONFIRM);
     ui_tab(TAB_ACTIVITIES);
+    if (g_model.settings.setup_guide) ui_setup_open(false);   /* a new remote: the setup guide, over Activities */
 }
 
 static void start_cb(lv_event_t *e)

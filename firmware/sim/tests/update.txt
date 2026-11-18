@@ -1,4 +1,4 @@
-# Software update: check, Install only on USB, unplugging stops it, install restarts into the new version
+# Software update: check, Install on USB or 30 %+ battery, a low battery stops it, install restarts into the new version
 expect Firmware 0.1.0
 click Start
 wait 300
@@ -18,32 +18,50 @@ shot 71_update_checking
 wait 2500
 expect Version 0.2.0 is available
 expect Checked just now
-expect Plug in USB-C to install
 shot 72_update_available
-# the button stays disabled on battery
-click Plug in USB-C to install
+# on battery with enough charge (82 %), Install is there without USB-C
+expect Install
+# too low: disabled until it's charged or plugged in
+battery 20
 wait 300
-expect Plug in USB-C to install
+expect Charge to 30 % or plug in
+click Charge to 30 % or plug in
+wait 300
+expect Charge to 30 % or plug in
 # plug in: no charging screen on this page, Install appears at once
 usb on
 wait 300
 expect Install
 expect Version 0.2.0 is available
 shot 73_update_usb
+# unplugged with enough battery: still Install
+battery 60
+wait 1500
+usb off
+wait 1500
+expect Install
+expect-no Charge to
 click Install
 wait 3000
 expect Installing 0.2.0
-expect keep the remote plugged in
+expect don't switch the remote off
 shot 74_update_installing
-# unplug: the update stops and nothing changes
+# plugging in and out doesn't stop it
+usb on
+wait 300
 usb off
 wait 300
+expect Installing 0.2.0
+# the battery runs low: the update stops and nothing changes
+battery 12
+wait 1500
 expect Update stopped
+expect The battery fell below 15 %
 expect Nothing was changed
 expect 0.1.0
-expect Plug in USB-C to install
+expect Charge to 30 % or plug in
 shot 75_update_stopped
-# back in, install again, all the way
+# plugged in, install again, all the way
 usb on
 wait 300
 expect Try 0.2.0 again

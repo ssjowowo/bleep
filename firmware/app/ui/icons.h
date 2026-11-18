@@ -88,6 +88,7 @@
 #define ICON_TAP              "\xEE\x81\x94"   /* touch_app */
 #define ICON_GAMEPAD          "\xEE\x81\x95"   /* sports_esports */
 #define ICON_SNAKE            "\xEE\x81\x96"   /* gesture */
+#define ICON_GESTURE          ICON_SNAKE
 #define ICON_BLOCKS           "\xEE\x81\x97"   /* view_quilt */
 #define ICON_GEAR             "\xEE\x81\x98"   /* settings */
 #define ICON_WIFI_BAR         "\xEE\x81\x99"   /* signal_wifi_4_bar */

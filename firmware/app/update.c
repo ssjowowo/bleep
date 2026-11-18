@@ -26,7 +26,15 @@ const update_status_t *update_status(void) { return &st; }
 
 bool update_can_install(void)
 {
-    return st.result == UPD_AVAILABLE || st.result == UPD_STOPPED_USB || st.result == UPD_INSTALL_FAILED;
+    return st.result == UPD_AVAILABLE || st.result == UPD_STOPPED_USB || st.result == UPD_INSTALL_FAILED ||
+           st.result == UPD_STOPPED_LOW;
+}
+
+bool update_power_ok(void)
+{
+    const hal_battery_t *b = app_battery();
+    if (b->usb) return true;
+    return !b->no_cell && b->percent >= UPD_MIN_BATTERY;
 }
 
 /* "0.10.2" > "0.9.7" */
@@ -72,8 +80,7 @@ void update_check(void)
 void update_install(void)
 {
     if (st.busy || !update_can_install()) return;
-    hal_battery_t b = *app_battery();
-    if (!b.usb) return;     /* the page only offers Install on USB */
+    if (!update_power_ok()) return;   /* the page only offers Install then */
     silent = false;
     installing = true;
     hal_log("update: installing %s", st.release.version);
@@ -97,7 +104,7 @@ static void stop_install(upd_result_t why)
     hal_fw_install_abort();
     installing = false;
     hal_log("update: stopped (%s), running firmware unchanged",
-            why == UPD_STOPPED_USB ? "USB-C unplugged" : "download failed");
+            why == UPD_STOPPED_LOW ? "battery low" : "download failed");
     app_buzz(HAPTIC_NO);
     set(UPD_IDLE, why);
 }
@@ -197,11 +204,12 @@ void update_tick(void)
     const settings_t *s = &g_model.settings;
     bool wifi_up = radio_status()->wifi == LINK_UP;
 
-    /* Installing is only allowed on USB; unplugging stops it */
+    /* On battery, an install stops if the battery runs low; unplugging USB
+     * doesn't matter while there's enough */
     if (installing && (st.busy == UPD_WAIT_WIFI || st.busy == UPD_DOWNLOADING)) {
-        hal_battery_t b = *app_battery();
-        if (!b.usb) {
-            stop_install(UPD_STOPPED_USB);
+        const hal_battery_t *b = app_battery();
+        if (!b->usb && !b->no_cell && b->percent < UPD_STOP_BATTERY) {
+            stop_install(UPD_STOPPED_LOW);
             return;
         }
     }

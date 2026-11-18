@@ -14,7 +14,7 @@ lv_obj_t *ha_card_create_full(lv_obj_t *parent, int entity);
  * the rest (a camera's snapshot keeps refreshing there) */
 lv_obj_t *ha_card_create_detail(lv_obj_t *parent, int entity);
 /* A key on that page: the volume keys step its value, OK switches it (Settings >
- * Home Assistant > Keys adjust an open card). False: not taken. */
+ * Keys & gestures > Keys adjust an open card). False: not taken. */
 bool ha_card_key(int entity, bleep_key_t key);
 /* A tile held (or tapped, when a tap can't switch it): its full card (scr_home.c) */
 void ha_card_open_detail(int entity);

@@ -34,7 +34,7 @@ shot 81_tap_wake
 # the settings
 tab Settings
 wait 300
-click Power & sleep
+click Keys & gestures
 wait 300
 expect Wake on double-tap
 expect Face down to pause

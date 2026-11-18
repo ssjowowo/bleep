@@ -20,11 +20,15 @@ wait 300
 slide Strength 3
 back
 wait 300
-click Power & sleep
+click Battery & sleep
 wait 300
 slide Idle after 6
 expect 1 min
+back
+wait 300
 # wake on pick-up off
+click Keys & gestures
+wait 300
 switch Wake on pick-up
 wait 300
 back
@@ -101,7 +105,7 @@ back
 wait 300
 expect Strong
 wait 300
-click Power & sleep
+click Battery & sleep
 wait 300
 expect 1 min
 expect 1.5 min

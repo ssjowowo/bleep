@@ -40,6 +40,8 @@ void demo_fill(const char **wifi_pass)
     *wifi_pass = "correcthorse";
     snprintf(s->ha_url, sizeof(s->ha_url), "http://homeassistant.local:8123");
     snprintf(s->ha_user, sizeof(s->ha_user), "Sam");
+    s->setup_guide = s->setup_card = false;   /* set up long ago */
+    s->tour_seen = true;
 
     /* 0: TV over IR */
     device_t *tv = model_add_device("Living room TV", DEV_TV);

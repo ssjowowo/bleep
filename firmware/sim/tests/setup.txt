@@ -1,0 +1,129 @@
+factory
+# The first-time setup guide on a new remote: every step, each flow coming
+# back to the guide, a skipped step left on the Activities tab's card, and
+# Settings > Setup guide opening it again.
+click Start
+wait 300
+expect Let's get your remote ready
+expect Set up later
+shot 400_setup_welcome
+click Get started
+wait 300
+# 1: Wi-Fi, through the usual Wi-Fi page, which comes back here once connected
+expect Step 1 of 6
+expect Choose a network
+expect Skip for now
+shot 401_setup_wifi
+click Choose a network
+wait 300
+click Scan
+wait 2500
+click Home-5G
+wait 300
+type correcthorse
+kbkey enter
+wait 300
+click Connect
+wait 1500
+expect Step 1 of 6
+expect Saved: Home-5G
+expect Change network
+shot 402_setup_wifi_done
+click Next
+wait 300
+# 2: Home Assistant, signed in on a phone; back to the guide
+expect Step 2 of 6
+click Sign in
+wait 300
+expect Server
+click Address
+wait 2000
+expect Found on your network
+click Home
+wait 300
+click Sign in with your phone
+wait 8200
+expect Step 2 of 6
+expect Signed in as
+shot 403_setup_ha_done
+# BACK goes a step back, and Next forward again
+key BACK
+wait 300
+expect Step 1 of 6
+click Next
+wait 300
+expect Step 2 of 6
+click Next
+wait 300
+# 3: the TV: the activity step can't do anything without a device yet
+expect Step 3 of 6
+shot 404_setup_device
+click Skip for now
+wait 300
+expect Step 4 of 6
+expect Add a device first
+shot 405_setup_activity_needs_device
+back
+wait 300
+expect Step 3 of 6
+click Add a device
+wait 300
+click IR from the library
+click Samsung
+click Yes, it works
+kbkey enter
+wait 300
+# added: back to the guide, not to the Devices tab
+expect Step 3 of 6
+expect Added: Samsung TV
+shot 406_setup_device_done
+click Next
+wait 300
+# 4: an activity with the TV in it, made in the usual editor
+expect Step 4 of 6
+click Create “Watch TV”
+wait 300
+expect Samsung TV
+shot 407_setup_activity_editor
+click Create
+wait 300
+expect Step 4 of 6
+expect 1 activity
+click Next
+wait 300
+# 5 and 6: the tour
+expect Step 5 of 6
+expect The pill shows where the keys go
+shot 408_setup_keys
+click Next
+wait 300
+expect Step 6 of 6
+expect Swipe down from the top
+shot 409_setup_touch
+click Next
+wait 300
+expect Your remote is ready
+expect-no Skipped
+shot 410_setup_done
+click Finish
+wait 300
+# everything done: no card on the Activities tab, the new activity there
+expect-no Finish setting up
+expect Watch TV
+# Settings > Setup guide opens it again, from its welcome page; BACK leaves it
+tab Settings
+wait 300
+click Setup guide
+wait 300
+expect Let's get your remote ready
+key BACK
+wait 300
+expect Setup guide
+# saved: a reboot doesn't bring the guide back
+# saved two seconds after the last change
+wait 2500
+reboot
+click Start
+wait 300
+expect-no Let's get your remote ready
+expect Watch TV
