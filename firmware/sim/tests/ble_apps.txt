@@ -1,0 +1,28 @@
+store fixtures/config-v1.json
+# Netflix and YouTube over Bluetooth (0.2.33): Button page 4 and 3, which
+# Android turns into BUTTON_4/BUTTON_3, Google TV's Netflix and YouTube keys.
+# The frozen v1 file saved them as usage 0 (did nothing): read as the real buttons.
+click Start
+wait 300
+click Shield TV
+wait 3000
+mark
+key NFLX
+wait 300
+expect-log BLE > 0x09:0x004 Button 4 (Netflix)
+key YT
+wait 300
+expect-log BLE > 0x09:0x003 Button 3 (YouTube)
+expect-log-no BLE > 0x0C:0x000
+# A key the device has no code for says so (0.2.34): Living room TV is IR, its
+# LG set has Netflix but no YouTube (none in Flipper-IRDB for LG)
+key PWR
+wait 500
+click Watch TV
+wait 3000
+mark
+key YT
+wait 300
+expect Living room TV has no YouTube code. Learn it from its remote.
+expect-log Living room TV has no YouTube
+shot 78_no_code_toast

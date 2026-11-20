@@ -84,8 +84,11 @@ const char *dev_transport_text(const device_t *d, char *buf, int len)
 /* ---- code helpers ---- */
 
 /* BLE HID usages. Consumer page 0x0C; keyboard page 0x07 for the D-pad and OK,
- * which Android TV handles reliably. Netflix/YouTube usages are still to be
- * confirmed on the real stick (open item), so they are 0 here. */
+ * which Android TV handles reliably. Netflix/YouTube are buttons 4 and 3 on the
+ * Button page (0x09): Linux makes them BTN_3/BTN_2, Android's Generic.kl turns
+ * those into KEYCODE_BUTTON_4/_3, the keycodes Google's own remote sends for
+ * its Netflix and YouTube keys (AOSP Vendor_0957_Product_0001.kl). The consumer
+ * usages that remote uses (0x78/0x77) are mapped only for its vendor ID. */
 void model_set_ble(device_t *d, const char *host)
 {
     d->transports |= TR_BLE;
@@ -105,8 +108,8 @@ void model_set_ble(device_t *d, const char *host)
     d->fn[FN_REW] = (code_t){TR_BLE, 0, 0x0C, 0xB4};
     d->fn[FN_FWD] = (code_t){TR_BLE, 0, 0x0C, 0xB3};
     d->fn[FN_POWER] = (code_t){TR_BLE, 0, 0x0C, 0x30};
-    d->fn[FN_NETFLIX] = (code_t){TR_BLE, 0, 0x0C, 0};
-    d->fn[FN_YOUTUBE] = (code_t){TR_BLE, 0, 0x0C, 0};
+    d->fn[FN_NETFLIX] = (code_t){TR_BLE, 0, 0x09, BLE_BTN_NETFLIX};
+    d->fn[FN_YOUTUBE] = (code_t){TR_BLE, 0, 0x09, BLE_BTN_YOUTUBE};
     d->fn[FN_SUBTITLES] = (code_t){TR_BLE, 0, 0x0C, 0x61};
     d->fn[FN_INFO] = (code_t){TR_BLE, 0, 0x0C, 0x60};
 }

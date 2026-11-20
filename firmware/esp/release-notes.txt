@@ -1,6 +1,8 @@
 # What the remote shows under "Version x.y.z is available" (Settings > Software update):
 # one line per version, "version: a sentence or two", at most 159 bytes of UTF-8.
 # A version without a line here ships with no notes.
+0.2.34: Netflix and YouTube over IR on more TVs, Sony and LG included. A key your TV has no code for now says so; learn it from the TV's remote.
+0.2.33: Netflix and YouTube keys work over Bluetooth on Google TV. If they do nothing, forget Bleep in the TV's Bluetooth settings and pair it again.
 0.2.32: Settings regrouped: brightness right on Display, a new Keys & gestures page, Battery & sleep with the nightstand clock. Tap the battery card for it.
 0.2.31: Updates install on battery too, from 30 % charge; no USB-C needed.
 0.2.30: A setup guide for new remotes: Wi-Fi, Home Assistant, your TV, an activity and the keys. Open it any time from Settings > Setup guide.

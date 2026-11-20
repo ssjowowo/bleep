@@ -193,8 +193,66 @@ def code_sets(root, kind, folders, most):
     return sets
 
 
+APPS = ("FN_NETFLIX", "FN_YOUTUBE")
+
+
+def app_votes(root):
+    """Netflix/YouTube codes in every TV file: {(proto, address): {fn: Counter}}, the same
+    per brand and address, and per brand"""
+    family = collections.defaultdict(lambda: collections.defaultdict(collections.Counter))
+    own = collections.defaultdict(lambda: collections.defaultdict(collections.Counter))
+    brand = collections.defaultdict(lambda: collections.defaultdict(collections.Counter))
+    for name, kind, folders, _ in BRANDS:
+        if kind != "DEV_TV":
+            continue
+        for folder in folders:
+            for dirpath, _, names in os.walk(os.path.join(root, folder)):
+                for n in sorted(names):
+                    if not n.endswith(".ir"):
+                        continue
+                    codes = read(os.path.join(dirpath, n))
+                    key = next((codes[p] for p in POWERS + ("FN_VOL_UP",) if p in codes), None)
+                    for fn, code in codes.items():
+                        if fn not in APPS:
+                            continue
+                        brand[name][fn][code] += 1
+                        if key and code[:2] == key[:2]:   # the same remote's command set
+                            family[key[:2]][fn][code] += 1
+                            own[(name,) + key[:2]][fn][code] += 1
+    return family, own, brand
+
+
+def top(votes, least):
+    """The code most files agree on, if at least `least` do and nothing ties it"""
+    best = votes.most_common(2)
+    if not best or best[0][1] < least or (len(best) > 1 and best[1][1] == best[0][1]):
+        return None
+    return best[0][0]
+
+
+def fill_apps(s, name, family, own, brand):
+    """A TV set without Netflix/YouTube borrows the code its remote family uses: from the
+    brand's remotes with the same protocol and address; else other brands' on that address,
+    only if they all agree (NEC address 4 is LG, Hisense, Vizio... each with its own
+    commands); else the code most of the brand's files agree on (Sony's sits on an address
+    of its own). Never a command the set already uses for something else."""
+    key = next(s[p] for p in POWERS + ("FN_VOL_UP",) if p in s)[:2]
+    one_maker = all(len(family[key][fn]) <= 1 for fn in APPS)
+    added = []
+    for fn in APPS:
+        if fn in s:
+            continue
+        code = (top(own[(name,) + key][fn], 1) or (one_maker and top(family[key][fn], 1))
+                or top(brand[name][fn], 2))
+        if code and code not in s.values():
+            s[fn] = code
+            added.append(fn)
+    return added
+
+
 def main():
     root = sys.argv[1]
+    family, own, brand = app_votes(root)
     try:
         commit = subprocess.run(["git", "-C", root, "rev-parse", "--short", "HEAD"], capture_output=True,
                                 text=True).stdout.strip() or "unknown"
@@ -219,7 +277,11 @@ def main():
             print(f"  {name} ({kind}): no usable code sets, left out", file=sys.stderr)
             continue
         brands.append((name, kind, len(sets), len(table)))
-        for s in sets:
+        for i, s in enumerate(sets):
+            if kind == "DEV_TV":
+                for fn in fill_apps(s, name, family, own, brand):
+                    p, a, b = s[fn]
+                    print(f"  {name} TV set {i + 1}: {fn} borrowed, {p} 0x{a:X}/0x{b:X}", file=sys.stderr)
             table.append((total, s))
             total += len(s)
     out.append("static const ir_lib_code_t codes[] = {")

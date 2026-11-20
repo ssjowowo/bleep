@@ -396,6 +396,13 @@ static void read_device(const cJSON *o, device_t *d)
         code->a = cJSON_IsNumber(a) ? (uint32_t)a->valuedouble : 0;
         code->b = cJSON_IsNumber(b) ? (uint32_t)b->valuedouble : 0;
     }
+    /* Before 0.2.33 the Bluetooth Netflix/YouTube keys were saved as usage 0
+     * ("to be confirmed"), which does nothing: give them the real buttons */
+    static const struct { fn_t f; uint16_t usage; } apps[] = {{FN_NETFLIX, BLE_BTN_NETFLIX}, {FN_YOUTUBE, BLE_BTN_YOUTUBE}};
+    for (int i = 0; i < N(apps); i++) {
+        code_t *code = &d->fn[apps[i].f];
+        if (code->transport == TR_BLE && code->b == 0) *code = (code_t){TR_BLE, 0, 0x09, apps[i].usage};
+    }
 }
 
 static void read_activity(const cJSON *o, activity_t *a, int n_devices)

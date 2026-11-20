@@ -277,6 +277,8 @@ void model_move_routine(int from, int to);
 int model_moved_index(int i, int from, int to);         /* where index i is after such a move */
 void model_delete_activity(int idx);
 void model_activity_rebuild(activity_t *a);
+#define BLE_BTN_YOUTUBE 3   /* Button page (0x09) usages: Google TV's YouTube and Netflix keys, see model.c */
+#define BLE_BTN_NETFLIX 4
 void model_set_ble(device_t *d, const char *host);      /* bonded BLE HID host: D-pad, media, volume */
 /* An entity_id's index in g_model.home.ents, added if it's new; -1 if it
  * doesn't fit, or there's no room even after dropping the ones nothing uses

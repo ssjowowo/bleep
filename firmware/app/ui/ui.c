@@ -383,8 +383,13 @@ static void on_event(app_event_t ev, int arg, void *ctx)
             ui_toast("%s didn't answer over Bluetooth. Is it on?", g_model.devices[arg].name);
         break;
     case EV_NO_TARGET:
-        if (key_target(arg) == KEYDEV_NONE) qs_keys_open();   /* nowhere to go: pick somewhere */
-        else ui_toast("%s isn't set up for this key", hal_key_name(arg));
+        if (key_target(arg) < 0) qs_keys_open();   /* nowhere to go: pick somewhere */
+        else {   /* the device hasn't got that function: say which, and how to add it */
+            const device_t *d = &g_model.devices[key_target(arg)];
+            const char *fn = fn_name(key_default_fn(arg));
+            if (d->transports & TR_IR) ui_toast("%s has no %s code. Learn it from its remote.", d->name, fn);
+            else ui_toast("%s has no %s key.", d->name, fn);
+        }
         break;
     default:
         break;

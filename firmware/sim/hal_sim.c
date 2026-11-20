@@ -306,6 +306,7 @@ static const char *usage_name(uint16_t page, uint16_t usage)
         case 0x28: return "Enter";
         }
     }
+    if (page == 0x09) return usage == 3 ? "Button 3 (YouTube)" : usage == 4 ? "Button 4 (Netflix)" : "Button";
     switch (usage) {
     case 0x223: return "AC Home";
     case 0x224: return "AC Back";

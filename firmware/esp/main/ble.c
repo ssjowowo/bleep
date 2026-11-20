@@ -34,6 +34,7 @@ static const char *TAG = "ble";
 #define APPEARANCE_KEYBOARD 0x03C1
 #define REPORT_KEYS 1
 #define REPORT_CONSUMER 2
+#define REPORT_BUTTONS 3
 
 static const uint8_t report_map[] = {
     /* keyboard: modifiers, reserved, 6 keys */
@@ -45,6 +46,12 @@ static const uint8_t report_map[] = {
     /* consumer control: one 16-bit usage */
     0x05, 0x0C, 0x09, 0x01, 0xA1, 0x01, 0x85, REPORT_CONSUMER,
     0x15, 0x00, 0x26, 0xFF, 0x03, 0x19, 0x00, 0x2A, 0xFF, 0x03, 0x75, 0x10, 0x95, 0x01, 0x81, 0x00,
+    0xC0,
+    /* buttons 1-8 (Button page) in a consumer collection: Linux gives them
+     * BTN_0..BTN_7, Android BUTTON_1..8; 3 and 4 are Google TV's YouTube and
+     * Netflix keys (model.c) */
+    0x05, 0x0C, 0x09, 0x01, 0xA1, 0x01, 0x85, REPORT_BUTTONS,
+    0x05, 0x09, 0x19, 0x01, 0x29, 0x08, 0x15, 0x00, 0x25, 0x01, 0x75, 0x01, 0x95, 0x08, 0x81, 0x02,
     0xC0,
 };
 
@@ -183,6 +190,10 @@ bool hal_ble_key(uint16_t page, uint16_t usage, uint8_t mods, bool down)
     if (page == 0x0C) {
         uint8_t r[2] = {down ? usage & 0xFF : 0, down ? usage >> 8 : 0};
         return esp_hidd_dev_input_set(hid, 0, REPORT_CONSUMER, r, sizeof(r)) == ESP_OK;
+    }
+    if (page == 0x09) {
+        uint8_t r = down && usage >= 1 && usage <= 8 ? 1 << (usage - 1) : 0;
+        return esp_hidd_dev_input_set(hid, 0, REPORT_BUTTONS, &r, 1) == ESP_OK;
     }
     uint8_t r[8] = {down ? mods : 0, 0, down ? (uint8_t)usage : 0};
     return esp_hidd_dev_input_set(hid, 0, REPORT_KEYS, r, sizeof(r)) == ESP_OK;
